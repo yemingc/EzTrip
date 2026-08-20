@@ -9,6 +9,7 @@
 - Backend：Python 3.12、FastAPI、Pydantic v2、SQLAlchemy、Alembic、uv
 - Frontend：Next.js 16、React 19、TypeScript、Tailwind CSS、pnpm
 - Infrastructure：PostgreSQL 17、Docker Compose、GitHub Actions
+- Agent infrastructure：LangGraph、DeepSeek OpenAI-compatible API、LangSmith
 
 ## 本地启动
 
@@ -80,8 +81,21 @@ Set-Location backend
 uv run pytest tests/test_smoke_cases.py --no-cov
 ```
 
+## Gate 0 architecture and observability probe
+
+公开架构决策位于 [`docs/adr/`](docs/adr/)。隔离的三节点探针用于验证 `DeepSeek LLM → weather fixture tool → DeepSeek LLM` 的 LangSmith trace 层级、metadata、错误记录和上传前脱敏；它不是旅行规划实现，也不会调用高德或真实天气数据。
+
+探针会产生少量 DeepSeek API 用量并向配置的 LangSmith Cloud 项目上传固定合成输入。CI 只运行 fake model 和 fixture 测试，不读取真实 Key、调用模型或上传 trace。
+
+```powershell
+Set-Location backend
+uv run python -m scripts.run_observability_probe
+uv run python -m scripts.run_observability_probe --force-tool-error
+```
+
 ## 当前边界
 
 - 不提供订票、订房、支付或实时房价；
 - 当前健康页不是旅行规划产品完成度；
+- 当前三节点探针只证明观测链路可接入，不证明模型规划质量；
 - 后续功能必须通过真实 provider contract、固定评测和可回放 trace 验证后再写入项目成果。
