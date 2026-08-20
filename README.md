@@ -2,7 +2,7 @@
 
 面向中国城市自由行的可验证、可调整、可追溯旅行规划助手。
 
-当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约，以及高德官方 MCP / REST 的真实字段探针与脱敏 fixture。仓库尚未实现生产旅行 Agent、provider adapter 或可执行旅行规划，也没有可对外声称的规划质量指标。
+当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约，以及高德官方 MCP / REST 探针、typed provider adapter 和脱敏 fixture。仓库尚未实现生产旅行 Agent、Graph 工作流或可执行旅行规划，也没有可对外声称的规划质量指标。
 
 ## 技术基线
 
@@ -118,11 +118,30 @@ uv run python -m scripts.run_amap_mcp_probe --live --write-fixture
 
 这只证明 provider 字段可用性和已知边界，不表示 Agent 或地图搜索产品功能已经实现。
 
+## AMap typed provider adapter
+
+[`docs/providers/amap-provider-contract.md`](docs/providers/amap-provider-contract.md) 说明业务层如何通过同一 port 使用 live MCP/REST 与离线 fixture。adapter 当前把高德结果归一化成 `CandidatePOI`、`WeatherRisk` 和 `RouteLeg`，并统一处理来源时间、响应哈希、字段漂移、超时、限流与认证失败。
+
+默认 fixture smoke 不联网：
+
+```powershell
+Set-Location backend
+uv run python -m scripts.run_amap_provider_smoke
+```
+
+显式 `--live` 才会读取本地 Key 并消耗少量高德配额：
+
+```powershell
+uv run python -m scripts.run_amap_provider_smoke --live
+```
+
+天气风险由 provider 数据触发并通过确定性阈值生成，不需要用户先追加“第二天下雨”。当前仍没有 Agent 使用这些结果生成行程。
+
 ## 当前边界
 
 - 不提供订票、订房、支付或实时房价；
 - 当前健康页不是旅行规划产品完成度；
 - 当前三节点探针只证明观测链路可接入，不证明模型规划质量；
-- 当前领域契约只证明数据结构和校验边界，不证明 provider 或多 Agent 已接入；
+- 当前领域契约和 provider adapter 已连通，但尚未接入 Agent 或多 Agent Graph；
 - 高德 live fixture 是 2026-08-20 的点时样本，不是当前天气、实时酒店价格或生产 SLA；
 - 后续功能必须通过真实 provider contract、固定评测和可回放 trace 验证后再写入项目成果。

@@ -91,4 +91,4 @@ uv run python -m scripts.run_amap_mcp_probe --live --write-fixture
 - fixture 不包含中国手机号或邮箱；
 - AMap infocode 能映射为稳定的 provider 错误类别。
 
-该探针是 EZ-004 的可行性证据。下一步 EZ-005 才会实现面向业务领域 DTO 的 provider adapter、fixture/live 双实现、重试与 contract tests；在那之前不能声称“景点推荐 Agent 已接入高德”或“系统已能生成真实行程”。
+该探针是 EZ-004 的可行性证据。后续 EZ-005 已基于此 fixture 实现面向业务领域 DTO 的 provider adapter、fixture/live 双 transport、有界重试与 contract tests，详见 [AMap provider contract](../providers/amap-provider-contract.md)。Agent 和真实行程工作流仍未实现，因此不能声称“景点推荐 Agent 已接入高德”或“系统已能生成真实行程”。

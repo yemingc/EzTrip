@@ -6,7 +6,6 @@ from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal, Protocol, cast
-from urllib.parse import urlencode
 
 import httpx
 from mcp import ClientSession
@@ -15,8 +14,15 @@ from pydantic import AwareDatetime, Field, JsonValue, model_validator
 
 from app.core.config import Settings
 from app.domain.base import DomainModel, Identifier, NonEmptyText
-from app.domain.provider import ProviderErrorCategory, ProviderFailure
+from app.domain.provider import ProviderErrorCategory
 from app.observability.redaction import TraceRedactor
+from app.providers.amap_protocol import (
+    build_amap_failure,
+    build_mcp_url,
+    classify_amap_infocode,
+    decode_mcp_json,
+)
+from app.providers.errors import ProviderRequestError
 
 PROBE_CITY_ADCODE = "110000"
 PROBE_CITY_NAME = "北京市"
@@ -33,35 +39,6 @@ REQUIRED_MCP_TOOLS = frozenset(
         "maps_direction_transit_integrated",
     }
 )
-
-AUTHENTICATION_INFOCODES = frozenset(
-    {
-        "10001",
-        "10002",
-        "10005",
-        "10006",
-        "10007",
-        "10009",
-        "10012",
-        "10013",
-        "10041",
-    }
-)
-RATE_LIMIT_INFOCODES = frozenset(
-    {
-        "10003",
-        "10004",
-        "10010",
-        "10014",
-        "10019",
-        "10020",
-        "10021",
-        "10029",
-        "10044",
-        "10045",
-    }
-)
-TIMEOUT_INFOCODES = frozenset({"10015", "10016"})
 
 SEARCH_POI_FIELDS = ("id", "name", "address", "typecode")
 DETAIL_FIELDS = (
@@ -150,35 +127,7 @@ class McpSessionLike(Protocol):
     async def call_tool(self, name: str, arguments: dict[str, Any]) -> Any: ...
 
 
-class AmapProbeError(RuntimeError):
-    def __init__(self, failure: ProviderFailure) -> None:
-        super().__init__(failure.message)
-        self.failure = failure
-
-
-def classify_amap_infocode(infocode: str) -> ProviderErrorCategory:
-    if infocode in AUTHENTICATION_INFOCODES:
-        return ProviderErrorCategory.AUTHENTICATION_FAILED
-    if infocode in RATE_LIMIT_INFOCODES:
-        return ProviderErrorCategory.RATE_LIMITED
-    if infocode in TIMEOUT_INFOCODES:
-        return ProviderErrorCategory.TIMEOUT
-    return ProviderErrorCategory.UNRECOVERABLE
-
-
-def build_amap_failure(
-    *,
-    operation: str,
-    category: ProviderErrorCategory,
-    message: str,
-) -> ProviderFailure:
-    return ProviderFailure(
-        provider="amap",
-        operation=operation,
-        category=category,
-        message=message,
-        retryable=category in {ProviderErrorCategory.TIMEOUT, ProviderErrorCategory.RATE_LIMITED},
-    )
+AmapProbeError = ProviderRequestError
 
 
 def _as_object(value: object, *, operation: str) -> dict[str, Any]:
@@ -229,64 +178,6 @@ def _select_fields(payload: Mapping[str, Any], fields: Sequence[str]) -> dict[st
         if field in payload:
             selected[field] = cast(JsonValue, payload[field])
     return selected
-
-
-def decode_mcp_json(result: object, *, operation: str) -> dict[str, Any]:
-    content = getattr(result, "content", None)
-    if not isinstance(content, Sequence):
-        raise AmapProbeError(
-            build_amap_failure(
-                operation=operation,
-                category=ProviderErrorCategory.MISSING_FIELD,
-                message=f"{operation} returned no MCP content blocks",
-            )
-        )
-
-    text: str | None = None
-    for block in content:
-        candidate = getattr(block, "text", None)
-        if isinstance(candidate, str):
-            text = candidate
-            break
-    if text is None:
-        raise AmapProbeError(
-            build_amap_failure(
-                operation=operation,
-                category=ProviderErrorCategory.MISSING_FIELD,
-                message=f"{operation} returned no JSON text content",
-            )
-        )
-    try:
-        decoded = json.loads(text)
-    except json.JSONDecodeError as exc:
-        raise AmapProbeError(
-            build_amap_failure(
-                operation=operation,
-                category=ProviderErrorCategory.UNRECOVERABLE,
-                message=f"{operation} returned invalid JSON content",
-            )
-        ) from exc
-
-    payload = _as_object(decoded, operation=operation)
-    infocode = str(payload.get("infocode", ""))
-    if payload.get("status") == "0" or (infocode and infocode != "10000"):
-        info = str(payload.get("info", "AMap request failed"))
-        raise AmapProbeError(
-            build_amap_failure(
-                operation=operation,
-                category=classify_amap_infocode(infocode),
-                message=f"{operation} failed with AMap infocode {infocode}: {info}",
-            )
-        )
-    if bool(getattr(result, "isError", False)):
-        raise AmapProbeError(
-            build_amap_failure(
-                operation=operation,
-                category=ProviderErrorCategory.UNRECOVERABLE,
-                message=f"{operation} returned an MCP tool error",
-            )
-        )
-    return payload
 
 
 def sanitize_text_search(payload: Mapping[str, Any]) -> dict[str, JsonValue]:
@@ -709,11 +600,6 @@ async def collect_amap_probe(
             "booking inventory.",
         ),
     )
-
-
-def build_mcp_url(endpoint: str, key: str) -> str:
-    separator = "&" if "?" in endpoint else "?"
-    return f"{endpoint}{separator}{urlencode({'key': key})}"
 
 
 async def run_live_amap_probe(settings: Settings) -> AmapProbeCapture:

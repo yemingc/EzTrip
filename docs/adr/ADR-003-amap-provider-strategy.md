@@ -38,6 +38,12 @@ EzTrip 面向中国用户，需要 POI、天气、距离和路线数据。高德
 
 完整字段、延迟、错误和配额边界见[高德官方 MCP / REST 真实探针报告](../probes/amap-mcp-live-probe-2026-08-20.md)。
 
+## 2026-08-20 adapter 验证
+
+EZ-005 已实现 `AmapTravelDataProvider`、请求级 live MCP client 和版本化 fixture client。两种 transport 通过同一组 POI、天气风险和路线 contract tests，并都输出 `CandidatePOI`、`WeatherRisk` 与 `RouteLeg`。只有超时和限流允许有界重试；认证、空结果、字段缺失和协议错误保持 typed failure。
+
+实现与当前限制见 [AMap provider contract](../providers/amap-provider-contract.md)。
+
 ## 重新评估条件
 
 出现以下情况之一时重新评估：官方 MCP 无法提供稳定字段；配额或延迟不满足演示；需要给多个独立应用复用同一 provider；REST fallback 逻辑超过 adapter 可维护范围。
