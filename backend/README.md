@@ -1,6 +1,6 @@
 # EzTrip API
 
-Gate 0 FastAPI service. It exposes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel domain contracts, and a typed AMap provider with live and fixture transports. The probes and provider are not yet part of the product API.
+Gate 0 FastAPI service. It exposes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel domain contracts, a deterministic `TripRequest` to `PlannerContext` compiler, and a typed AMap provider with live and fixture transports. The probes, compiler, and provider are not yet part of the product API or a production planning graph.
 
 ```powershell
 uv sync --all-groups
@@ -13,14 +13,24 @@ Run offline checks:
 uv run pytest
 uv run ruff check .
 uv run ruff format --check .
-uv run mypy app
+uv run mypy app scripts
 ```
 
 Regenerate the committed domain JSON Schema bundle after changing a contract:
 
 ```powershell
 uv run python -m scripts.export_domain_schemas
+uv run python -m scripts.export_planner_context_example
 ```
+
+Compile the committed Beijing request into a deterministic planning context:
+
+```powershell
+uv run python -m scripts.export_planner_context_example
+uv run pytest tests/test_planner_context.py tests/test_domain_contract_examples.py --no-cov
+```
+
+The compiler derives dates, lodging nights, room nights, budget reference amounts, constraint scopes, clarification questions, and capability readiness. It does not parse raw Chinese, call an LLM, fetch candidates, or generate an itinerary.
 
 Run the live observability probe only after configuring the local root `.env`:
 

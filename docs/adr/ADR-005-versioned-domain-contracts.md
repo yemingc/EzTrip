@@ -26,7 +26,7 @@
 - 行程时间线、费用引用、版本血缘和修复动作在模型层执行跨字段校验；
 - 提交生成后的 JSON Schema bundle 和可解析示例，CI 检查它们与代码一致。
 
-`PlannerContext` 不在本 ADR 中实现。它将在 `EZ-006` 中从 `TripRequest`、候选与工具快照编译，避免把尚未验证的派生语义提前塞进请求模型。
+`PlannerContext` 已在 `EZ-006` 中作为独立契约实现，并由确定性编译器从 `TripRequest` 生成。它只包含日期、人数、预算参考尺度、约束作用域、澄清项和能力就绪状态；候选与天气等 provider 结果仍在后续节点获取，避免把尚未验证的外部事实塞进请求解释。规则和门禁见 [`docs/planning/planner-context.md`](../planning/planner-context.md)。
 
 ## 后果
 

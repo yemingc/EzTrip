@@ -332,6 +332,657 @@
       "title": "TripRequest",
       "type": "object"
     },
+    "PlannerContext": {
+      "$defs": {
+        "BudgetCategory": {
+          "enum": [
+            "lodging",
+            "transport",
+            "food",
+            "admission",
+            "activity",
+            "other"
+          ],
+          "title": "BudgetCategory",
+          "type": "string"
+        },
+        "BudgetPlanningContext": {
+          "additionalProperties": false,
+          "properties": {
+            "total_limit": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Total Limit"
+            },
+            "currency": {
+              "const": "CNY",
+              "default": "CNY",
+              "title": "Currency",
+              "type": "string"
+            },
+            "hard_limit": {
+              "title": "Hard Limit",
+              "type": "boolean"
+            },
+            "included_categories": {
+              "items": {
+                "$ref": "#/$defs/BudgetCategory"
+              },
+              "minItems": 1,
+              "title": "Included Categories",
+              "type": "array"
+            },
+            "excluded_categories": {
+              "items": {
+                "$ref": "#/$defs/BudgetCategory"
+              },
+              "title": "Excluded Categories",
+              "type": "array"
+            },
+            "includes_lodging": {
+              "title": "Includes Lodging",
+              "type": "boolean"
+            },
+            "reference_party_per_day": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Reference Party Per Day"
+            },
+            "reference_per_traveler_trip": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Reference Per Traveler Trip"
+            },
+            "reference_per_traveler_day": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Reference Per Traveler Day"
+            }
+          },
+          "required": [
+            "total_limit",
+            "hard_limit",
+            "included_categories",
+            "excluded_categories",
+            "includes_lodging",
+            "reference_party_per_day",
+            "reference_per_traveler_trip",
+            "reference_per_traveler_day"
+          ],
+          "title": "BudgetPlanningContext",
+          "type": "object"
+        },
+        "ClarificationKind": {
+          "enum": [
+            "unsupported_destination",
+            "missing_rooms",
+            "missing_budget",
+            "unconfirmed_constraint"
+          ],
+          "title": "ClarificationKind",
+          "type": "string"
+        },
+        "Constraint": {
+          "additionalProperties": false,
+          "properties": {
+            "constraint_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Constraint Id",
+              "type": "string"
+            },
+            "kind": {
+              "$ref": "#/$defs/ConstraintKind"
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              ],
+              "title": "Value"
+            },
+            "strength": {
+              "$ref": "#/$defs/ConstraintStrength"
+            },
+            "priority": {
+              "maximum": 5,
+              "minimum": 1,
+              "title": "Priority",
+              "type": "integer"
+            },
+            "source": {
+              "$ref": "#/$defs/ConstraintSource"
+            },
+            "applies_to_dates": {
+              "default": [],
+              "items": {
+                "format": "date",
+                "type": "string"
+              },
+              "title": "Applies To Dates",
+              "type": "array"
+            },
+            "confirmed": {
+              "title": "Confirmed",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "constraint_id",
+            "kind",
+            "value",
+            "strength",
+            "priority",
+            "source",
+            "confirmed"
+          ],
+          "title": "Constraint",
+          "type": "object"
+        },
+        "ConstraintKind": {
+          "enum": [
+            "must_visit",
+            "avoid",
+            "interest",
+            "walking_intensity",
+            "transport_mode",
+            "accommodation",
+            "meal",
+            "accessibility",
+            "schedule"
+          ],
+          "title": "ConstraintKind",
+          "type": "string"
+        },
+        "ConstraintSource": {
+          "enum": [
+            "user_explicit",
+            "user_confirmed",
+            "agent_inferred",
+            "system"
+          ],
+          "title": "ConstraintSource",
+          "type": "string"
+        },
+        "ConstraintStrength": {
+          "enum": [
+            "hard",
+            "soft"
+          ],
+          "title": "ConstraintStrength",
+          "type": "string"
+        },
+        "DestinationContext": {
+          "additionalProperties": false,
+          "properties": {
+            "input_name": {
+              "minLength": 1,
+              "title": "Input Name",
+              "type": "string"
+            },
+            "normalized_name": {
+              "minLength": 1,
+              "title": "Normalized Name",
+              "type": "string"
+            },
+            "administrative_code": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{6}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Administrative Code"
+            },
+            "primary_provider_supported": {
+              "title": "Primary Provider Supported",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "input_name",
+            "normalized_name",
+            "primary_provider_supported"
+          ],
+          "title": "DestinationContext",
+          "type": "object"
+        },
+        "PartyPlanningContext": {
+          "additionalProperties": false,
+          "properties": {
+            "adults": {
+              "maximum": 20,
+              "minimum": 0,
+              "title": "Adults",
+              "type": "integer"
+            },
+            "children": {
+              "maximum": 20,
+              "minimum": 0,
+              "title": "Children",
+              "type": "integer"
+            },
+            "seniors": {
+              "maximum": 20,
+              "minimum": 0,
+              "title": "Seniors",
+              "type": "integer"
+            },
+            "total_travelers": {
+              "maximum": 60,
+              "minimum": 1,
+              "title": "Total Travelers",
+              "type": "integer"
+            },
+            "rooms": {
+              "anyOf": [
+                {
+                  "maximum": 20,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Rooms"
+            },
+            "lodging_nights": {
+              "maximum": 4,
+              "minimum": 1,
+              "title": "Lodging Nights",
+              "type": "integer"
+            },
+            "room_nights": {
+              "anyOf": [
+                {
+                  "maximum": 80,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Room Nights"
+            }
+          },
+          "required": [
+            "adults",
+            "children",
+            "seniors",
+            "total_travelers",
+            "lodging_nights"
+          ],
+          "title": "PartyPlanningContext",
+          "type": "object"
+        },
+        "PlannerCapability": {
+          "enum": [
+            "candidate_search",
+            "stay_search",
+            "weather_lookup",
+            "route_planning",
+            "budget_validation",
+            "plan_finalization"
+          ],
+          "title": "PlannerCapability",
+          "type": "string"
+        },
+        "PlannerDayContext": {
+          "additionalProperties": false,
+          "properties": {
+            "day_number": {
+              "maximum": 5,
+              "minimum": 1,
+              "title": "Day Number",
+              "type": "integer"
+            },
+            "date": {
+              "format": "date",
+              "title": "Date",
+              "type": "string"
+            },
+            "constraint_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Constraint Ids",
+              "type": "array"
+            }
+          },
+          "required": [
+            "day_number",
+            "date"
+          ],
+          "title": "PlannerDayContext",
+          "type": "object"
+        },
+        "PlannerReadiness": {
+          "enum": [
+            "ready",
+            "ready_with_questions",
+            "needs_clarification"
+          ],
+          "title": "PlannerReadiness",
+          "type": "string"
+        },
+        "PlanningClarification": {
+          "additionalProperties": false,
+          "properties": {
+            "clarification_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Clarification Id",
+              "type": "string"
+            },
+            "kind": {
+              "$ref": "#/$defs/ClarificationKind"
+            },
+            "field_path": {
+              "minLength": 1,
+              "title": "Field Path",
+              "type": "string"
+            },
+            "prompt": {
+              "minLength": 1,
+              "title": "Prompt",
+              "type": "string"
+            },
+            "reason": {
+              "minLength": 1,
+              "title": "Reason",
+              "type": "string"
+            },
+            "affected_capabilities": {
+              "items": {
+                "$ref": "#/$defs/PlannerCapability"
+              },
+              "minItems": 1,
+              "title": "Affected Capabilities",
+              "type": "array"
+            },
+            "blocking": {
+              "title": "Blocking",
+              "type": "boolean"
+            },
+            "constraint_id": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Constraint Id"
+            }
+          },
+          "required": [
+            "clarification_id",
+            "kind",
+            "field_path",
+            "prompt",
+            "reason",
+            "affected_capabilities",
+            "blocking"
+          ],
+          "title": "PlanningClarification",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "compiler_version": {
+          "const": "planner-context-v1",
+          "default": "planner-context-v1",
+          "title": "Compiler Version",
+          "type": "string"
+        },
+        "context_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Context Id",
+          "type": "string"
+        },
+        "request_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "input_request_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Input Request Sha256",
+          "type": "string"
+        },
+        "locale": {
+          "const": "zh-CN",
+          "default": "zh-CN",
+          "title": "Locale",
+          "type": "string"
+        },
+        "origin_city": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Origin City"
+        },
+        "destination": {
+          "$ref": "#/$defs/DestinationContext"
+        },
+        "start_date": {
+          "format": "date",
+          "title": "Start Date",
+          "type": "string"
+        },
+        "end_date": {
+          "format": "date",
+          "title": "End Date",
+          "type": "string"
+        },
+        "day_count": {
+          "maximum": 5,
+          "minimum": 2,
+          "title": "Day Count",
+          "type": "integer"
+        },
+        "lodging_nights": {
+          "maximum": 4,
+          "minimum": 1,
+          "title": "Lodging Nights",
+          "type": "integer"
+        },
+        "party": {
+          "$ref": "#/$defs/PartyPlanningContext"
+        },
+        "budget": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BudgetPlanningContext"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "travel_styles": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Travel Styles",
+          "type": "array"
+        },
+        "confirmed_hard_constraints": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Constraint"
+          },
+          "title": "Confirmed Hard Constraints",
+          "type": "array"
+        },
+        "confirmed_soft_constraints": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Constraint"
+          },
+          "title": "Confirmed Soft Constraints",
+          "type": "array"
+        },
+        "pending_constraints": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Constraint"
+          },
+          "title": "Pending Constraints",
+          "type": "array"
+        },
+        "global_constraint_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Global Constraint Ids",
+          "type": "array"
+        },
+        "days": {
+          "items": {
+            "$ref": "#/$defs/PlannerDayContext"
+          },
+          "maxItems": 5,
+          "minItems": 2,
+          "title": "Days",
+          "type": "array"
+        },
+        "clarifications": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/PlanningClarification"
+          },
+          "title": "Clarifications",
+          "type": "array"
+        },
+        "readiness": {
+          "$ref": "#/$defs/PlannerReadiness"
+        },
+        "ready_capabilities": {
+          "items": {
+            "$ref": "#/$defs/PlannerCapability"
+          },
+          "title": "Ready Capabilities",
+          "type": "array"
+        },
+        "blocked_capabilities": {
+          "items": {
+            "$ref": "#/$defs/PlannerCapability"
+          },
+          "title": "Blocked Capabilities",
+          "type": "array"
+        }
+      },
+      "required": [
+        "context_id",
+        "request_id",
+        "input_request_sha256",
+        "destination",
+        "start_date",
+        "end_date",
+        "day_count",
+        "lodging_nights",
+        "party",
+        "days",
+        "readiness",
+        "ready_capabilities",
+        "blocked_capabilities"
+      ],
+      "title": "PlannerContext",
+      "type": "object"
+    },
     "Party": {
       "additionalProperties": false,
       "properties": {

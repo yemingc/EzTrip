@@ -2,7 +2,7 @@
 
 面向中国城市自由行的可验证、可调整、可追溯旅行规划助手。
 
-当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约，以及高德官方 MCP / REST 探针、typed provider adapter 和脱敏 fixture。仓库尚未实现生产旅行 Agent、Graph 工作流或可执行旅行规划，也没有可对外声称的规划质量指标。
+当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture，以及 `TripRequest → PlannerContext` 确定性编译层。仓库尚未实现生产旅行 Agent、Graph 工作流或可执行旅行规划，也没有可对外声称的规划质量指标。
 
 ## 技术基线
 
@@ -105,6 +105,18 @@ uv run python -m scripts.export_domain_schemas
 uv run pytest tests/test_domain_contract_examples.py tests/test_domain_models.py --no-cov
 ```
 
+## PlannerContext 确定性编译
+
+[`docs/planning/planner-context.md`](docs/planning/planner-context.md) 说明结构化 `TripRequest` 如何被机械编译成日期与住宿晚数、人数与间夜、预算参考尺度、约束作用域、澄清问题和逐项能力门禁。相同输入会得到相同哈希和结果；房间数、预算或未确认约束不会被模型静默猜测。
+
+```powershell
+Set-Location backend
+uv run python -m scripts.export_planner_context_example
+uv run pytest tests/test_planner_context.py tests/test_domain_contract_examples.py --no-cov
+```
+
+当前编译器不负责解析中文原话、调用模型、搜索景点或生成行程；它为下一阶段的 LangGraph 澄清路由与候选搜索提供稳定输入。
+
 ## AMap live contract probe
 
 [`docs/probes/amap-mcp-live-probe-2026-08-20.md`](docs/probes/amap-mcp-live-probe-2026-08-20.md) 记录一次固定北京真实探针：官方 MCP 当前发现 15 个工具，并验证 POI、天气、距离、步行和公交响应；版本化 fixture 只保留字段白名单并执行凭据/PII 脱敏。CI 回放 fixture，不读取 Key 或访问高德。
@@ -142,6 +154,6 @@ uv run python -m scripts.run_amap_provider_smoke --live
 - 不提供订票、订房、支付或实时房价；
 - 当前健康页不是旅行规划产品完成度；
 - 当前三节点探针只证明观测链路可接入，不证明模型规划质量；
-- 当前领域契约和 provider adapter 已连通，但尚未接入 Agent 或多 Agent Graph；
+- 当前领域契约、PlannerContext 编译器和 provider adapter 已各自通过测试，但尚未接入 Agent 或多 Agent Graph；
 - 高德 live fixture 是 2026-08-20 的点时样本，不是当前天气、实时酒店价格或生产 SLA；
 - 后续功能必须通过真实 provider contract、固定评测和可回放 trace 验证后再写入项目成果。
