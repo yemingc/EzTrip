@@ -1,0 +1,71 @@
+{
+  "id": "smoke-budget-conflict-beijing-3d-v1",
+  "version": 1,
+  "category": "budget_conflict",
+  "title": "北京三日全包预算不可满足",
+  "request": {
+    "locale": "zh-CN",
+    "text": "两位成年人去北京玩三天，总预算只有 300 元，预算需要包含两晚住宿、市内交通、吃饭和景点门票，并且必须去故宫和八达岭长城。"
+  },
+  "given": {
+    "data_mode": "fixture",
+    "conditions": [
+      {
+        "kind": "cost_floor",
+        "source": "deterministic_cost_fixture",
+        "description": "版本化费用下界高于用户总预算，用于稳定触发不可满足冲突。",
+        "values": {
+          "currency": "CNY",
+          "requested_total": 300,
+          "deterministic_floor": 900,
+          "included_categories": ["lodging", "transport", "food", "admission"]
+        }
+      }
+    ]
+  },
+  "expectations": [
+    {
+      "code": "constraint.budget_semantics_explicit",
+      "required": true,
+      "description": "系统明确预算覆盖两人、三天、两晚住宿及指定费用类别。"
+    },
+    {
+      "code": "validator.unsatisfiable_conflict",
+      "required": true,
+      "description": "确定性校验器返回预算不可满足及最小缺口。"
+    },
+    {
+      "code": "constraint.no_silent_relaxation",
+      "required": true,
+      "description": "不得静默删除住宿、必去地点或其他硬条件。"
+    },
+    {
+      "code": "hitl.relaxation_requested",
+      "required": true,
+      "description": "系统请求用户选择提高预算或放宽范围。"
+    },
+    {
+      "code": "plan.not_finalized",
+      "required": true,
+      "description": "硬冲突未解决前不得输出伪装为可执行的最终行程。"
+    }
+  ],
+  "forbidden_behaviors": [
+    {
+      "code": "budget.exceeded_without_warning",
+      "description": "不得超预算后仍声称满足用户要求。"
+    },
+    {
+      "code": "constraint.silently_removed",
+      "description": "不得擅自移除酒店、餐饮、交通、门票或必去地点。"
+    },
+    {
+      "code": "price.fabricated",
+      "description": "不得编造实时酒店价格或可预订房态。"
+    }
+  ],
+  "boundary_notes": [
+    "900 元只是版本化测试下界，不是市场价格结论。",
+    "真实费用规则会在 BudgetConstraint 和 CostItem 稳定后替换本场景注入值。"
+  ]
+}

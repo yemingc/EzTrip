@@ -1,0 +1,72 @@
+{
+  "id": "smoke-weather-risk-beijing-3d-v1",
+  "version": 1,
+  "category": "weather_risk",
+  "title": "天气工具主动发现第二天降雨风险",
+  "request": {
+    "locale": "zh-CN",
+    "text": "请为两位成年人规划 2026 年 10 月 2 日到 4 日的北京三日游，第二天优先安排八达岭长城和颐和园，偏好户外景观和摄影。"
+  },
+  "given": {
+    "data_mode": "fixture",
+    "conditions": [
+      {
+        "kind": "weather_observation",
+        "source": "weather_tool_fixture",
+        "description": "天气工具刷新后发现第二天存在显著降雨风险，用户请求本身没有追加天气信息。",
+        "values": {
+          "day_offset": 2,
+          "condition": "rain",
+          "precipitation_probability": 0.9,
+          "retrieved_at": "2026-10-01T08:00:00+08:00",
+          "affected_activity_types": ["outdoor", "photography"]
+        }
+      }
+    ]
+  },
+  "expectations": [
+    {
+      "code": "weather.tool_originated_detection",
+      "required": true,
+      "description": "风险由天气工具数据主动触发，不等待用户报告下雨。"
+    },
+    {
+      "code": "weather.risk_structured",
+      "required": true,
+      "description": "系统产生带日期、阈值、来源和获取时间的 WeatherRisk。"
+    },
+    {
+      "code": "plan.impacted_items_identified",
+      "required": true,
+      "description": "系统定位第二天受影响的室外活动，而不是笼统重做全部计划。"
+    },
+    {
+      "code": "repair.local_replan_proposed",
+      "required": true,
+      "description": "系统主动生成局部替代建议并保留未受影响日期。"
+    },
+    {
+      "code": "hitl.major_change_requires_confirmation",
+      "required": true,
+      "description": "跨日移动或删除 must-visit 等重大变化必须等待用户确认。"
+    }
+  ],
+  "forbidden_behaviors": [
+    {
+      "code": "weather.waits_for_user_report",
+      "description": "不得要求用户先输入第二天下雨才发现风险。"
+    },
+    {
+      "code": "repair.full_plan_regenerated_without_scope",
+      "description": "不得在没有影响分析时无边界重生成整份计划。"
+    },
+    {
+      "code": "weather.source_omitted",
+      "description": "不得省略天气来源与获取时间。"
+    }
+  ],
+  "boundary_notes": [
+    "降雨阈值当前来自场景 fixture，WeatherRisk 正式阈值将在 Gate 1 后定义。",
+    "Gate 0 不实现 WeatherWatch 调度、真实天气 API 或最终重排算法。"
+  ]
+}

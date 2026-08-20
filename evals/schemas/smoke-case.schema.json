@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eztrip.local/schemas/smoke-case.schema.json",
+  "title": "EzTrip Gate 0 smoke case",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "category",
+    "title",
+    "request",
+    "given",
+    "expectations",
+    "forbidden_behaviors",
+    "boundary_notes"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^smoke-[a-z0-9-]+-v[1-9][0-9]*$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "category": {
+      "enum": ["normal", "budget_conflict", "weather_risk"]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["locale", "text"],
+      "properties": {
+        "locale": {
+          "const": "zh-CN"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 10
+        }
+      }
+    },
+    "given": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["data_mode", "conditions"],
+      "properties": {
+        "data_mode": {
+          "const": "fixture"
+        },
+        "conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "source", "description", "values"],
+            "properties": {
+              "kind": {
+                "enum": ["planning_baseline", "cost_floor", "weather_observation"]
+              },
+              "source": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "values": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "expectations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "required", "description"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "forbidden_behaviors": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "description"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "boundary_notes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "suite": "gate-0-smoke",
+  "version": 1,
+  "status": "specification",
+  "case_schema": "../../schemas/smoke-case.schema.json",
+  "cases": [
+    {
+      "id": "smoke-normal-beijing-3d-v1",
+      "category": "normal",
+      "path": "normal-beijing-3d.v1.json"
+    },
+    {
+      "id": "smoke-budget-conflict-beijing-3d-v1",
+      "category": "budget_conflict",
+      "path": "budget-conflict-beijing-3d.v1.json"
+    },
+    {
+      "id": "smoke-weather-risk-beijing-3d-v1",
+      "category": "weather_risk",
+      "path": "weather-risk-beijing-3d.v1.json"
+    }
+  ]
+}
