@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.0",
+  "request_id": "request_beijing_3d_001",
+  "locale": "zh-CN",
+  "raw_text": "请为两位成年人规划 2026 年 10 月 2 日到 4 日的北京三日游，必须去故宫，偏好历史文化，每天不要走太多路；不含酒店的当地总预算为 3000 元。",
+  "origin_city": "上海市",
+  "destination_city": "北京市",
+  "start_date": "2026-10-02",
+  "end_date": "2026-10-04",
+  "party": {
+    "adults": 2,
+    "children": 0,
+    "seniors": 0,
+    "rooms": 1
+  },
+  "budget": {
+    "total_limit": "3000.00",
+    "currency": "CNY",
+    "scope": "party_total",
+    "period": "whole_trip",
+    "included_categories": ["transport", "food", "admission", "activity"],
+    "hard_limit": true
+  },
+  "travel_styles": ["历史文化", "轻步行"],
+  "constraints": {
+    "items": [
+      {
+        "constraint_id": "must_visit_forbidden_city",
+        "kind": "must_visit",
+        "value": "故宫",
+        "strength": "hard",
+        "priority": 5,
+        "source": "user_explicit",
+        "applies_to_dates": [],
+        "confirmed": true
+      },
+      {
+        "constraint_id": "walking_intensity_low",
+        "kind": "walking_intensity",
+        "value": "low",
+        "strength": "soft",
+        "priority": 4,
+        "source": "user_explicit",
+        "applies_to_dates": [],
+        "confirmed": true
+      }
+    ]
+  }
+}
