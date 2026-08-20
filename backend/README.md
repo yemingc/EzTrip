@@ -1,6 +1,6 @@
 # EzTrip API
 
-Gate 0 FastAPI service. It exposes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, and versioned V1 travel domain contracts. The probe uses a fixed weather fixture and is not part of the product API.
+Gate 0 FastAPI service. It exposes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel domain contracts, and an isolated AMap MCP/REST contract probe. Neither probe is part of the product API.
 
 ```powershell
 uv sync --all-groups
@@ -30,3 +30,11 @@ uv run python -m scripts.run_observability_probe --force-tool-error
 ```
 
 The live commands use DeepSeek and LangSmith Cloud. They never call AMap and must not run in CI.
+
+Run the low-volume AMap live contract probe only when intentionally refreshing its sanitized fixture:
+
+```powershell
+uv run python -m scripts.run_amap_mcp_probe --live --write-fixture
+```
+
+This command uses the root `.env` AMap key. CI only validates the committed allow-listed fixture and never makes live provider calls.

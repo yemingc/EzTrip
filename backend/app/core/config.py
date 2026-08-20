@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -58,6 +58,37 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="AMAP_MAPS_API_KEY",
     )
+    amap_mcp_url: str = Field(
+        default="https://mcp.amap.com/mcp",
+        validation_alias="AMAP_MCP_URL",
+    )
+    amap_mcp_transport: Literal["streamable_http"] = Field(
+        default="streamable_http",
+        validation_alias="AMAP_MCP_TRANSPORT",
+    )
+    amap_mcp_timeout_seconds: float = Field(
+        default=20.0,
+        gt=0,
+        validation_alias="AMAP_MCP_TIMEOUT_SECONDS",
+    )
+    amap_probe_total_timeout_seconds: float = Field(
+        default=90.0,
+        gt=0,
+        validation_alias="AMAP_PROBE_TOTAL_TIMEOUT_SECONDS",
+    )
+    amap_rest_weather_url: str = Field(
+        default="https://restapi.amap.com/v3/weather/weatherInfo",
+        validation_alias="AMAP_REST_WEATHER_URL",
+    )
+
+    @field_validator("amap_mcp_url", "amap_rest_weather_url")
+    @classmethod
+    def validate_amap_endpoint(cls, value: str) -> str:
+        if not value.startswith("https://"):
+            raise ValueError("AMap endpoints must use HTTPS")
+        if "?" in value:
+            raise ValueError("AMap endpoint settings must not contain query parameters or keys")
+        return value.rstrip("/")
 
 
 @lru_cache
