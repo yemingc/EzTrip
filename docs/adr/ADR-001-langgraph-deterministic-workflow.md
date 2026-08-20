@@ -17,7 +17,7 @@
 
 采用方案 3。LangGraph 负责共享状态、条件分支、并行、checkpoint 和 HITL 中断；Agent 只是图中的一种节点，不拥有隐式的全局状态。只有互不依赖的候选搜索可以并行，预算、时间、距离和硬约束结果必须在汇合后由普通代码校验。
 
-Gate 0 三节点探针只验证 `model → fixture tool → model finalizer` 的 trace 层级，不代表最终旅行图已经实现。
+Gate 0 三节点探针只验证 `model → fixture tool → model finalizer` 的 trace 层级。EZ-007 已新增第一条 `compile_context → clarification_gate → candidate_search` 旅行主链，但它仍只是确定性输入门禁与必去候选查询，不代表模型 Agent、多 Agent 协作或最终行程已经实现。实现边界见 [`docs/planning/minimal-planning-graph.md`](../planning/minimal-planning-graph.md)。
 
 ## 后果
 

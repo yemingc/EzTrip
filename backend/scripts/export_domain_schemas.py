@@ -9,6 +9,7 @@ from app.domain import (
     ConstraintSet,
     CostItem,
     DayPlan,
+    MinimalPlanningResult,
     Party,
     PlannerContext,
     PlanVersion,
@@ -27,6 +28,7 @@ DEFAULT_OUTPUT_PATH = REPOSITORY_ROOT / "docs" / "contracts" / "domain-contracts
 SCHEMA_MODELS: tuple[type[DomainModel], ...] = (
     TripRequest,
     PlannerContext,
+    MinimalPlanningResult,
     Party,
     BudgetConstraint,
     ConstraintSet,

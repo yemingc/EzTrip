@@ -52,6 +52,15 @@ from app.domain.validation import (
     ValidationEvidence,
     ValidationIssue,
 )
+from app.domain.workflow import (
+    CandidateQuerySource,
+    CandidateSearchQuery,
+    MinimalPlanningResult,
+    PlanningNodeEvent,
+    PlanningNodeName,
+    PlanningNodeOutcome,
+    PlanningWorkflowStatus,
+)
 
 __all__ = [
     "ActivityEnvironment",
@@ -60,6 +69,8 @@ __all__ = [
     "BudgetConstraint",
     "BudgetPlanningContext",
     "CandidatePOI",
+    "CandidateQuerySource",
+    "CandidateSearchQuery",
     "CandidateStay",
     "ClarificationKind",
     "Constraint",
@@ -74,6 +85,7 @@ __all__ = [
     "GeoPoint",
     "IssueSeverity",
     "ItineraryItem",
+    "MinimalPlanningResult",
     "MoneyRange",
     "Party",
     "PartyPlanningContext",
@@ -84,6 +96,10 @@ __all__ = [
     "PlannerDayContext",
     "PlannerReadiness",
     "PlanningClarification",
+    "PlanningNodeEvent",
+    "PlanningNodeName",
+    "PlanningNodeOutcome",
+    "PlanningWorkflowStatus",
     "ProviderErrorCategory",
     "ProviderFailure",
     "RepairAction",
