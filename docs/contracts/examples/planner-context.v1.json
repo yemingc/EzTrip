@@ -1,0 +1,108 @@
+{
+  "schema_version": "1.0",
+  "compiler_version": "planner-context-v1",
+  "context_id": "planner-context-22435fe17e8788ab",
+  "request_id": "request_beijing_3d_001",
+  "input_request_sha256": "22435fe17e8788abf67c2d1fc1d11bbe5a92d0f0b420ac7dff479a651f4d149d",
+  "locale": "zh-CN",
+  "origin_city": "上海市",
+  "destination": {
+    "input_name": "北京市",
+    "normalized_name": "北京市",
+    "administrative_code": "110000",
+    "primary_provider_supported": true
+  },
+  "start_date": "2026-10-02",
+  "end_date": "2026-10-04",
+  "day_count": 3,
+  "lodging_nights": 2,
+  "party": {
+    "adults": 2,
+    "children": 0,
+    "seniors": 0,
+    "total_travelers": 2,
+    "rooms": 1,
+    "lodging_nights": 2,
+    "room_nights": 2
+  },
+  "budget": {
+    "total_limit": "3000.00",
+    "currency": "CNY",
+    "hard_limit": true,
+    "included_categories": [
+      "transport",
+      "food",
+      "admission",
+      "activity"
+    ],
+    "excluded_categories": [
+      "lodging",
+      "other"
+    ],
+    "includes_lodging": false,
+    "reference_party_per_day": "1000.00",
+    "reference_per_traveler_trip": "1500.00",
+    "reference_per_traveler_day": "500.00"
+  },
+  "travel_styles": [
+    "历史文化",
+    "轻步行"
+  ],
+  "confirmed_hard_constraints": [
+    {
+      "constraint_id": "must_visit_forbidden_city",
+      "kind": "must_visit",
+      "value": "故宫",
+      "strength": "hard",
+      "priority": 5,
+      "source": "user_explicit",
+      "applies_to_dates": [],
+      "confirmed": true
+    }
+  ],
+  "confirmed_soft_constraints": [
+    {
+      "constraint_id": "walking_intensity_low",
+      "kind": "walking_intensity",
+      "value": "low",
+      "strength": "soft",
+      "priority": 4,
+      "source": "user_explicit",
+      "applies_to_dates": [],
+      "confirmed": true
+    }
+  ],
+  "pending_constraints": [],
+  "global_constraint_ids": [
+    "must_visit_forbidden_city",
+    "walking_intensity_low"
+  ],
+  "days": [
+    {
+      "day_number": 1,
+      "date": "2026-10-02",
+      "constraint_ids": []
+    },
+    {
+      "day_number": 2,
+      "date": "2026-10-03",
+      "constraint_ids": []
+    },
+    {
+      "day_number": 3,
+      "date": "2026-10-04",
+      "constraint_ids": []
+    }
+  ],
+  "clarifications": [],
+  "readiness": "ready",
+  "ready_capabilities": [
+    "candidate_search",
+    "stay_search",
+    "weather_lookup",
+    "route_planning",
+    "budget_validation",
+    "plan_finalization"
+  ],
+  "blocked_capabilities": []
+}

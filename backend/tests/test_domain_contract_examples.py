@@ -3,8 +3,12 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from app.domain import TripPlan, TripRequest, ValidationIssue
+from app.domain import PlannerContext, TripPlan, TripRequest, ValidationIssue
+from app.planning import compile_planner_context
 from scripts.export_domain_schemas import DEFAULT_OUTPUT_PATH, SCHEMA_MODELS, build_schema_bundle
+from scripts.export_planner_context_example import (
+    DEFAULT_OUTPUT_PATH as PLANNER_CONTEXT_EXAMPLE_PATH,
+)
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 EXAMPLE_DIRECTORY = REPOSITORY_ROOT / "docs" / "contracts" / "examples"
@@ -27,6 +31,21 @@ def test_trip_request_example_is_valid_and_preserves_budget_semantics() -> None:
     assert request.budget.total_limit == Decimal("3000.00")
     assert request.budget.includes_lodging is False
     assert TripRequest.model_validate_json(request.model_dump_json()) == request
+
+
+def test_planner_context_example_is_valid_and_reproducible_from_trip_request() -> None:
+    request = TripRequest.model_validate(load_json(EXAMPLE_DIRECTORY / "trip-request.v1.json"))
+    committed_context = PlannerContext.model_validate(load_json(PLANNER_CONTEXT_EXAMPLE_PATH))
+
+    assert committed_context == compile_planner_context(request)
+    assert committed_context.request_id == request.request_id
+    assert committed_context.day_count == 3
+    assert committed_context.lodging_nights == 2
+    assert committed_context.readiness == "ready"
+    assert committed_context.blocked_capabilities == ()
+    assert PlannerContext.model_validate_json(committed_context.model_dump_json()) == (
+        committed_context
+    )
 
 
 def test_trip_plan_example_is_valid_recalculable_and_source_traceable() -> None:
