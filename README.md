@@ -2,7 +2,7 @@
 
 面向中国城市自由行的可验证、可调整、可追溯旅行规划助手。
 
-当前处于 Gate 0 工程基线阶段。仓库只包含可运行的 FastAPI/Next.js 空壳、PostgreSQL 迁移基线和 CI；尚未实现 Agent、地图检索或旅行规划能力，也没有可对外声称的质量指标。
+当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针，以及第一版旅行领域契约。仓库尚未实现生产旅行 Agent、地图检索或可执行旅行规划，也没有可对外声称的规划质量指标。
 
 ## 技术基线
 
@@ -93,9 +93,22 @@ uv run python -m scripts.run_observability_probe
 uv run python -m scripts.run_observability_probe --force-tool-error
 ```
 
+## V1 domain contracts
+
+[`docs/contracts/`](docs/contracts/) 保存从 Pydantic 模型机械导出的 JSON Schema bundle 和可解析示例，覆盖旅行请求、约束、候选 POI/住宿、天气风险、路线、费用、逐日计划、校验问题与计划版本。契约会拒绝未知字段和关键跨字段冲突，并明确区分 live、fixture、用户输入与估算数据。
+
+这些对象目前是后续 Agent、provider normalizer、确定性校验器和 API 的共享数据边界，不表示对应工作流已经实现。
+
+```powershell
+Set-Location backend
+uv run python -m scripts.export_domain_schemas
+uv run pytest tests/test_domain_contract_examples.py tests/test_domain_models.py --no-cov
+```
+
 ## 当前边界
 
 - 不提供订票、订房、支付或实时房价；
 - 当前健康页不是旅行规划产品完成度；
 - 当前三节点探针只证明观测链路可接入，不证明模型规划质量；
+- 当前领域契约只证明数据结构和校验边界，不证明 provider 或多 Agent 已接入；
 - 后续功能必须通过真实 provider contract、固定评测和可回放 trace 验证后再写入项目成果。

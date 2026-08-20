@@ -1,0 +1,62 @@
+import json
+from decimal import Decimal
+from pathlib import Path
+from typing import Any
+
+from app.domain import TripPlan, TripRequest, ValidationIssue
+from scripts.export_domain_schemas import DEFAULT_OUTPUT_PATH, SCHEMA_MODELS, build_schema_bundle
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+EXAMPLE_DIRECTORY = REPOSITORY_ROOT / "docs" / "contracts" / "examples"
+
+
+def load_json(path: Path) -> dict[str, Any]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert isinstance(data, dict)
+    return data
+
+
+def test_trip_request_example_is_valid_and_preserves_budget_semantics() -> None:
+    request = TripRequest.model_validate(load_json(EXAMPLE_DIRECTORY / "trip-request.v1.json"))
+
+    assert request.destination_city == "北京市"
+    assert request.day_count == 3
+    assert request.lodging_nights == 2
+    assert request.party.total_travelers == 2
+    assert request.budget is not None
+    assert request.budget.total_limit == Decimal("3000.00")
+    assert request.budget.includes_lodging is False
+    assert TripRequest.model_validate_json(request.model_dump_json()) == request
+
+
+def test_trip_plan_example_is_valid_recalculable_and_source_traceable() -> None:
+    plan = TripPlan.model_validate(load_json(EXAMPLE_DIRECTORY / "trip-plan.v1.json"))
+
+    assert len(plan.days) == 3
+    assert plan.total_cost_minimum == Decimal("120.00")
+    assert plan.total_cost_maximum == Decimal("120.00")
+    assert plan.days[1].weather_risk_ids[0] == plan.weather_risks[0].risk_id
+    grounded_items = [item for day in plan.days for item in day.items if item.candidate_id]
+    assert grounded_items
+    assert all(item.source and item.source.provider_id for item in grounded_items)
+    assert TripPlan.model_validate_json(plan.model_dump_json()) == plan
+
+
+def test_validation_issue_example_requires_explicit_user_approval() -> None:
+    issue = ValidationIssue.model_validate(
+        load_json(EXAMPLE_DIRECTORY / "validation-issue.v1.json")
+    )
+
+    assert issue.responsible_node == "budget"
+    assert issue.repair_action == "ask_user"
+    assert issue.requires_user_confirmation is True
+    assert ValidationIssue.model_validate_json(issue.model_dump_json()) == issue
+
+
+def test_committed_schema_bundle_matches_the_pydantic_models() -> None:
+    committed_bundle = load_json(DEFAULT_OUTPUT_PATH)
+    generated_bundle = build_schema_bundle()
+
+    assert committed_bundle == generated_bundle
+    assert set(committed_bundle["models"]) == {model.__name__ for model in SCHEMA_MODELS}
+    assert committed_bundle["version"] == "1.0"

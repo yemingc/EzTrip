@@ -1,0 +1,22 @@
+{
+  "issue_id": "issue_budget_floor_001",
+  "rule_code": "budget.deterministic_floor_exceeds_limit",
+  "severity": "error",
+  "message": "确定性费用下界超过用户总预算，不能生成最终行程。",
+  "evidence": [
+    {
+      "field_path": "budget.total_limit",
+      "description": "用户确认的全程总预算",
+      "observed_value": 300
+    },
+    {
+      "field_path": "cost_summary.minimum",
+      "description": "版本化 fixture 计算出的费用下界",
+      "observed_value": 900
+    }
+  ],
+  "responsible_node": "budget",
+  "repairable": true,
+  "repair_action": "ask_user",
+  "requires_user_confirmation": true
+}
