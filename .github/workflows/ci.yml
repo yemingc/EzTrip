@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend quality gates
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: eztrip
+          POSTGRES_USER: eztrip
+          POSTGRES_PASSWORD: eztrip-ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U eztrip -d eztrip"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      EZTRIP_DATABASE_URL: postgresql+asyncpg://eztrip:eztrip-ci@localhost:5432/eztrip
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - run: uv sync --locked --all-groups
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy app
+      - run: uv run pytest
+      - run: uv run alembic upgrade head
+
+  frontend:
+    name: Frontend quality gates
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - run: corepack enable
+      - run: corepack prepare pnpm@11.19.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm build
