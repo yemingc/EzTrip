@@ -1,6 +1,6 @@
 # EzTrip API
 
-Gate 0 FastAPI service. It exposes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel domain contracts, a deterministic `TripRequest` to `PlannerContext` compiler, and a typed AMap provider with live and fixture transports. The probes, compiler, and provider are not yet part of the product API or a production planning graph.
+Gate 0 FastAPI service. It exposes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel domain contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, and the first three-node planning Graph. These components are not yet exposed as a product planning API and do not generate a final itinerary.
 
 ```powershell
 uv sync --all-groups
@@ -21,6 +21,7 @@ Regenerate the committed domain JSON Schema bundle after changing a contract:
 ```powershell
 uv run python -m scripts.export_domain_schemas
 uv run python -m scripts.export_planner_context_example
+uv run python -m scripts.run_minimal_planning_graph --write-example
 ```
 
 Compile the committed Beijing request into a deterministic planning context:
@@ -31,6 +32,15 @@ uv run pytest tests/test_planner_context.py tests/test_domain_contract_examples.
 ```
 
 The compiler derives dates, lodging nights, room nights, budget reference amounts, constraint scopes, clarification questions, and capability readiness. It does not parse raw Chinese, call an LLM, fetch candidates, or generate an itinerary.
+
+Run the first executable planning Graph entirely offline:
+
+```powershell
+uv run python -m scripts.run_minimal_planning_graph
+uv run pytest tests/test_minimal_planning_graph.py --no-cov
+```
+
+The Graph compiles context, applies a capability-specific clarification gate, and searches fixture-backed POIs only for confirmed `must_visit` constraints. It records typed failures and source-traceable candidates. It does not perform open-ended model recommendation, ranking, weather/route joins, budgeting, or itinerary generation.
 
 Run the live observability probe only after configuring the local root `.env`:
 

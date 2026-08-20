@@ -6,6 +6,7 @@
 
 - V1 只支持中国单城市、2–5 个自然日、人民币预算；
 - `PlannerContext` 记录对 `TripRequest` 的唯一确定性解释、输入哈希、澄清问题和能力就绪状态；
+- `MinimalPlanningResult` 记录首条 LangGraph 的节点事件、候选查询来源、provider 候选与 typed failure；
 - 金额使用 `Decimal` 语义，`CostItem` 可确定性重算最小/最大总额；
 - POI、住宿、天气和路线数据携带 provider、数据模式与获取时间；
 - `WeatherRisk` 只能由 live/fixture 天气工具数据产生，不能伪装成用户追加输入；
@@ -17,6 +18,7 @@
 
 - `examples/trip-request.v1.json`：北京三日请求；
 - `examples/planner-context.v1.json`：由上述请求机械编译的规划上下文；
+- `examples/minimal-planning-result.v1.json`：用离线高德 fixture 重放三节点 Graph 的完整结果；
 - `examples/trip-plan.v1.json`：带 provider 来源和费用台账的结构化计划；
 - `examples/validation-issue.v1.json`：不可满足预算冲突。
 
@@ -26,6 +28,7 @@
 Set-Location backend
 uv run python -m scripts.export_domain_schemas
 uv run python -m scripts.export_planner_context_example
+uv run python -m scripts.run_minimal_planning_graph --write-example
 ```
 
-测试会校验示例可解析、序列化可往返，检查提交的 schema bundle 与代码生成结果一致，并重新编译 `TripRequest` 验证 `PlannerContext` 示例没有漂移。
+测试会校验示例可解析、序列化可往返，检查提交的 schema bundle 与代码生成结果一致，并重新编译 `TripRequest`、回放 fixture Graph，验证两个机械示例没有漂移。

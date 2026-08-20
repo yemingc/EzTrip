@@ -1,14 +1,25 @@
+import asyncio
 import json
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from app.domain import PlannerContext, TripPlan, TripRequest, ValidationIssue
+from app.domain import (
+    MinimalPlanningResult,
+    PlannerContext,
+    TripPlan,
+    TripRequest,
+    ValidationIssue,
+)
 from app.planning import compile_planner_context
 from scripts.export_domain_schemas import DEFAULT_OUTPUT_PATH, SCHEMA_MODELS, build_schema_bundle
 from scripts.export_planner_context_example import (
     DEFAULT_OUTPUT_PATH as PLANNER_CONTEXT_EXAMPLE_PATH,
 )
+from scripts.run_minimal_planning_graph import (
+    DEFAULT_OUTPUT_PATH as MINIMAL_PLANNING_RESULT_EXAMPLE_PATH,
+)
+from scripts.run_minimal_planning_graph import build_fixture_result
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 EXAMPLE_DIRECTORY = REPOSITORY_ROOT / "docs" / "contracts" / "examples"
@@ -46,6 +57,19 @@ def test_planner_context_example_is_valid_and_reproducible_from_trip_request() -
     assert PlannerContext.model_validate_json(committed_context.model_dump_json()) == (
         committed_context
     )
+
+
+def test_minimal_planning_result_example_replays_the_fixture_graph() -> None:
+    committed_result = MinimalPlanningResult.model_validate(
+        load_json(MINIMAL_PLANNING_RESULT_EXAMPLE_PATH)
+    )
+    replayed_result = asyncio.run(build_fixture_result())
+
+    assert committed_result == replayed_result
+    assert committed_result.status == "candidates_ready"
+    assert [candidate.name for candidate in committed_result.candidates] == ["故宫博物院"]
+    assert committed_result.candidates[0].source.data_mode == "fixture"
+    assert committed_result.provider_failures == ()
 
 
 def test_trip_plan_example_is_valid_recalculable_and_source_traceable() -> None:
