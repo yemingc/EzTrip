@@ -2,7 +2,7 @@
 
 面向中国城市自由行的可验证、可调整、可追溯旅行规划助手。
 
-当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针，以及第一版旅行领域契约。仓库尚未实现生产旅行 Agent、地图检索或可执行旅行规划，也没有可对外声称的规划质量指标。
+当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约，以及高德官方 MCP / REST 的真实字段探针与脱敏 fixture。仓库尚未实现生产旅行 Agent、provider adapter 或可执行旅行规划，也没有可对外声称的规划质量指标。
 
 ## 技术基线
 
@@ -105,10 +105,24 @@ uv run python -m scripts.export_domain_schemas
 uv run pytest tests/test_domain_contract_examples.py tests/test_domain_models.py --no-cov
 ```
 
+## AMap live contract probe
+
+[`docs/probes/amap-mcp-live-probe-2026-08-20.md`](docs/probes/amap-mcp-live-probe-2026-08-20.md) 记录一次固定北京真实探针：官方 MCP 当前发现 15 个工具，并验证 POI、天气、距离、步行和公交响应；版本化 fixture 只保留字段白名单并执行凭据/PII 脱敏。CI 回放 fixture，不读取 Key 或访问高德。
+
+真实探针会消耗少量高德配额，必须在本地配置 Key 并显式确认：
+
+```powershell
+Set-Location backend
+uv run python -m scripts.run_amap_mcp_probe --live --write-fixture
+```
+
+这只证明 provider 字段可用性和已知边界，不表示 Agent 或地图搜索产品功能已经实现。
+
 ## 当前边界
 
 - 不提供订票、订房、支付或实时房价；
 - 当前健康页不是旅行规划产品完成度；
 - 当前三节点探针只证明观测链路可接入，不证明模型规划质量；
 - 当前领域契约只证明数据结构和校验边界，不证明 provider 或多 Agent 已接入；
+- 高德 live fixture 是 2026-08-20 的点时样本，不是当前天气、实时酒店价格或生产 SLA；
 - 后续功能必须通过真实 provider contract、固定评测和可回放 trace 验证后再写入项目成果。

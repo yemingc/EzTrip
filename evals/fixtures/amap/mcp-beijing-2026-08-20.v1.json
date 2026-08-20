@@ -1,0 +1,542 @@
+{
+  "schema_version": "1.0",
+  "capture_id": "amap_mcp_beijing_20260820_v1",
+  "captured_at": "2026-08-20T08:37:56.896792Z",
+  "data_mode": "live_capture",
+  "endpoint": "https://mcp.amap.com/mcp",
+  "mcp_sdk_version": "1.29.0",
+  "protocol_version": "2025-03-26",
+  "server_name": "amap-sse-server",
+  "server_version": "1.0.0",
+  "tool_catalog": [
+    {
+      "name": "maps_direction_bicycling",
+      "required": [
+        "origin",
+        "destination"
+      ],
+      "properties": [
+        "destination",
+        "origin"
+      ]
+    },
+    {
+      "name": "maps_direction_driving",
+      "required": [
+        "origin",
+        "destination"
+      ],
+      "properties": [
+        "destination",
+        "origin"
+      ]
+    },
+    {
+      "name": "maps_direction_transit_integrated",
+      "required": [
+        "origin",
+        "destination",
+        "city",
+        "cityd"
+      ],
+      "properties": [
+        "city",
+        "cityd",
+        "destination",
+        "origin"
+      ]
+    },
+    {
+      "name": "maps_direction_walking",
+      "required": [
+        "origin",
+        "destination"
+      ],
+      "properties": [
+        "destination",
+        "origin"
+      ]
+    },
+    {
+      "name": "maps_distance",
+      "required": [
+        "origins",
+        "destination"
+      ],
+      "properties": [
+        "destination",
+        "origins",
+        "type"
+      ]
+    },
+    {
+      "name": "maps_geo",
+      "required": [
+        "address"
+      ],
+      "properties": [
+        "address",
+        "city"
+      ]
+    },
+    {
+      "name": "maps_regeocode",
+      "required": [
+        "location"
+      ],
+      "properties": [
+        "location"
+      ]
+    },
+    {
+      "name": "maps_ip_location",
+      "required": [
+        "ip"
+      ],
+      "properties": [
+        "ip"
+      ]
+    },
+    {
+      "name": "maps_schema_personal_map",
+      "required": [
+        "orgName",
+        "lineList"
+      ],
+      "properties": [
+        "lineList",
+        "orgName"
+      ]
+    },
+    {
+      "name": "maps_around_search",
+      "required": [
+        "keywords",
+        "location"
+      ],
+      "properties": [
+        "keywords",
+        "location",
+        "radius",
+        "strategy"
+      ]
+    },
+    {
+      "name": "maps_search_detail",
+      "required": [
+        "id"
+      ],
+      "properties": [
+        "id"
+      ]
+    },
+    {
+      "name": "maps_text_search",
+      "required": [
+        "keywords"
+      ],
+      "properties": [
+        "city",
+        "citylimit",
+        "keywords"
+      ]
+    },
+    {
+      "name": "maps_schema_navi",
+      "required": [
+        "lon",
+        "lat"
+      ],
+      "properties": [
+        "lat",
+        "lon"
+      ]
+    },
+    {
+      "name": "maps_schema_take_taxi",
+      "required": [
+        "dlon",
+        "dlat",
+        "dname"
+      ],
+      "properties": [
+        "dlat",
+        "dlon",
+        "dname",
+        "slat",
+        "slon",
+        "sname"
+      ]
+    },
+    {
+      "name": "maps_weather",
+      "required": [
+        "city"
+      ],
+      "properties": [
+        "city"
+      ]
+    }
+  ],
+  "calls": [
+    {
+      "operation": "weather_rest_fallback",
+      "transport": "rest_fallback",
+      "arguments": {
+        "city": "110000",
+        "extensions": "all"
+      },
+      "latency_ms": 102,
+      "response": {
+        "status": "1",
+        "info": "OK",
+        "infocode": "10000",
+        "forecasts": [
+          {
+            "province": "北京",
+            "city": "北京市",
+            "adcode": "110000",
+            "reporttime": "2026-08-20 16:37:40",
+            "casts": [
+              {
+                "date": "2026-08-20",
+                "week": "4",
+                "dayweather": "多云",
+                "nightweather": "多云",
+                "daytemp": "31",
+                "nighttemp": "22",
+                "daywind": "南",
+                "nightwind": "南",
+                "daypower": "1-3",
+                "nightpower": "1-3",
+                "daytemp_float": "31.0",
+                "nighttemp_float": "22.0"
+              },
+              {
+                "date": "2026-08-21",
+                "week": "5",
+                "dayweather": "雷阵雨",
+                "nightweather": "雷阵雨",
+                "daytemp": "31",
+                "nighttemp": "24",
+                "daywind": "南",
+                "nightwind": "南",
+                "daypower": "1-3",
+                "nightpower": "1-3",
+                "daytemp_float": "31.0",
+                "nighttemp_float": "24.0"
+              },
+              {
+                "date": "2026-08-22",
+                "week": "6",
+                "dayweather": "雷阵雨",
+                "nightweather": "雷阵雨",
+                "daytemp": "30",
+                "nighttemp": "24",
+                "daywind": "东南",
+                "nightwind": "东南",
+                "daypower": "1-3",
+                "nightpower": "1-3",
+                "daytemp_float": "30.0",
+                "nighttemp_float": "24.0"
+              },
+              {
+                "date": "2026-08-23",
+                "week": "7",
+                "dayweather": "雷阵雨",
+                "nightweather": "雷阵雨",
+                "daytemp": "31",
+                "nighttemp": "23",
+                "daywind": "东南",
+                "nightwind": "东南",
+                "daypower": "1-3",
+                "nightpower": "1-3",
+                "daytemp_float": "31.0",
+                "nighttemp_float": "23.0"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "operation": "maps_text_search",
+      "transport": "mcp_streamable_http",
+      "arguments": {
+        "keywords": "故宫博物院",
+        "city": "110000",
+        "citylimit": true
+      },
+      "latency_ms": 226,
+      "response": {
+        "pois": [
+          {
+            "id": "B000A8UIN8",
+            "name": "故宫博物院",
+            "address": "景山前街4号",
+            "typecode": "110201|140100"
+          },
+          {
+            "id": "B0FFFT7UKC",
+            "name": "故宫博物院-文华殿",
+            "address": "景山前街4号故宫博物院内(东南角)",
+            "typecode": "110200"
+          },
+          {
+            "id": "B000A84GDN",
+            "name": "故宫博物院-午门",
+            "address": "东华门街道景山前街4号故宫博物院内(南侧)",
+            "typecode": "110200"
+          }
+        ]
+      }
+    },
+    {
+      "operation": "maps_search_detail",
+      "transport": "mcp_streamable_http",
+      "arguments": {
+        "id": "B000A8UIN8"
+      },
+      "latency_ms": 99,
+      "response": {
+        "id": "B000A8UIN8",
+        "name": "故宫博物院",
+        "location": "116.397029,39.917839",
+        "address": "景山前街4号",
+        "business_area": "",
+        "city": "北京市",
+        "type": "风景名胜;风景名胜;世界遗产|科教文化服务;博物馆;博物馆",
+        "alias": "紫禁城",
+        "cost": "",
+        "open_time": "",
+        "opentime2": "07/27 08:30-17:00开放 最晚进入16:00；04/01-07/26 周二-周日 08:30-17:00开放 最晚进入16:00；07/28-10/31 周二-周日 08:30-17:00开放 最晚进入16:00；11/01-12/31 周二-周日 08:30-16:30开放 最晚进入15:30；01/01-03/31 周二-周日 08:30-16:30开放 最晚进入15:30；11/01-12/31 周二-周日 08:30-16:30开放 最晚进入15:30；01/01-03/31 周二-周日 08:30-16:30开放 最晚进入15:30；01/01-07/26 周一 全天不开放；07/28-12/31 周一 全天不开放；清明节,劳动节,端午节,中秋节,国庆节 08:30-17:00开放 最晚进入16:00；停止入园时间含钟表馆、珍宝馆。",
+        "rating": "4.9",
+        "level": "AAAAA",
+        "ticket_ordering": "0"
+      }
+    },
+    {
+      "operation": "maps_text_search",
+      "transport": "mcp_streamable_http",
+      "arguments": {
+        "keywords": "天坛公园",
+        "city": "110000",
+        "citylimit": true
+      },
+      "latency_ms": 241,
+      "response": {
+        "pois": [
+          {
+            "id": "B000A81CB2",
+            "name": "天坛公园",
+            "address": "天坛东里甲1号",
+            "typecode": "110101"
+          },
+          {
+            "id": "B0FFI0TMCV",
+            "name": "天坛公园售票处",
+            "address": "天坛东里甲1号天坛公园(西南角)",
+            "typecode": "070306"
+          },
+          {
+            "id": "B000A7XXAW",
+            "name": "天坛公园-圜丘",
+            "address": "天坛路甲1号天坛公园内(东南角)",
+            "typecode": "110200"
+          }
+        ]
+      }
+    },
+    {
+      "operation": "maps_search_detail",
+      "transport": "mcp_streamable_http",
+      "arguments": {
+        "id": "B000A81CB2"
+      },
+      "latency_ms": 109,
+      "response": {
+        "id": "B000A81CB2",
+        "name": "天坛公园",
+        "location": "116.410829,39.881913",
+        "address": "天坛东里甲1号",
+        "business_area": "",
+        "city": "北京市",
+        "type": "风景名胜;公园广场;公园",
+        "alias": "天地坛",
+        "cost": "",
+        "open_time": "",
+        "opentime2": "4月1日至10月31日:06:00-22:00(21:00停止入园),园中园08:00-18:00(17:30停止入园)；11月1日至3月31日:06:30-22:00(21:00停止入园),园中园08:00-17:00(16:30停止入园)",
+        "rating": "4.9",
+        "level": "AAAAA",
+        "ticket_ordering": "0"
+      }
+    },
+    {
+      "operation": "maps_weather",
+      "transport": "mcp_streamable_http",
+      "arguments": {
+        "city": "110000"
+      },
+      "latency_ms": 80,
+      "response": {
+        "city": "北京市",
+        "forecasts": [
+          {
+            "date": "2026-08-20",
+            "week": "4",
+            "dayweather": "多云",
+            "nightweather": "多云",
+            "daytemp": "31",
+            "nighttemp": "22",
+            "daywind": "南",
+            "nightwind": "南",
+            "daypower": "1-3",
+            "nightpower": "1-3",
+            "daytemp_float": "31.0",
+            "nighttemp_float": "22.0"
+          },
+          {
+            "date": "2026-08-21",
+            "week": "5",
+            "dayweather": "雷阵雨",
+            "nightweather": "雷阵雨",
+            "daytemp": "31",
+            "nighttemp": "24",
+            "daywind": "南",
+            "nightwind": "南",
+            "daypower": "1-3",
+            "nightpower": "1-3",
+            "daytemp_float": "31.0",
+            "nighttemp_float": "24.0"
+          },
+          {
+            "date": "2026-08-22",
+            "week": "6",
+            "dayweather": "雷阵雨",
+            "nightweather": "雷阵雨",
+            "daytemp": "30",
+            "nighttemp": "24",
+            "daywind": "东南",
+            "nightwind": "东南",
+            "daypower": "1-3",
+            "nightpower": "1-3",
+            "daytemp_float": "30.0",
+            "nighttemp_float": "24.0"
+          },
+          {
+            "date": "2026-08-23",
+            "week": "7",
+            "dayweather": "雷阵雨",
+            "nightweather": "雷阵雨",
+            "daytemp": "31",
+            "nighttemp": "23",
+            "daywind": "东南",
+            "nightwind": "东南",
+            "daypower": "1-3",
+            "nightpower": "1-3",
+            "daytemp_float": "31.0",
+            "nighttemp_float": "23.0"
+          }
+        ]
+      }
+    },
+    {
+      "operation": "maps_distance",
+      "transport": "mcp_streamable_http",
+      "arguments": {
+        "origins": "116.397029,39.917839",
+        "destination": "116.410829,39.881913",
+        "type": "1"
+      },
+      "latency_ms": 86,
+      "response": {
+        "results": [
+          {
+            "origin_id": "1",
+            "dest_id": "1",
+            "distance": "5928",
+            "duration": "1990"
+          }
+        ]
+      }
+    },
+    {
+      "operation": "maps_direction_walking",
+      "transport": "mcp_streamable_http",
+      "arguments": {
+        "origin": "116.397029,39.917839",
+        "destination": "116.410829,39.881913"
+      },
+      "latency_ms": 84,
+      "response": {
+        "route": {
+          "origin": "116.397029,39.917839",
+          "destination": "116.410829,39.881913",
+          "paths": [
+            {
+              "distance": 5508,
+              "duration": 4406,
+              "step_count": 24,
+              "steps": [
+                {
+                  "instruction": "向南步行32米左转",
+                  "orientation": "南",
+                  "road": "",
+                  "distance": 32,
+                  "duration": 26
+                },
+                {
+                  "instruction": "向东南步行114米左转",
+                  "orientation": "东南",
+                  "road": "",
+                  "distance": 114,
+                  "duration": 91
+                },
+                {
+                  "instruction": "向东步行10米直行",
+                  "orientation": "东",
+                  "road": "",
+                  "distance": 10,
+                  "duration": 8
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "operation": "maps_direction_transit_integrated",
+      "transport": "mcp_streamable_http",
+      "arguments": {
+        "origin": "116.397029,39.917839",
+        "destination": "116.410829,39.881913",
+        "city": "110000",
+        "cityd": "110000"
+      },
+      "latency_ms": 299,
+      "response": {
+        "origin": "116.397029,39.917839",
+        "destination": "116.410829,39.881913",
+        "distance": "5172",
+        "transits": [
+          {
+            "duration": "3817",
+            "walking_distance": "2876",
+            "segment_count": 2
+          },
+          {
+            "duration": "5640",
+            "walking_distance": "2217",
+            "segment_count": 2
+          }
+        ]
+      }
+    }
+  ],
+  "limitations": [
+    "Live capture is a point-in-time contract fixture, not current travel advice.",
+    "MCP weather omits provider reporttime and adcode; the REST weather call is retained as a freshness fallback.",
+    "POI cost and opening fields can be empty or irregular and must not be treated as booking inventory."
+  ]
+}

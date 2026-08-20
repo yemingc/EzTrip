@@ -32,6 +32,12 @@ EzTrip 面向中国用户，需要 POI、天气、距离和路线数据。高德
 - contract tests 能回放成功、超时、限流、字段缺失和无结果场景。
 - 需要额外维护 adapter 与 fixture，但这正是工具可靠性和可测试性的核心证据。
 
+## 2026-08-20 探针验证
+
+固定北京 live probe 实际发现 15 个工具，并验证了 POI 搜索/详情、天气、距离、步行和公交路线。`maps_weather` 没有返回 `reporttime/adcode`，因此触发本 ADR 所述的最小 REST weather fallback；POI 的 `cost` 为空且开放时间格式不规则，不能作为酒店/门票库存或可信价格。
+
+完整字段、延迟、错误和配额边界见[高德官方 MCP / REST 真实探针报告](../probes/amap-mcp-live-probe-2026-08-20.md)。
+
 ## 重新评估条件
 
 出现以下情况之一时重新评估：官方 MCP 无法提供稳定字段；配额或延迟不满足演示；需要给多个独立应用复用同一 provider；REST fallback 逻辑超过 adapter 可维护范围。
