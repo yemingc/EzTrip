@@ -1,0 +1,73 @@
+{
+  "id": "smoke-normal-beijing-3d-v1",
+  "version": 1,
+  "category": "normal",
+  "title": "北京三日历史文化轻步行行程",
+  "request": {
+    "locale": "zh-CN",
+    "text": "请为两位成年人规划 2026 年 10 月 2 日到 4 日的北京三日游，必须去故宫，偏好历史文化，每天不要走太多路；不含酒店的当地总预算为 3000 元。"
+  },
+  "given": {
+    "data_mode": "fixture",
+    "conditions": [
+      {
+        "kind": "planning_baseline",
+        "source": "planning_fixture",
+        "description": "后续 provider fixture 将提供北京 POI、开放信息、路线和可追溯来源。",
+        "values": {
+          "city": "北京市",
+          "start_date": "2026-10-02",
+          "end_date": "2026-10-04",
+          "traveler_count": 2,
+          "budget_cny": 3000,
+          "lodging_included": false
+        }
+      }
+    ]
+  },
+  "expectations": [
+    {
+      "code": "request.constraints_preserved",
+      "required": true,
+      "description": "城市、日期、人数、预算口径、必去地点和步行偏好均被保留。"
+    },
+    {
+      "code": "plan.day_count_is_three",
+      "required": true,
+      "description": "计划明确包含三个自然日。"
+    },
+    {
+      "code": "plan.must_visit_included",
+      "required": true,
+      "description": "故宫被安排且没有被静默替换。"
+    },
+    {
+      "code": "budget.recalculable",
+      "required": true,
+      "description": "当地支出由结构化费用项重算，酒店不计入本场景预算。"
+    },
+    {
+      "code": "recommendation.source_traceable",
+      "required": true,
+      "description": "每个推荐地点都能回指 provider fixture 或实时 provider 结果。"
+    }
+  ],
+  "forbidden_behaviors": [
+    {
+      "code": "plan.duplicate_poi",
+      "description": "同一 POI 不得在多个时段重复安排。"
+    },
+    {
+      "code": "source.fabricated",
+      "description": "不得把模型记忆中的地点或营业信息伪装成 provider 数据。"
+    },
+    {
+      "code": "budget.llm_only",
+      "description": "不得只依赖模型心算给出预算总额。"
+    }
+  ],
+  "boundary_notes": [
+    "当前仅定义行为契约，不包含真实高德响应或完整 TripPlan。",
+    "步行强度阈值将在领域 schema 和路线字段稳定后量化。"
+  ]
+}

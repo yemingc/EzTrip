@@ -71,6 +71,15 @@ pnpm typecheck
 pnpm build
 ```
 
+## Gate 0 smoke scenarios
+
+`evals/cases/smoke/` 固化了 3 条规格级场景：正常北京三日游、确定性预算冲突、天气工具主动发现风险。它们当前只定义输入、注入条件和必须/禁止行为，不代表 Agent 或真实数据源已经实现。
+
+```powershell
+Set-Location backend
+uv run pytest tests/test_smoke_cases.py --no-cov
+```
+
 ## 当前边界
 
 - 不提供订票、订房、支付或实时房价；
