@@ -1,0 +1,198 @@
+{
+  "suite": "plan-agent-v1",
+  "version": 1,
+  "data_mode": "fixture",
+  "cases": [
+    {
+      "case_id": "plan-agent-beijing-history-v1",
+      "title": "北京历史文化三日完整材料排程",
+      "request": {
+        "request_id": "plan_agent_beijing_history_request",
+        "raw_text": "两位成年人去北京三天，偏好历史文化和轻步行，预算3000元。",
+        "destination_city": "北京市",
+        "start_date": "2026-10-02",
+        "end_date": "2026-10-04",
+        "party": {"adults": 2, "rooms": 1},
+        "budget": {
+          "total_limit": "3000.00",
+          "included_categories": ["lodging", "transport", "food", "admission", "activity", "other"],
+          "hard_limit": false
+        },
+        "travel_styles": ["历史文化", "轻步行"]
+      },
+      "explore_fixture_case_id": "explore-beijing-history-v1",
+      "stay_fixture_case_id": "stay-beijing-history-low-walking-v1",
+      "expected": {
+        "material_status": "ready",
+        "run_status": "planned",
+        "candidate_count": 3,
+        "model_call_count": 1
+      },
+      "boundary_notes": [
+        "模型只能排程 shortlist candidate_id，候选名称、来源和路线由代码回填。"
+      ]
+    },
+    {
+      "case_id": "plan-agent-beijing-food-v1",
+      "title": "北京胡同与餐饮双意图两日排程",
+      "request": {
+        "request_id": "plan_agent_beijing_food_request",
+        "raw_text": "两位成年人去北京两天，想逛胡同并吃北京特色小吃，预算2400元。",
+        "destination_city": "北京市",
+        "start_date": "2026-10-10",
+        "end_date": "2026-10-11",
+        "party": {"adults": 2, "rooms": 1},
+        "budget": {
+          "total_limit": "2400.00",
+          "included_categories": ["lodging", "transport", "food", "admission", "activity", "other"],
+          "hard_limit": false
+        },
+        "travel_styles": ["胡同漫步", "本地美食"],
+        "constraints": {"items": [
+          {
+            "constraint_id": "plan_bj_food",
+            "kind": "meal",
+            "value": "北京特色小吃",
+            "strength": "soft",
+            "priority": 4,
+            "source": "user_explicit",
+            "confirmed": true
+          }
+        ]}
+      },
+      "explore_fixture_case_id": "explore-beijing-hutong-food-v1",
+      "stay_fixture_case_id": "stay-beijing-history-low-walking-v1",
+      "expected": {
+        "material_status": "ready",
+        "run_status": "planned",
+        "candidate_count": 3,
+        "model_call_count": 1
+      },
+      "boundary_notes": [
+        "餐饮类型来自候选类别的确定性映射，不由模型新增餐厅事实。"
+      ]
+    },
+    {
+      "case_id": "plan-agent-shanghai-view-food-v1",
+      "title": "上海城市风光与餐饮两日排程",
+      "request": {
+        "request_id": "plan_agent_shanghai_view_food_request",
+        "raw_text": "两位成年人去上海两天，想看城市风光并吃小笼包，预算2800元。",
+        "destination_city": "上海市",
+        "start_date": "2026-10-15",
+        "end_date": "2026-10-16",
+        "party": {"adults": 2, "rooms": 1},
+        "budget": {
+          "total_limit": "2800.00",
+          "included_categories": ["lodging", "transport", "food", "admission", "activity", "other"],
+          "hard_limit": false
+        },
+        "travel_styles": ["城市风光", "本地美食"]
+      },
+      "explore_fixture_case_id": "explore-shanghai-view-food-v1",
+      "stay_fixture_case_id": "stay-shanghai-bund-city-view-v1",
+      "expected": {
+        "material_status": "ready",
+        "run_status": "planned",
+        "candidate_count": 3,
+        "model_call_count": 1
+      },
+      "boundary_notes": [
+        "天气风险由 Weather 工具主动提供，无需用户追加天气事实。"
+      ]
+    },
+    {
+      "case_id": "plan-agent-chengdu-family-v1",
+      "title": "成都亲子三日路线天气联合排程",
+      "request": {
+        "request_id": "plan_agent_chengdu_family_request",
+        "raw_text": "两位成年人带一名儿童去成都三天，必须去熊猫基地，预算3600元。",
+        "destination_city": "成都市",
+        "start_date": "2026-10-20",
+        "end_date": "2026-10-22",
+        "party": {"adults": 2, "children": 1, "rooms": 1},
+        "budget": {
+          "total_limit": "3600.00",
+          "included_categories": ["lodging", "transport", "food", "admission", "activity", "other"],
+          "hard_limit": false
+        },
+        "travel_styles": ["亲子", "动物"],
+        "constraints": {"items": [
+          {
+            "constraint_id": "plan_cd_must_panda",
+            "kind": "must_visit",
+            "value": "成都大熊猫繁育研究基地",
+            "strength": "hard",
+            "priority": 5,
+            "source": "user_explicit",
+            "confirmed": true
+          }
+        ]}
+      },
+      "explore_fixture_case_id": "explore-chengdu-family-panda-v1",
+      "stay_fixture_case_id": "stay-chengdu-family-panda-v1",
+      "expected": {
+        "material_status": "ready",
+        "run_status": "planned",
+        "candidate_count": 3,
+        "model_call_count": 1
+      },
+      "boundary_notes": [
+        "本阶段保留 must_visit 输入，但完整硬校验由后续 Hard Validators 实现。"
+      ]
+    },
+    {
+      "case_id": "plan-agent-route-timeout-skip-v1",
+      "title": "单条路线超时后禁止带缺口调用 Plan 模型",
+      "request": {
+        "request_id": "plan_agent_route_timeout_request",
+        "raw_text": "两位成年人去北京三天，偏好历史文化，预算3000元。",
+        "destination_city": "北京市",
+        "start_date": "2026-10-02",
+        "end_date": "2026-10-04",
+        "party": {"adults": 2, "rooms": 1},
+        "budget": {
+          "total_limit": "3000.00",
+          "included_categories": ["lodging", "transport", "food", "admission", "activity", "other"],
+          "hard_limit": false
+        },
+        "travel_styles": ["历史文化"]
+      },
+      "explore_fixture_case_id": "explore-beijing-history-v1",
+      "stay_fixture_case_id": "stay-beijing-history-low-walking-v1",
+      "route_failure": "one_timeout",
+      "expected": {
+        "material_status": "partial",
+        "run_status": "skipped",
+        "candidate_count": 3,
+        "model_call_count": 0
+      },
+      "boundary_notes": [
+        "路线 partial 时返回类型化 skip，不能让模型猜测缺失路线。"
+      ]
+    },
+    {
+      "case_id": "plan-agent-unsupported-city-skip-v1",
+      "title": "未配置城市在 Plan 模型调用前阻断",
+      "request": {
+        "request_id": "plan_agent_unsupported_city_request",
+        "raw_text": "两位成年人去南京两天，想住在中心城区。",
+        "destination_city": "南京市",
+        "start_date": "2026-10-17",
+        "end_date": "2026-10-18",
+        "party": {"adults": 2, "rooms": 1}
+      },
+      "explore_fixture_case_id": "explore-beijing-history-v1",
+      "stay_fixture_case_id": "stay-beijing-history-low-walking-v1",
+      "expected": {
+        "material_status": "blocked",
+        "run_status": "skipped",
+        "candidate_count": 0,
+        "model_call_count": 0
+      },
+      "boundary_notes": [
+        "blocked 表示 EzTrip V1 能力边界，不代表地图服务本身不支持南京。"
+      ]
+    }
+  ]
+}

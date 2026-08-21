@@ -1,0 +1,1291 @@
+{
+  "$defs": {
+    "ActivityKind": {
+      "enum": [
+        "attraction",
+        "meal",
+        "stay",
+        "transit",
+        "free_time"
+      ],
+      "title": "ActivityKind",
+      "type": "string"
+    },
+    "BudgetAllocationStatus": {
+      "enum": [
+        "allocated",
+        "blocked",
+        "not_requested"
+      ],
+      "title": "BudgetAllocationStatus",
+      "type": "string"
+    },
+    "BudgetAssessmentStatus": {
+      "enum": [
+        "not_requested",
+        "within_limit",
+        "possible_overrun",
+        "exceeded",
+        "incomplete"
+      ],
+      "title": "BudgetAssessmentStatus",
+      "type": "string"
+    },
+    "BudgetCategory": {
+      "enum": [
+        "lodging",
+        "transport",
+        "food",
+        "admission",
+        "activity",
+        "other"
+      ],
+      "title": "BudgetCategory",
+      "type": "string"
+    },
+    "BudgetValidationSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/BudgetAssessmentStatus"
+        },
+        "currency": {
+          "const": "CNY",
+          "default": "CNY",
+          "title": "Currency",
+          "type": "string"
+        },
+        "total_limit": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total Limit"
+        },
+        "included_categories": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/BudgetCategory"
+          },
+          "title": "Included Categories",
+          "type": "array"
+        },
+        "missing_categories": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/BudgetCategory"
+          },
+          "title": "Missing Categories",
+          "type": "array"
+        },
+        "considered_cost_item_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Considered Cost Item Ids",
+          "type": "array"
+        },
+        "excluded_cost_item_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Excluded Cost Item Ids",
+          "type": "array"
+        },
+        "total_minimum": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+              "type": "string"
+            }
+          ],
+          "title": "Total Minimum"
+        },
+        "total_maximum": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+              "type": "string"
+            }
+          ],
+          "title": "Total Maximum"
+        },
+        "minimum_gap": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+              "type": "string"
+            }
+          ],
+          "title": "Minimum Gap"
+        },
+        "maximum_gap": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+              "type": "string"
+            }
+          ],
+          "title": "Maximum Gap"
+        }
+      },
+      "required": [
+        "status",
+        "total_minimum",
+        "total_maximum",
+        "minimum_gap",
+        "maximum_gap"
+      ],
+      "title": "BudgetValidationSummary",
+      "type": "object"
+    },
+    "CostItem": {
+      "additionalProperties": false,
+      "properties": {
+        "cost_item_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Cost Item Id",
+          "type": "string"
+        },
+        "category": {
+          "$ref": "#/$defs/BudgetCategory"
+        },
+        "description": {
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "quantity": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)",
+              "type": "string"
+            }
+          ],
+          "title": "Quantity"
+        },
+        "unit_price": {
+          "$ref": "#/$defs/MoneyRange"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceReference"
+        },
+        "is_estimate": {
+          "title": "Is Estimate",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "cost_item_id",
+        "category",
+        "description",
+        "quantity",
+        "unit_price",
+        "source",
+        "is_estimate"
+      ],
+      "title": "CostItem",
+      "type": "object"
+    },
+    "DataMode": {
+      "enum": [
+        "live",
+        "fixture",
+        "user_input",
+        "estimate"
+      ],
+      "title": "DataMode",
+      "type": "string"
+    },
+    "DayPlan": {
+      "additionalProperties": false,
+      "properties": {
+        "date": {
+          "format": "date",
+          "title": "Date",
+          "type": "string"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/ItineraryItem"
+          },
+          "minItems": 1,
+          "title": "Items",
+          "type": "array"
+        },
+        "weather_risk_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Weather Risk Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "date",
+        "items"
+      ],
+      "title": "DayPlan",
+      "type": "object"
+    },
+    "GeoPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "latitude": {
+          "maximum": 90,
+          "minimum": -90,
+          "title": "Latitude",
+          "type": "number"
+        },
+        "longitude": {
+          "maximum": 180,
+          "minimum": -180,
+          "title": "Longitude",
+          "type": "number"
+        }
+      },
+      "required": [
+        "latitude",
+        "longitude"
+      ],
+      "title": "GeoPoint",
+      "type": "object"
+    },
+    "IssueSeverity": {
+      "enum": [
+        "warning",
+        "error"
+      ],
+      "title": "IssueSeverity",
+      "type": "string"
+    },
+    "ItineraryItem": {
+      "additionalProperties": false,
+      "properties": {
+        "item_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Item Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/ActivityKind"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "start_at": {
+          "format": "date-time",
+          "title": "Start At",
+          "type": "string"
+        },
+        "end_at": {
+          "format": "date-time",
+          "title": "End At",
+          "type": "string"
+        },
+        "candidate_id": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Candidate Id"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceReference"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "route_from_previous": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RouteLeg"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "cost_item_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Cost Item Ids",
+          "type": "array"
+        },
+        "notes": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Notes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "item_id",
+        "kind",
+        "title",
+        "start_at",
+        "end_at"
+      ],
+      "title": "ItineraryItem",
+      "type": "object"
+    },
+    "ModelTokenUsage": {
+      "additionalProperties": false,
+      "properties": {
+        "prompt_tokens": {
+          "minimum": 0,
+          "title": "Prompt Tokens",
+          "type": "integer"
+        },
+        "completion_tokens": {
+          "minimum": 0,
+          "title": "Completion Tokens",
+          "type": "integer"
+        },
+        "total_tokens": {
+          "minimum": 0,
+          "title": "Total Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens"
+      ],
+      "title": "ModelTokenUsage",
+      "type": "object"
+    },
+    "MoneyRange": {
+      "additionalProperties": false,
+      "properties": {
+        "minimum": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+              "type": "string"
+            }
+          ],
+          "title": "Minimum"
+        },
+        "maximum": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+              "type": "string"
+            }
+          ],
+          "title": "Maximum"
+        },
+        "currency": {
+          "const": "CNY",
+          "default": "CNY",
+          "title": "Currency",
+          "type": "string"
+        }
+      },
+      "required": [
+        "minimum",
+        "maximum"
+      ],
+      "title": "MoneyRange",
+      "type": "object"
+    },
+    "PlanAgentDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "proposal": {
+          "$ref": "#/$defs/PlannerPlacementProposal"
+        },
+        "item": {
+          "$ref": "#/$defs/ItineraryItem"
+        },
+        "route_edge_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Route Edge Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "proposal",
+        "item",
+        "route_edge_id"
+      ],
+      "title": "PlanAgentDecision",
+      "type": "object"
+    },
+    "PlanAgentRunStatus": {
+      "enum": [
+        "planned",
+        "skipped"
+      ],
+      "title": "PlanAgentRunStatus",
+      "type": "string"
+    },
+    "PlanAgentSkipReason": {
+      "enum": [
+        "materials_not_ready"
+      ],
+      "title": "PlanAgentSkipReason",
+      "type": "string"
+    },
+    "PlanStatus": {
+      "enum": [
+        "draft",
+        "pending_confirmation",
+        "final",
+        "conflicted"
+      ],
+      "title": "PlanStatus",
+      "type": "string"
+    },
+    "PlanValidationReport": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "validator_version": {
+          "const": "deterministic-plan-validator-v1",
+          "default": "deterministic-plan-validator-v1",
+          "title": "Validator Version",
+          "type": "string"
+        },
+        "request_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "plan_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Plan Id",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/PlanValidationStatus"
+        },
+        "can_finalize": {
+          "title": "Can Finalize",
+          "type": "boolean"
+        },
+        "budget": {
+          "$ref": "#/$defs/BudgetValidationSummary"
+        },
+        "issues": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ValidationIssue"
+          },
+          "title": "Issues",
+          "type": "array"
+        },
+        "passed_rule_codes": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Passed Rule Codes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "request_id",
+        "plan_id",
+        "status",
+        "can_finalize",
+        "budget"
+      ],
+      "title": "PlanValidationReport",
+      "type": "object"
+    },
+    "PlanValidationStatus": {
+      "enum": [
+        "passed",
+        "warning",
+        "conflicted"
+      ],
+      "title": "PlanValidationStatus",
+      "type": "string"
+    },
+    "PlannerPlacementProposal": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Candidate Id",
+          "type": "string"
+        },
+        "day_number": {
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Day Number",
+          "type": "integer"
+        },
+        "start_time": {
+          "pattern": "^(?:0[8-9]|1\\d|2[0-1]):(?:00|30)$",
+          "title": "Start Time",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "candidate_id",
+        "day_number",
+        "start_time",
+        "reason"
+      ],
+      "title": "PlannerPlacementProposal",
+      "type": "object"
+    },
+    "PlanningMaterialStatus": {
+      "enum": [
+        "ready",
+        "partial",
+        "blocked"
+      ],
+      "title": "PlanningMaterialStatus",
+      "type": "string"
+    },
+    "RepairAction": {
+      "enum": [
+        "none",
+        "rerun_constraint",
+        "rerun_explore",
+        "rerun_stay",
+        "rerun_route",
+        "replan_day",
+        "recalculate_budget",
+        "ask_user"
+      ],
+      "title": "RepairAction",
+      "type": "string"
+    },
+    "ResponsibleNode": {
+      "enum": [
+        "constraint",
+        "explore",
+        "stay",
+        "weather",
+        "route",
+        "plan",
+        "budget",
+        "validator"
+      ],
+      "title": "ResponsibleNode",
+      "type": "string"
+    },
+    "RiskSeverity": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "extreme"
+      ],
+      "title": "RiskSeverity",
+      "type": "string"
+    },
+    "RouteEndpoint": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "candidate_id": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Candidate Id"
+        },
+        "location": {
+          "$ref": "#/$defs/GeoPoint"
+        }
+      },
+      "required": [
+        "name",
+        "location"
+      ],
+      "title": "RouteEndpoint",
+      "type": "object"
+    },
+    "RouteLeg": {
+      "additionalProperties": false,
+      "properties": {
+        "route_leg_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Route Leg Id",
+          "type": "string"
+        },
+        "origin": {
+          "$ref": "#/$defs/RouteEndpoint"
+        },
+        "destination": {
+          "$ref": "#/$defs/RouteEndpoint"
+        },
+        "mode": {
+          "$ref": "#/$defs/RouteMode"
+        },
+        "distance_meters": {
+          "minimum": 0,
+          "title": "Distance Meters",
+          "type": "integer"
+        },
+        "duration_minutes": {
+          "exclusiveMinimum": 0,
+          "maximum": 1440,
+          "title": "Duration Minutes",
+          "type": "integer"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceReference"
+        }
+      },
+      "required": [
+        "route_leg_id",
+        "origin",
+        "destination",
+        "mode",
+        "distance_meters",
+        "duration_minutes",
+        "source"
+      ],
+      "title": "RouteLeg",
+      "type": "object"
+    },
+    "RouteMode": {
+      "enum": [
+        "walking",
+        "transit",
+        "driving",
+        "cycling"
+      ],
+      "title": "RouteMode",
+      "type": "string"
+    },
+    "SourceReference": {
+      "additionalProperties": false,
+      "description": "Traceable origin for provider data or an explicit estimate.",
+      "properties": {
+        "provider": {
+          "minLength": 1,
+          "title": "Provider",
+          "type": "string"
+        },
+        "provider_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider Id"
+        },
+        "data_mode": {
+          "$ref": "#/$defs/DataMode"
+        },
+        "retrieved_at": {
+          "format": "date-time",
+          "title": "Retrieved At",
+          "type": "string"
+        },
+        "raw_response_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Raw Response Sha256"
+        }
+      },
+      "required": [
+        "provider",
+        "data_mode",
+        "retrieved_at"
+      ],
+      "title": "SourceReference",
+      "type": "object"
+    },
+    "TripPlan": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "plan_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Plan Id",
+          "type": "string"
+        },
+        "request_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/PlanStatus"
+        },
+        "destination_city": {
+          "minLength": 1,
+          "title": "Destination City",
+          "type": "string"
+        },
+        "start_date": {
+          "format": "date",
+          "title": "Start Date",
+          "type": "string"
+        },
+        "end_date": {
+          "format": "date",
+          "title": "End Date",
+          "type": "string"
+        },
+        "days": {
+          "items": {
+            "$ref": "#/$defs/DayPlan"
+          },
+          "maxItems": 5,
+          "minItems": 2,
+          "title": "Days",
+          "type": "array"
+        },
+        "cost_items": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CostItem"
+          },
+          "title": "Cost Items",
+          "type": "array"
+        },
+        "weather_risks": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/WeatherRisk"
+          },
+          "title": "Weather Risks",
+          "type": "array"
+        }
+      },
+      "required": [
+        "plan_id",
+        "request_id",
+        "status",
+        "destination_city",
+        "start_date",
+        "end_date",
+        "days"
+      ],
+      "title": "TripPlan",
+      "type": "object"
+    },
+    "ValidationEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "field_path": {
+          "minLength": 1,
+          "title": "Field Path",
+          "type": "string"
+        },
+        "description": {
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "observed_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed Value"
+        }
+      },
+      "required": [
+        "field_path",
+        "description"
+      ],
+      "title": "ValidationEvidence",
+      "type": "object"
+    },
+    "ValidationIssue": {
+      "additionalProperties": false,
+      "properties": {
+        "issue_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Issue Id",
+          "type": "string"
+        },
+        "rule_code": {
+          "minLength": 1,
+          "title": "Rule Code",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/IssueSeverity"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/ValidationEvidence"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "responsible_node": {
+          "$ref": "#/$defs/ResponsibleNode"
+        },
+        "repairable": {
+          "title": "Repairable",
+          "type": "boolean"
+        },
+        "repair_action": {
+          "$ref": "#/$defs/RepairAction"
+        },
+        "requires_user_confirmation": {
+          "default": false,
+          "title": "Requires User Confirmation",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "issue_id",
+        "rule_code",
+        "severity",
+        "message",
+        "evidence",
+        "responsible_node",
+        "repairable",
+        "repair_action"
+      ],
+      "title": "ValidationIssue",
+      "type": "object"
+    },
+    "WeatherRisk": {
+      "additionalProperties": false,
+      "properties": {
+        "risk_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Risk Id",
+          "type": "string"
+        },
+        "city": {
+          "minLength": 1,
+          "title": "City",
+          "type": "string"
+        },
+        "starts_at": {
+          "format": "date-time",
+          "title": "Starts At",
+          "type": "string"
+        },
+        "ends_at": {
+          "format": "date-time",
+          "title": "Ends At",
+          "type": "string"
+        },
+        "risk_type": {
+          "$ref": "#/$defs/WeatherRiskType"
+        },
+        "severity": {
+          "$ref": "#/$defs/RiskSeverity"
+        },
+        "metrics": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "propertyNames": {
+            "minLength": 1
+          },
+          "title": "Metrics",
+          "type": "object"
+        },
+        "threshold_description": {
+          "minLength": 1,
+          "title": "Threshold Description",
+          "type": "string"
+        },
+        "affected_activity_types": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Affected Activity Types",
+          "type": "array"
+        },
+        "advisory": {
+          "minLength": 1,
+          "title": "Advisory",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceReference"
+        }
+      },
+      "required": [
+        "risk_id",
+        "city",
+        "starts_at",
+        "ends_at",
+        "risk_type",
+        "severity",
+        "threshold_description",
+        "affected_activity_types",
+        "advisory",
+        "source"
+      ],
+      "title": "WeatherRisk",
+      "type": "object"
+    },
+    "WeatherRiskType": {
+      "enum": [
+        "rain",
+        "heat",
+        "wind",
+        "snow",
+        "cold",
+        "air_quality"
+      ],
+      "title": "WeatherRiskType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "agent_version": {
+      "const": "multi-agent-plan-v1",
+      "default": "multi-agent-plan-v1",
+      "title": "Agent Version",
+      "type": "string"
+    },
+    "prompt_version": {
+      "const": "route-weather-budget-schedule-v1",
+      "default": "route-weather-budget-schedule-v1",
+      "title": "Prompt Version",
+      "type": "string"
+    },
+    "request_id": {
+      "maxLength": 100,
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "context_id": {
+      "maxLength": 100,
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+      "title": "Context Id",
+      "type": "string"
+    },
+    "input_material_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Input Material Sha256",
+      "type": "string"
+    },
+    "material_status": {
+      "$ref": "#/$defs/PlanningMaterialStatus"
+    },
+    "budget_status": {
+      "$ref": "#/$defs/BudgetAllocationStatus"
+    },
+    "status": {
+      "$ref": "#/$defs/PlanAgentRunStatus"
+    },
+    "skip_reason": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PlanAgentSkipReason"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "input_poi_candidate_ids": {
+      "items": {
+        "maxLength": 100,
+        "minLength": 1,
+        "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+        "type": "string"
+      },
+      "maxItems": 4,
+      "title": "Input Poi Candidate Ids",
+      "type": "array"
+    },
+    "primary_stay_candidate_id": {
+      "anyOf": [
+        {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Primary Stay Candidate Id"
+    },
+    "input_route_edge_count": {
+      "maximum": 20,
+      "minimum": 0,
+      "title": "Input Route Edge Count",
+      "type": "integer"
+    },
+    "input_weather_risk_ids": {
+      "default": [],
+      "items": {
+        "maxLength": 100,
+        "minLength": 1,
+        "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+        "type": "string"
+      },
+      "title": "Input Weather Risk Ids",
+      "type": "array"
+    },
+    "model": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model"
+    },
+    "latency_ms": {
+      "minimum": 0,
+      "title": "Latency Ms",
+      "type": "integer"
+    },
+    "usage": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ModelTokenUsage"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "model_call_count": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Model Call Count",
+      "type": "integer"
+    },
+    "decisions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/PlanAgentDecision"
+      },
+      "maxItems": 4,
+      "title": "Decisions",
+      "type": "array"
+    },
+    "route_edge_ids_used": {
+      "default": [],
+      "items": {
+        "maxLength": 100,
+        "minLength": 1,
+        "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+        "type": "string"
+      },
+      "maxItems": 4,
+      "title": "Route Edge Ids Used",
+      "type": "array"
+    },
+    "plan": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TripPlan"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "validation": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PlanValidationReport"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "request_id",
+    "context_id",
+    "input_material_sha256",
+    "material_status",
+    "budget_status",
+    "status",
+    "input_poi_candidate_ids",
+    "input_route_edge_count",
+    "latency_ms",
+    "model_call_count"
+  ],
+  "title": "PlanAgentRunResult",
+  "type": "object"
+}

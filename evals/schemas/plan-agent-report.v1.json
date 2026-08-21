@@ -1,0 +1,492 @@
+{
+  "$defs": {
+    "EvaluationCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Code",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "passed"
+      ],
+      "title": "EvaluationCheck",
+      "type": "object"
+    },
+    "ModelTokenUsage": {
+      "additionalProperties": false,
+      "properties": {
+        "prompt_tokens": {
+          "minimum": 0,
+          "title": "Prompt Tokens",
+          "type": "integer"
+        },
+        "completion_tokens": {
+          "minimum": 0,
+          "title": "Completion Tokens",
+          "type": "integer"
+        },
+        "total_tokens": {
+          "minimum": 0,
+          "title": "Total Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens"
+      ],
+      "title": "ModelTokenUsage",
+      "type": "object"
+    },
+    "PlanAgentCaseResult": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "expected_material_status": {
+          "$ref": "#/$defs/PlanningMaterialStatus"
+        },
+        "actual_material_status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlanningMaterialStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "expected_run_status": {
+          "$ref": "#/$defs/PlanAgentRunStatus"
+        },
+        "actual_run_status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlanAgentRunStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "candidate_count": {
+          "maximum": 4,
+          "minimum": 0,
+          "title": "Candidate Count",
+          "type": "integer"
+        },
+        "scheduled_candidate_count": {
+          "maximum": 4,
+          "minimum": 0,
+          "title": "Scheduled Candidate Count",
+          "type": "integer"
+        },
+        "grounded_candidate_count": {
+          "maximum": 4,
+          "minimum": 0,
+          "title": "Grounded Candidate Count",
+          "type": "integer"
+        },
+        "traceable_candidate_count": {
+          "maximum": 4,
+          "minimum": 0,
+          "title": "Traceable Candidate Count",
+          "type": "integer"
+        },
+        "route_backed_candidate_count": {
+          "maximum": 4,
+          "minimum": 0,
+          "title": "Route Backed Candidate Count",
+          "type": "integer"
+        },
+        "input_weather_risk_count": {
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Input Weather Risk Count",
+          "type": "integer"
+        },
+        "preserved_weather_risk_count": {
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Preserved Weather Risk Count",
+          "type": "integer"
+        },
+        "day_count": {
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Day Count",
+          "type": "integer"
+        },
+        "cost_item_count": {
+          "minimum": 0,
+          "title": "Cost Item Count",
+          "type": "integer"
+        },
+        "model_call_count": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Model Call Count",
+          "type": "integer"
+        },
+        "validation_status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlanValidationStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "latency_ms": {
+          "minimum": 0,
+          "title": "Latency Ms",
+          "type": "integer"
+        },
+        "usage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelTokenUsage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/EvaluationCheck"
+          },
+          "minItems": 1,
+          "title": "Checks",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "passed",
+        "expected_material_status",
+        "expected_run_status",
+        "candidate_count",
+        "scheduled_candidate_count",
+        "grounded_candidate_count",
+        "traceable_candidate_count",
+        "route_backed_candidate_count",
+        "input_weather_risk_count",
+        "preserved_weather_risk_count",
+        "day_count",
+        "cost_item_count",
+        "model_call_count",
+        "latency_ms",
+        "checks"
+      ],
+      "title": "PlanAgentCaseResult",
+      "type": "object"
+    },
+    "PlanAgentRunStatus": {
+      "enum": [
+        "planned",
+        "skipped"
+      ],
+      "title": "PlanAgentRunStatus",
+      "type": "string"
+    },
+    "PlanValidationStatus": {
+      "enum": [
+        "passed",
+        "warning",
+        "conflicted"
+      ],
+      "title": "PlanValidationStatus",
+      "type": "string"
+    },
+    "PlanningMaterialStatus": {
+      "enum": [
+        "ready",
+        "partial",
+        "blocked"
+      ],
+      "title": "PlanningMaterialStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "suite": {
+      "const": "plan-agent-v1",
+      "default": "plan-agent-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "agent_version": {
+      "const": "multi-agent-plan-v1",
+      "default": "multi-agent-plan-v1",
+      "title": "Agent Version",
+      "type": "string"
+    },
+    "execution_mode": {
+      "enum": [
+        "fixture",
+        "live"
+      ],
+      "title": "Execution Mode",
+      "type": "string"
+    },
+    "model": {
+      "minLength": 1,
+      "title": "Model",
+      "type": "string"
+    },
+    "dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Dataset Sha256",
+      "type": "string"
+    },
+    "case_count": {
+      "const": 6,
+      "default": 6,
+      "title": "Case Count",
+      "type": "integer"
+    },
+    "passed_case_count": {
+      "maximum": 6,
+      "minimum": 0,
+      "title": "Passed Case Count",
+      "type": "integer"
+    },
+    "case_pass_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Case Pass Rate"
+    },
+    "planned_case_count": {
+      "maximum": 4,
+      "minimum": 0,
+      "title": "Planned Case Count",
+      "type": "integer"
+    },
+    "skipped_case_count": {
+      "maximum": 2,
+      "minimum": 0,
+      "title": "Skipped Case Count",
+      "type": "integer"
+    },
+    "model_call_count": {
+      "maximum": 4,
+      "minimum": 0,
+      "title": "Model Call Count",
+      "type": "integer"
+    },
+    "candidate_count": {
+      "maximum": 16,
+      "minimum": 0,
+      "title": "Candidate Count",
+      "type": "integer"
+    },
+    "scheduled_candidate_count": {
+      "maximum": 16,
+      "minimum": 0,
+      "title": "Scheduled Candidate Count",
+      "type": "integer"
+    },
+    "grounding_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Grounding Rate"
+    },
+    "source_traceability_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Source Traceability Rate"
+    },
+    "route_lineage_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Route Lineage Rate"
+    },
+    "weather_preservation_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Weather Preservation Rate"
+    },
+    "zero_cost_claim_case_count": {
+      "maximum": 4,
+      "minimum": 0,
+      "title": "Zero Cost Claim Case Count",
+      "type": "integer"
+    },
+    "skipped_zero_model_call_case_count": {
+      "maximum": 2,
+      "minimum": 0,
+      "title": "Skipped Zero Model Call Case Count",
+      "type": "integer"
+    },
+    "usage_case_count": {
+      "maximum": 4,
+      "minimum": 0,
+      "title": "Usage Case Count",
+      "type": "integer"
+    },
+    "total_prompt_tokens": {
+      "minimum": 0,
+      "title": "Total Prompt Tokens",
+      "type": "integer"
+    },
+    "total_completion_tokens": {
+      "minimum": 0,
+      "title": "Total Completion Tokens",
+      "type": "integer"
+    },
+    "total_tokens": {
+      "minimum": 0,
+      "title": "Total Tokens",
+      "type": "integer"
+    },
+    "p50_latency_ms": {
+      "minimum": 0,
+      "title": "P50 Latency Ms",
+      "type": "integer"
+    },
+    "p95_latency_ms": {
+      "minimum": 0,
+      "title": "P95 Latency Ms",
+      "type": "integer"
+    },
+    "results": {
+      "items": {
+        "$ref": "#/$defs/PlanAgentCaseResult"
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "title": "Results",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Limitations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "execution_mode",
+    "model",
+    "dataset_sha256",
+    "passed_case_count",
+    "case_pass_rate",
+    "planned_case_count",
+    "skipped_case_count",
+    "model_call_count",
+    "candidate_count",
+    "scheduled_candidate_count",
+    "grounding_rate",
+    "source_traceability_rate",
+    "route_lineage_rate",
+    "weather_preservation_rate",
+    "zero_cost_claim_case_count",
+    "skipped_zero_model_call_case_count",
+    "usage_case_count",
+    "total_prompt_tokens",
+    "total_completion_tokens",
+    "total_tokens",
+    "p50_latency_ms",
+    "p95_latency_ms",
+    "results",
+    "limitations"
+  ],
+  "title": "PlanAgentBaselineReport",
+  "type": "object"
+}

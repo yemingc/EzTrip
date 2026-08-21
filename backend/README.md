@@ -1,6 +1,6 @@
 # EzTrip API
 
-Gate 0 FastAPI service plus the first offline Gate 2 vertical slice, recoverable HITL wrapper, specialist fan-out, and deterministic planning-material layer. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, schema-constrained Constraint/Explore/Stay Agents, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, a SQLite-checkpointed main Graph using native LangGraph interrupt/resume, an independent parallel Explore/Stay/proactive-Weather information-gathering Graph, and a bounded route matrix plus auditable budget allocator. These components are not yet exposed as a product planning API and the material bundle is not yet a final itinerary.
+Gate 0 FastAPI service plus the first offline Gate 2 vertical slice, recoverable HITL wrapper, specialist fan-out, deterministic planning-material layer, and schema-constrained multi-Agent Plan Agent. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, schema-constrained Constraint/Explore/Stay Agents, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, a SQLite-checkpointed main Graph using native LangGraph interrupt/resume, an independent parallel Explore/Stay/proactive-Weather information-gathering Graph, a bounded route matrix plus auditable budget allocator, and a Plan Agent that consumes those materials into the shared `TripPlan` contract. These components are not yet exposed as a product planning API; hard validators and repair routing remain later stages.
 
 ```powershell
 uv sync --all-groups
@@ -27,6 +27,7 @@ uv run python -m scripts.export_stay_agent_schemas
 uv run python -m scripts.export_checkpoint_hitl_schemas
 uv run python -m scripts.export_specialist_fanout_schemas
 uv run python -m scripts.export_planning_material_schemas
+uv run python -m scripts.export_plan_agent_schemas
 uv run python -m scripts.export_plan_validation_example
 uv run python -m scripts.export_planner_context_example
 uv run python -m scripts.run_minimal_planning_graph --write-example
@@ -145,7 +146,18 @@ uv run python -m scripts.run_planning_material_eval
 uv run pytest tests/test_planning_materials.py tests/test_planning_material_eval.py --no-cov
 ```
 
-The material builder selects at most four ranked POIs and one primary stay, queries a directed transit matrix with concurrency capped at four, preserves typed per-edge failures, and allocates exact-cent budget targets with versioned weights. The committed fixture report records 5/5 cases and 42/42 expected route edges. The allocator creates planning targets rather than price facts, and the bundle still requires a later Plan Agent before it can become a complete multi-Agent `TripPlan`.
+The material builder selects at most four ranked POIs and one primary stay, queries a directed transit matrix with concurrency capped at four, preserves typed per-edge failures, and allocates exact-cent budget targets with versioned weights. The committed fixture report records 5/5 cases and 42/42 expected route edges. The allocator creates planning targets rather than price facts; its bundle is consumed by the Plan Agent described below rather than being presented as an itinerary itself.
+
+Run the multi-Agent Plan Agent grounding regression offline or explicitly refresh its live-model baseline:
+
+```powershell
+uv run python -m scripts.export_plan_agent_schemas
+uv run python -m scripts.run_plan_agent_eval
+uv run python -m scripts.run_plan_agent_eval --live
+uv run pytest tests/test_plan_agent.py tests/test_plan_agent_evaluation.py --no-cov
+```
+
+The Plan Agent makes one schema-constrained placement call only for ready material bundles, while deterministic code preserves candidate facts, sources, route edges, weather risks, complete dates, IDs, and validation lineage. The committed fixture and DeepSeek reports both record 6/6 cases, 12/12 grounded and route-backed scheduled candidates, and two zero-model-call stops. Budget allocations remain targets rather than verified prices, so the Plan Agent emits no fabricated `CostItem`; opening-hours and must/avoid hard checks plus repair routing remain later work.
 
 Run the live observability probe only after configuring the local root `.env`:
 

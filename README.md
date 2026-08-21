@@ -2,7 +2,7 @@
 
 面向中国城市自由行的可验证、可调整、可追溯旅行规划助手。
 
-当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、开放式景点/餐饮 Explore Agent、住宿区域筛选 Stay Agent、确定性预算/基础计划 Validator、北京三日 Gate 2 最小纵向切片、基于 SQLite checkpoint 的可恢复主编排与原生 HITL、Explore/Stay/主动天气三分支并行编排，以及供后续 Plan Agent 消费的有界路线矩阵和确定性预算材料层。模型路径都有真实 DeepSeek/LangSmith 隔离评测；纵向切片、恢复、fan-out 和材料层评测使用 fixture 来建立可重放证据。仓库尚未把专业信息包合成为完整多 Agent `TripPlan`，也未实现前端人工审核或产品规划 API。
+当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、开放式景点/餐饮 Explore Agent、住宿区域筛选 Stay Agent、确定性预算/基础计划 Validator、北京三日 Gate 2 最小纵向切片、基于 SQLite checkpoint 的可恢复主编排与原生 HITL、Explore/Stay/主动天气三分支并行编排、有界路线矩阵和确定性预算材料层，以及把这些专业信息包合成为同构完整 `TripPlan` 草案的 schema-constrained Plan Agent。模型路径都有真实 DeepSeek/LangSmith 隔离评测；纵向切片、恢复、fan-out、材料层和 Plan Agent 都有 fixture 可重放证据。仓库尚未实现 Hard Validators、Repair Router、前端人工审核或产品规划 API。
 
 ## 技术基线
 
@@ -262,6 +262,22 @@ uv run python -m scripts.run_planning_material_eval
 
 该层没有新增 LLM 调用，提交指标不是模型准确率。路线 fixture 不代表当前高德实时耗时，预算目标也不是价格或可行性保证；输出仍是最终 Plan Agent 之前的材料，而不是完整 `TripPlan`。
 
+## 多 Agent Plan Agent
+
+[`docs/agents/plan-agent.md`](docs/agents/plan-agent.md) 实现 `propose_schedule → normalize_schedule` 子图。模型只能为 planning shortlist 中的 POI 提议日期、时间和理由；代码要求每个候选恰好一次，回填候选名称/来源、住宿锚点路线与相邻路线、逐日天气风险、完整日期和稳定 ID，最后复用 deterministic Validator 生成同构 `TripPlan` 草案。材料为 partial/blocked 时返回 typed skip，模型调用固定为 0。
+
+[`docs/evaluation/plan-agent-baseline.md`](docs/evaluation/plan-agent-baseline.md) 冻结北京、上海、成都 4 条可规划案例与 2 条停止路由案例。fixture 与 2026-08-21 的 `deepseek-v4-pro`/LangSmith 点时报告均为 6/6 cases；真实模型路径 12/12 candidates covered/grounded/source-traceable/route-backed，天气保留率 1.0000，2/2 非就绪案例零模型调用，共 9067 tokens，模型延迟 p50/p95 为 3457/3800 ms。
+
+```powershell
+Set-Location backend
+uv run python -m scripts.export_plan_agent_schemas
+uv run python -m scripts.run_plan_agent_eval
+uv run python -m scripts.run_plan_agent_eval --live
+uv run pytest tests/test_plan_agent.py tests/test_plan_agent_evaluation.py --no-cov
+```
+
+预算 allocation 仍是目标 envelope，不是价格；Plan Agent 不会据此制造 `CostItem` 或宣称预算满足。住宿候选当前仅作路线锚点，不代表价格、库存或预订。营业时间、must/avoid、路线时间窗等 Hard Validators 及 Repair Router 属于下一阶段，所以 1.0000 指标是 grounding/lineage 回归，不是行程主观质量准确率或生产 SLA。
+
 ## AMap live contract probe
 
 [`docs/probes/amap-mcp-live-probe-2026-08-20.md`](docs/probes/amap-mcp-live-probe-2026-08-20.md) 记录一次固定北京真实探针：官方 MCP 当前发现 15 个工具，并验证 POI、天气、距离、步行和公交响应；版本化 fixture 只保留字段白名单并执行凭据/PII 脱敏。CI 回放 fixture，不读取 Key 或访问高德。
@@ -299,6 +315,6 @@ uv run python -m scripts.run_amap_provider_smoke --live
 - 不提供订票、订房、支付或实时房价；
 - 当前健康页不是旅行规划产品完成度；
 - 当前三节点探针只证明观测链路可接入，不证明模型规划质量；
-- 当前领域契约、PlannerContext 编译器、provider adapter、Single Planner 和 Validator 已在 Gate 2 fixture 纵向切片及可恢复 HITL 主编排中连通；Explore、Stay 与主动 Weather 的信息包已进入独立路线矩阵和预算材料层，但尚未由 Plan Agent 合成为同构最终 TripPlan，Constraint Agent 也尚未接入产品入口；
+- 当前领域契约、PlannerContext 编译器、provider adapter、Single Planner 和 Validator 已在 Gate 2 fixture 纵向切片及可恢复 HITL 主编排中连通；Explore、Stay 与主动 Weather 的信息包已经通过路线/预算材料层进入 Plan Agent，并合成为同构完整 `TripPlan` 草案，但尚未经过下一阶段 Hard Validators、Repair Router 或产品 API，Constraint Agent 也尚未接入产品入口；
 - 高德 live fixture 是 2026-08-20 的点时样本，不是当前天气、实时酒店价格或生产 SLA；
 - 后续功能必须通过真实 provider contract、固定评测和可回放 trace 验证后再写入项目成果。
