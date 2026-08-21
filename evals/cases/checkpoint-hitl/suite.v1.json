@@ -1,0 +1,33 @@
+{
+  "suite": "stateful-checkpoint-hitl-v1",
+  "version": 1,
+  "execution_mode": "fixture",
+  "source_suite": "beijing-three-day-vertical-slice-gate2-v1",
+  "source_dataset_sha256": "e91c4eff4d28922891e3d81f2324341625a44a2b2d0466039e81684fcd46ad20",
+  "cases": [
+    {
+      "version": 1,
+      "case_id": "checkpoint-hitl-ready-v1",
+      "source_case_id": "gate2-beijing-normal-v1",
+      "thread_id": "checkpoint-hitl-ready-thread-v1",
+      "action": "approve_draft",
+      "reviewer_id": "fixture-reviewer",
+      "comment": "批准草案进入后续执行前准备。",
+      "decided_at": "2026-08-21T09:30:00Z",
+      "expected_review_kind": "plan_approval",
+      "expected_terminal_status": "approved_draft"
+    },
+    {
+      "version": 1,
+      "case_id": "checkpoint-hitl-conflict-v1",
+      "source_case_id": "gate2-beijing-budget-conflict-v1",
+      "thread_id": "checkpoint-hitl-conflict-thread-v1",
+      "action": "acknowledge_conflict",
+      "reviewer_id": "fixture-reviewer",
+      "comment": "已知预算硬冲突, 不将草案标记为可执行。",
+      "decided_at": "2026-08-21T09:35:00Z",
+      "expected_review_kind": "conflict_resolution",
+      "expected_terminal_status": "conflict_acknowledged"
+    }
+  ]
+}

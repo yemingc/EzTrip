@@ -321,7 +321,7 @@ def build_single_planner_graph(
     workflow.add_edge(START, "propose_schedule")
     workflow.add_edge("propose_schedule", "validate_schedule")
     workflow.add_edge("validate_schedule", END)
-    return workflow.compile(name=SINGLE_PLANNER_NAME)
+    return workflow.compile(checkpointer=False, name=SINGLE_PLANNER_NAME)
 
 
 def build_single_planner_run_config(context: PlannerContext, *, model: str) -> RunnableConfig:

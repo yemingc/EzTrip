@@ -1,6 +1,6 @@
 # EzTrip API
 
-Gate 0 FastAPI service plus the first offline Gate 2 vertical slice. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, the first three-node planning Graph, an isolated schema-constrained Constraint Agent, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, and a fixture-backed complete Beijing three-day `TripPlan`. These components are not yet exposed as a product planning API and never auto-finalize the Gate 2 draft.
+Gate 0 FastAPI service plus the first offline Gate 2 vertical slice and recoverable HITL wrapper. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, the first three-node planning Graph, an isolated schema-constrained Constraint Agent, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, and a SQLite-checkpointed main Graph using native LangGraph interrupt/resume. These components are not yet exposed as a product planning API and never auto-finalize the Gate 2 draft.
 
 ```powershell
 uv sync --all-groups
@@ -22,6 +22,7 @@ Regenerate the committed domain JSON Schema bundle after changing a contract:
 uv run python -m scripts.export_domain_schemas
 uv run python -m scripts.export_constraint_agent_schemas
 uv run python -m scripts.export_single_planner_schema
+uv run python -m scripts.export_checkpoint_hitl_schemas
 uv run python -m scripts.export_plan_validation_example
 uv run python -m scripts.export_planner_context_example
 uv run python -m scripts.run_minimal_planning_graph --write-example
@@ -92,6 +93,16 @@ uv run pytest tests/test_vertical_slice.py --no-cov
 ```
 
 The committed result connects the existing context compiler, fixture provider, Single Planner, deterministic `TripPlan` assembler, and validator. It records 2/2 cases, 20/20 checks, 6/6 traceable candidate occurrences, and 2/2 exact replays. The normal case recomputes a 500 CNY fixture total; the hard case reports a 600 CNY gap without removing candidates or auto-finalizing. These are workflow-contract results over labelled fixtures and a fixed Planner proposal, not live price or model-quality claims.
+
+Run the recoverable checkpoint and HITL gate:
+
+```powershell
+uv run python -m scripts.export_checkpoint_hitl_schemas
+uv run python -m scripts.run_checkpoint_hitl_eval
+uv run pytest tests/test_stateful_planning.py --no-cov
+```
+
+The main Graph persists JSON-compatible state in SQLite, pauses with LangGraph `interrupt()`, and resumes from a newly constructed runtime via `Command(resume=...)`. The committed fixture report records 2/2 cases and 20/20 checks; both restored runs make zero provider and Planner-model calls. Approval still leaves `TripPlan.status=draft`, while a conflicted plan cannot use the approval action. SQLite is local evidence, not a production concurrency, encryption, or availability claim.
 
 Run the live observability probe only after configuring the local root `.env`:
 

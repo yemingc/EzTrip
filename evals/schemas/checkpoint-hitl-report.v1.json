@@ -1,0 +1,316 @@
+{
+  "$defs": {
+    "CheckpointHitlCaseResult": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "source_case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Source Case Id",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "paused_status": {
+          "$ref": "#/$defs/PlanningThreadStatus"
+        },
+        "review_kind": {
+          "$ref": "#/$defs/HumanReviewKind"
+        },
+        "action": {
+          "$ref": "#/$defs/HumanReviewAction"
+        },
+        "terminal_status": {
+          "$ref": "#/$defs/PlanningThreadStatus"
+        },
+        "provider_call_count": {
+          "minimum": 0,
+          "title": "Provider Call Count",
+          "type": "integer"
+        },
+        "planner_model_call_count": {
+          "minimum": 0,
+          "title": "Planner Model Call Count",
+          "type": "integer"
+        },
+        "restored_provider_call_count": {
+          "minimum": 0,
+          "title": "Restored Provider Call Count",
+          "type": "integer"
+        },
+        "restored_planner_model_call_count": {
+          "minimum": 0,
+          "title": "Restored Planner Model Call Count",
+          "type": "integer"
+        },
+        "checkpoint_count": {
+          "minimum": 1,
+          "title": "Checkpoint Count",
+          "type": "integer"
+        },
+        "state_restored_after_runtime_rebuild": {
+          "title": "State Restored After Runtime Rebuild",
+          "type": "boolean"
+        },
+        "vertical_slice_preserved": {
+          "title": "Vertical Slice Preserved",
+          "type": "boolean"
+        },
+        "event_nodes": {
+          "items": {
+            "$ref": "#/$defs/StatefulPlanningNodeName"
+          },
+          "title": "Event Nodes",
+          "type": "array"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/EvaluationCheck"
+          },
+          "minItems": 1,
+          "title": "Checks",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "source_case_id",
+        "passed",
+        "paused_status",
+        "review_kind",
+        "action",
+        "terminal_status",
+        "provider_call_count",
+        "planner_model_call_count",
+        "restored_provider_call_count",
+        "restored_planner_model_call_count",
+        "checkpoint_count",
+        "state_restored_after_runtime_rebuild",
+        "vertical_slice_preserved",
+        "event_nodes",
+        "checks"
+      ],
+      "title": "CheckpointHitlCaseResult",
+      "type": "object"
+    },
+    "EvaluationCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Code",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "passed"
+      ],
+      "title": "EvaluationCheck",
+      "type": "object"
+    },
+    "HumanReviewAction": {
+      "enum": [
+        "approve_draft",
+        "acknowledge_conflict",
+        "request_revision",
+        "cancel"
+      ],
+      "title": "HumanReviewAction",
+      "type": "string"
+    },
+    "HumanReviewKind": {
+      "enum": [
+        "plan_approval",
+        "conflict_resolution"
+      ],
+      "title": "HumanReviewKind",
+      "type": "string"
+    },
+    "PlanningThreadStatus": {
+      "enum": [
+        "planning",
+        "plan_ready",
+        "awaiting_human_review",
+        "review_decided",
+        "approved_draft",
+        "conflict_acknowledged",
+        "revision_requested",
+        "cancelled"
+      ],
+      "title": "PlanningThreadStatus",
+      "type": "string"
+    },
+    "StatefulPlanningNodeName": {
+      "enum": [
+        "run_vertical_slice",
+        "prepare_human_review",
+        "human_review",
+        "apply_review_decision"
+      ],
+      "title": "StatefulPlanningNodeName",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "suite": {
+      "const": "stateful-checkpoint-hitl-v1",
+      "default": "stateful-checkpoint-hitl-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "workflow_version": {
+      "const": "stateful-planning-checkpoint-v1",
+      "default": "stateful-planning-checkpoint-v1",
+      "title": "Workflow Version",
+      "type": "string"
+    },
+    "execution_mode": {
+      "const": "fixture",
+      "default": "fixture",
+      "title": "Execution Mode",
+      "type": "string"
+    },
+    "checkpoint_backend": {
+      "const": "sqlite",
+      "default": "sqlite",
+      "title": "Checkpoint Backend",
+      "type": "string"
+    },
+    "source_dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Source Dataset Sha256",
+      "type": "string"
+    },
+    "dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Dataset Sha256",
+      "type": "string"
+    },
+    "case_count": {
+      "const": 2,
+      "default": 2,
+      "title": "Case Count",
+      "type": "integer"
+    },
+    "passed_case_count": {
+      "maximum": 2,
+      "minimum": 0,
+      "title": "Passed Case Count",
+      "type": "integer"
+    },
+    "case_pass_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Case Pass Rate"
+    },
+    "check_count": {
+      "minimum": 1,
+      "title": "Check Count",
+      "type": "integer"
+    },
+    "passed_check_count": {
+      "minimum": 0,
+      "title": "Passed Check Count",
+      "type": "integer"
+    },
+    "check_pass_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Check Pass Rate"
+    },
+    "runtime_reconstruction_count": {
+      "maximum": 2,
+      "minimum": 0,
+      "title": "Runtime Reconstruction Count",
+      "type": "integer"
+    },
+    "no_expensive_replay_count": {
+      "maximum": 2,
+      "minimum": 0,
+      "title": "No Expensive Replay Count",
+      "type": "integer"
+    },
+    "draft_preserved_count": {
+      "maximum": 2,
+      "minimum": 0,
+      "title": "Draft Preserved Count",
+      "type": "integer"
+    },
+    "results": {
+      "items": {
+        "$ref": "#/$defs/CheckpointHitlCaseResult"
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "title": "Results",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Limitations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "source_dataset_sha256",
+    "dataset_sha256",
+    "passed_case_count",
+    "case_pass_rate",
+    "check_count",
+    "passed_check_count",
+    "check_pass_rate",
+    "runtime_reconstruction_count",
+    "no_expensive_replay_count",
+    "draft_preserved_count",
+    "results",
+    "limitations"
+  ],
+  "title": "CheckpointHitlReport",
+  "type": "object"
+}

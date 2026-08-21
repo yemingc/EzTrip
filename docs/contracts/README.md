@@ -16,6 +16,7 @@
 - 住宿候选不包含实时房态或可预订承诺，价格只能缺省或明确标记来源的估算；
 - `ValidationIssue` 显式记录责任节点、证据、修复动作和是否需要用户确认；
 - `PlanVersion` 保存约束哈希、工具快照、模型/Prompt 版本和变更范围。
+- `HumanReviewRequest` 和 `HumanReviewResume` 冻结主编排图暂停/恢复的显式人工协议；允许动作由确定性校验结果决定，不能把模型推断冒充用户批准。
 
 示例：
 
@@ -33,6 +34,7 @@ Set-Location backend
 uv run python -m scripts.export_domain_schemas
 uv run python -m scripts.export_constraint_agent_schemas
 uv run python -m scripts.export_single_planner_schema
+uv run python -m scripts.export_checkpoint_hitl_schemas
 uv run python -m scripts.export_plan_validation_example
 uv run python -m scripts.export_planner_context_example
 uv run python -m scripts.run_minimal_planning_graph --write-example

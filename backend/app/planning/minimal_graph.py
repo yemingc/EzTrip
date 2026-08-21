@@ -240,7 +240,7 @@ def build_minimal_planning_graph(
         },
     )
     workflow.add_edge(PlanningNodeName.CANDIDATE_SEARCH.value, END)
-    return workflow.compile(name=MINIMAL_PLANNING_GRAPH_NAME)
+    return workflow.compile(checkpointer=False, name=MINIMAL_PLANNING_GRAPH_NAME)
 
 
 def build_planning_run_config(

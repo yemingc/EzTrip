@@ -1,0 +1,154 @@
+{
+  "schema_version": "1.0",
+  "suite": "stateful-checkpoint-hitl-v1",
+  "workflow_version": "stateful-planning-checkpoint-v1",
+  "execution_mode": "fixture",
+  "checkpoint_backend": "sqlite",
+  "source_dataset_sha256": "e91c4eff4d28922891e3d81f2324341625a44a2b2d0466039e81684fcd46ad20",
+  "dataset_sha256": "a0d6cbe74e14d87874b3e8843d4fb142841f92296a6fb75c83d638982875cd19",
+  "case_count": 2,
+  "passed_case_count": 2,
+  "case_pass_rate": "1.0000",
+  "check_count": 20,
+  "passed_check_count": 20,
+  "check_pass_rate": "1.0000",
+  "runtime_reconstruction_count": 2,
+  "no_expensive_replay_count": 2,
+  "draft_preserved_count": 2,
+  "results": [
+    {
+      "case_id": "checkpoint-hitl-ready-v1",
+      "source_case_id": "gate2-beijing-normal-v1",
+      "passed": true,
+      "paused_status": "awaiting_human_review",
+      "review_kind": "plan_approval",
+      "action": "approve_draft",
+      "terminal_status": "approved_draft",
+      "provider_call_count": 3,
+      "planner_model_call_count": 1,
+      "restored_provider_call_count": 0,
+      "restored_planner_model_call_count": 0,
+      "checkpoint_count": 6,
+      "state_restored_after_runtime_rebuild": true,
+      "vertical_slice_preserved": true,
+      "event_nodes": [
+        "run_vertical_slice",
+        "prepare_human_review",
+        "human_review",
+        "apply_review_decision"
+      ],
+      "checks": [
+        {
+          "code": "paused_at_native_human_review",
+          "passed": true
+        },
+        {
+          "code": "deterministic_review_policy",
+          "passed": true
+        },
+        {
+          "code": "sqlite_checkpoint_written",
+          "passed": true
+        },
+        {
+          "code": "state_restored_after_runtime_rebuild",
+          "passed": true
+        },
+        {
+          "code": "provider_not_replayed_after_restore",
+          "passed": true
+        },
+        {
+          "code": "planner_model_not_replayed_after_restore",
+          "passed": true
+        },
+        {
+          "code": "human_decision_audited",
+          "passed": true
+        },
+        {
+          "code": "expected_terminal_status",
+          "passed": true
+        },
+        {
+          "code": "vertical_slice_preserved_as_draft",
+          "passed": true
+        },
+        {
+          "code": "checkpoint_history_covers_all_main_nodes",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "checkpoint-hitl-conflict-v1",
+      "source_case_id": "gate2-beijing-budget-conflict-v1",
+      "passed": true,
+      "paused_status": "awaiting_human_review",
+      "review_kind": "conflict_resolution",
+      "action": "acknowledge_conflict",
+      "terminal_status": "conflict_acknowledged",
+      "provider_call_count": 3,
+      "planner_model_call_count": 1,
+      "restored_provider_call_count": 0,
+      "restored_planner_model_call_count": 0,
+      "checkpoint_count": 6,
+      "state_restored_after_runtime_rebuild": true,
+      "vertical_slice_preserved": true,
+      "event_nodes": [
+        "run_vertical_slice",
+        "prepare_human_review",
+        "human_review",
+        "apply_review_decision"
+      ],
+      "checks": [
+        {
+          "code": "paused_at_native_human_review",
+          "passed": true
+        },
+        {
+          "code": "deterministic_review_policy",
+          "passed": true
+        },
+        {
+          "code": "sqlite_checkpoint_written",
+          "passed": true
+        },
+        {
+          "code": "state_restored_after_runtime_rebuild",
+          "passed": true
+        },
+        {
+          "code": "provider_not_replayed_after_restore",
+          "passed": true
+        },
+        {
+          "code": "planner_model_not_replayed_after_restore",
+          "passed": true
+        },
+        {
+          "code": "human_decision_audited",
+          "passed": true
+        },
+        {
+          "code": "expected_terminal_status",
+          "passed": true
+        },
+        {
+          "code": "vertical_slice_preserved_as_draft",
+          "passed": true
+        },
+        {
+          "code": "checkpoint_history_covers_all_main_nodes",
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "本报告使用版本化北京 fixture, 不代表实时旅行数据或模型规划质量。",
+    "SQLite 只验证本地运行时重建, 尚未覆盖进程强杀、并发恢复或分布式部署。",
+    "检查点包含结构化请求与规划状态; 生产环境仍需加密、保留期和访问控制。",
+    "人审决定是固定测试输入, 尚未接入前端审核界面或身份认证。"
+  ]
+}

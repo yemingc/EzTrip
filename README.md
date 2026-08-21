@@ -2,7 +2,7 @@
 
 面向中国城市自由行的可验证、可调整、可追溯旅行规划助手。
 
-当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、确定性预算/基础计划 Validator，以及北京三日 Gate 2 最小纵向切片。两个 Agent 都有真实 DeepSeek/LangSmith 隔离评测；纵向切片当前使用固定模型提案与 fixture 来证明可重放组件闭环，仓库尚未实现多 Agent 完整工作流或产品规划 API。
+当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、确定性预算/基础计划 Validator、北京三日 Gate 2 最小纵向切片，以及基于 SQLite checkpoint 的可恢复主编排与原生 HITL。两个 Agent 都有真实 DeepSeek/LangSmith 隔离评测；纵向切片和恢复评测使用固定模型提案与 fixture 来证明可重放组件闭环，仓库尚未实现多 Agent 完整工作流、前端人工审核或产品规划 API。
 
 ## 技术基线
 
@@ -193,6 +193,18 @@ uv run pytest tests/test_vertical_slice.py --no-cov
 
 提交报告为 2/2 cases、20/20 checks、6/6 candidate sources traceable、2/2 exact replays。这是结构、grounding、预算算术和失败语义的 Gate 2 证据；固定 Planner 提案、POI 与费用都是明确 fixture，不能写成模型行程准确率、实时价格或生产 SLA。
 
+## 可恢复主编排与 HITL
+
+[`docs/planning/stateful-checkpoint-hitl.md`](docs/planning/stateful-checkpoint-hitl.md) 在 Gate 2 外增加 `run_vertical_slice → prepare_human_review → interrupt → apply_review_decision` 主图。LangGraph 原生 `interrupt` 和 `Command(resume=...)` 配合 SQLite checkpoint，使 graph/runtime 关闭并重建后仍能从相同 `thread_id` 继续；内部候选搜索和 Planner 子图不会继承检查点，因此恢复不会重复调用 provider 或模型。
+
+```powershell
+Set-Location backend
+uv run python -m scripts.run_checkpoint_hitl_eval
+uv run pytest tests/test_stateful_planning.py --no-cov
+```
+
+提交报告为 2/2 cases、20/20 checks、2/2 runtime reconstructions，恢复阶段 provider/model 调用均为 0。正常案例只能批准为 `approved_draft`；预算硬冲突不允许批准，只能显式确认冲突、请求修改或取消。SQLite 目前是本地恢复证据，不是生产级并发、高可用或加密方案；检查点仍含结构化用户数据。
+
 ## AMap live contract probe
 
 [`docs/probes/amap-mcp-live-probe-2026-08-20.md`](docs/probes/amap-mcp-live-probe-2026-08-20.md) 记录一次固定北京真实探针：官方 MCP 当前发现 15 个工具，并验证 POI、天气、距离、步行和公交响应；版本化 fixture 只保留字段白名单并执行凭据/PII 脱敏。CI 回放 fixture，不读取 Key 或访问高德。
@@ -230,6 +242,6 @@ uv run python -m scripts.run_amap_provider_smoke --live
 - 不提供订票、订房、支付或实时房价；
 - 当前健康页不是旅行规划产品完成度；
 - 当前三节点探针只证明观测链路可接入，不证明模型规划质量；
-- 当前领域契约、PlannerContext 编译器、provider adapter、Single Planner 和 Validator 已在 Gate 2 fixture 纵向切片中连通；Constraint Agent 尚未进入该主链，固定 Planner 提案不代表模型质量，多 Agent 协作仍未实现；
+- 当前领域契约、PlannerContext 编译器、provider adapter、Single Planner 和 Validator 已在 Gate 2 fixture 纵向切片及可恢复 HITL 主编排中连通；Constraint Agent 尚未进入该主链，固定 Planner 提案不代表模型质量，多 Agent 协作仍未实现；
 - 高德 live fixture 是 2026-08-20 的点时样本，不是当前天气、实时酒店价格或生产 SLA；
 - 后续功能必须通过真实 provider contract、固定评测和可回放 trace 验证后再写入项目成果。
