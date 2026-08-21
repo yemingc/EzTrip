@@ -1,0 +1,650 @@
+{
+  "schema_version": "1.0",
+  "suite": "constraint-agent-planning-seed-v1",
+  "agent_version": "constraint-agent-v1",
+  "prompt_version": "constraint-extraction-v1",
+  "execution_mode": "live",
+  "model": "deepseek-v4-pro",
+  "dataset_sha256": "7aafbb5a44463ce4d8c24fa01d66d987121b8a2dfef4bad4346da0effe96457e",
+  "case_count": 10,
+  "passed_case_count": 9,
+  "exact_case_rate": "0.9000",
+  "expected_constraint_count": 16,
+  "actual_constraint_count": 16,
+  "semantic_match_count": 15,
+  "semantic_precision": "0.9375",
+  "semantic_recall": "0.9375",
+  "confirmation_match_count": 15,
+  "confirmation_accuracy": "1.0000",
+  "clarification_match_case_count": 10,
+  "clarification_case_rate": "1.0000",
+  "usage_case_count": 10,
+  "total_prompt_tokens": 9255,
+  "total_completion_tokens": 1107,
+  "total_tokens": 10362,
+  "p50_latency_ms": 3166,
+  "p95_latency_ms": 4668,
+  "results": [
+    {
+      "case_id": "seed-standard-beijing-history-v1",
+      "tier": "standard",
+      "passed": true,
+      "expected_constraints": [
+        {
+          "kind": "must_visit",
+          "value": "故宫",
+          "strength": "hard",
+          "source": "user_explicit",
+          "confirmed": true
+        },
+        {
+          "kind": "interest",
+          "value": "历史文化",
+          "strength": "soft",
+          "source": "user_explicit",
+          "confirmed": true
+        },
+        {
+          "kind": "walking_intensity",
+          "value": "low",
+          "strength": "soft",
+          "source": "user_explicit",
+          "confirmed": true
+        }
+      ],
+      "actual_constraints": [
+        {
+          "kind": "must_visit",
+          "value": "故宫",
+          "strength": "hard",
+          "source": "user_explicit",
+          "confirmed": true
+        },
+        {
+          "kind": "interest",
+          "value": "历史文化",
+          "strength": "soft",
+          "source": "user_explicit",
+          "confirmed": true
+        },
+        {
+          "kind": "walking_intensity",
+          "value": "low",
+          "strength": "soft",
+          "source": "user_explicit",
+          "confirmed": true
+        }
+      ],
+      "expected_constraint_count": 3,
+      "actual_constraint_count": 3,
+      "semantic_match_count": 3,
+      "confirmation_match_count": 3,
+      "clarification_match": true,
+      "latency_ms": 4668,
+      "usage": {
+        "prompt_tokens": 932,
+        "completion_tokens": 166,
+        "total_tokens": 1098
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "protocol_success",
+          "passed": true
+        },
+        {
+          "code": "semantic_constraints_exact",
+          "passed": true
+        },
+        {
+          "code": "source_confirmation_exact",
+          "passed": true
+        },
+        {
+          "code": "clarification_set_exact",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-standard-beijing-no-budget-v1",
+      "tier": "standard",
+      "passed": true,
+      "expected_constraints": [
+        {
+          "kind": "must_visit",
+          "value": "故宫",
+          "strength": "hard",
+          "source": "user_explicit",
+          "confirmed": true
+        }
+      ],
+      "actual_constraints": [
+        {
+          "kind": "must_visit",
+          "value": "故宫",
+          "strength": "hard",
+          "source": "user_explicit",
+          "confirmed": true
+        }
+      ],
+      "expected_constraint_count": 1,
+      "actual_constraint_count": 1,
+      "semantic_match_count": 1,
+      "confirmation_match_count": 1,
+      "clarification_match": true,
+      "latency_ms": 2715,
+      "usage": {
+        "prompt_tokens": 918,
+        "completion_tokens": 83,
+        "total_tokens": 1001
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "protocol_success",
+          "passed": true
+        },
+        {
+          "code": "semantic_constraints_exact",
+          "passed": true
+        },
+        {
+          "code": "source_confirmation_exact",
+          "passed": true
+        },
+        {
+          "code": "clarification_set_exact",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-standard-beijing-no-must-visit-v1",
+      "tier": "standard",
+      "passed": true,
+      "expected_constraints": [
+        {
+          "kind": "interest",
+          "value": "历史文化",
+          "strength": "soft",
+          "source": "user_explicit",
+          "confirmed": true
+        }
+      ],
+      "actual_constraints": [
+        {
+          "kind": "interest",
+          "value": "历史文化",
+          "strength": "soft",
+          "source": "user_explicit",
+          "confirmed": true
+        }
+      ],
+      "expected_constraint_count": 1,
+      "actual_constraint_count": 1,
+      "semantic_match_count": 1,
+      "confirmation_match_count": 1,
+      "clarification_match": true,
+      "latency_ms": 4069,
+      "usage": {
+        "prompt_tokens": 919,
+        "completion_tokens": 80,
+        "total_tokens": 999
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "protocol_success",
+          "passed": true
+        },
+        {
+          "code": "semantic_constraints_exact",
+          "passed": true
+        },
+        {
+          "code": "source_confirmation_exact",
+          "passed": true
+        },
+        {
+          "code": "clarification_set_exact",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-standard-shanghai-bund-v1",
+      "tier": "standard",
+      "passed": true,
+      "expected_constraints": [
+        {
+          "kind": "must_visit",
+          "value": "外滩",
+          "strength": "hard",
+          "source": "user_explicit",
+          "confirmed": true
+        },
+        {
+          "kind": "interest",
+          "value": "城市风光",
+          "strength": "soft",
+          "source": "user_explicit",
+          "confirmed": true
+        }
+      ],
+      "actual_constraints": [
+        {
+          "kind": "must_visit",
+          "value": "外滩",
+          "strength": "hard",
+          "source": "user_explicit",
+          "confirmed": true
+        },
+        {
+          "kind": "interest",
+          "value": "城市风光",
+          "strength": "soft",
+          "source": "user_explicit",
+          "confirmed": true
+        }
+      ],
+      "expected_constraint_count": 2,
+      "actual_constraint_count": 2,
+      "semantic_match_count": 2,
+      "confirmation_match_count": 2,
+      "clarification_match": true,
+      "latency_ms": 4552,
+      "usage": {
+        "prompt_tokens": 922,
+        "completion_tokens": 127,
+        "total_tokens": 1049
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "protocol_success",
+          "passed": true
+        },
+        {
+          "code": "semantic_constraints_exact",
+          "passed": true
+        },
+        {
+          "code": "source_confirmation_exact",
+          "passed": true
+        },
+        {
+          "code": "clarification_set_exact",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-standard-chengdu-family-panda-v1",
+      "tier": "standard",
+      "passed": true,
+      "expected_constraints": [
+        {
+          "kind": "must_visit",
+          "value": "成都大熊猫繁育研究基地",
+          "strength": "hard",
+          "source": "user_explicit",
+          "confirmed": true
+        },
+        {
+          "kind": "interest",
+          "value": "亲子活动",
+          "strength": "soft",
+          "source": "user_explicit",
+          "confirmed": true
+        }
+      ],
+      "actual_constraints": [
+        {
+          "kind": "must_visit",
+          "value": "成都大熊猫繁育研究基地",
+          "strength": "hard",
+          "source": "user_explicit",
+          "confirmed": true
+        },
+        {
+          "kind": "interest",
+          "value": "亲子活动",
+          "strength": "soft",
+          "source": "user_explicit",
+          "confirmed": true
+        }
+      ],
+      "expected_constraint_count": 2,
+      "actual_constraint_count": 2,
+      "semantic_match_count": 2,
+      "confirmation_match_count": 2,
+      "clarification_match": true,
+      "latency_ms": 3818,
+      "usage": {
+        "prompt_tokens": 927,
+        "completion_tokens": 137,
+        "total_tokens": 1064
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "protocol_success",
+          "passed": true
+        },
+        {
+          "code": "semantic_constraints_exact",
+          "passed": true
+        },
+        {
+          "code": "source_confirmation_exact",
+          "passed": true
+        },
+        {
+          "code": "clarification_set_exact",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-standard-beijing-senior-low-budget-v1",
+      "tier": "standard",
+      "passed": false,
+      "expected_constraints": [
+        {
+          "kind": "must_visit",
+          "value": "故宫",
+          "strength": "hard",
+          "source": "user_explicit",
+          "confirmed": true
+        },
+        {
+          "kind": "walking_intensity",
+          "value": "low",
+          "strength": "soft",
+          "source": "user_explicit",
+          "confirmed": true
+        },
+        {
+          "kind": "accessibility",
+          "value": "减少台阶",
+          "strength": "hard",
+          "source": "user_explicit",
+          "confirmed": true
+        }
+      ],
+      "actual_constraints": [
+        {
+          "kind": "must_visit",
+          "value": "故宫",
+          "strength": "hard",
+          "source": "user_explicit",
+          "confirmed": true
+        },
+        {
+          "kind": "walking_intensity",
+          "value": "low",
+          "strength": "soft",
+          "source": "user_explicit",
+          "confirmed": true
+        },
+        {
+          "kind": "accessibility",
+          "value": "减少台阶",
+          "strength": "soft",
+          "source": "user_explicit",
+          "confirmed": true
+        }
+      ],
+      "expected_constraint_count": 3,
+      "actual_constraint_count": 3,
+      "semantic_match_count": 2,
+      "confirmation_match_count": 2,
+      "clarification_match": true,
+      "latency_ms": 3725,
+      "usage": {
+        "prompt_tokens": 934,
+        "completion_tokens": 169,
+        "total_tokens": 1103
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "protocol_success",
+          "passed": true
+        },
+        {
+          "code": "semantic_constraints_exact",
+          "passed": false
+        },
+        {
+          "code": "source_confirmation_exact",
+          "passed": false
+        },
+        {
+          "code": "clarification_set_exact",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-hard-unsupported-nanjing-v1",
+      "tier": "hard",
+      "passed": true,
+      "expected_constraints": [
+        {
+          "kind": "must_visit",
+          "value": "中山陵",
+          "strength": "hard",
+          "source": "user_explicit",
+          "confirmed": true
+        }
+      ],
+      "actual_constraints": [
+        {
+          "kind": "must_visit",
+          "value": "中山陵",
+          "strength": "hard",
+          "source": "user_explicit",
+          "confirmed": true
+        }
+      ],
+      "expected_constraint_count": 1,
+      "actual_constraint_count": 1,
+      "semantic_match_count": 1,
+      "confirmation_match_count": 1,
+      "clarification_match": true,
+      "latency_ms": 2997,
+      "usage": {
+        "prompt_tokens": 923,
+        "completion_tokens": 85,
+        "total_tokens": 1008
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "protocol_success",
+          "passed": true
+        },
+        {
+          "code": "semantic_constraints_exact",
+          "passed": true
+        },
+        {
+          "code": "source_confirmation_exact",
+          "passed": true
+        },
+        {
+          "code": "clarification_set_exact",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-hard-missing-rooms-lodging-v1",
+      "tier": "hard",
+      "passed": true,
+      "expected_constraints": [
+        {
+          "kind": "must_visit",
+          "value": "故宫",
+          "strength": "hard",
+          "source": "user_explicit",
+          "confirmed": true
+        }
+      ],
+      "actual_constraints": [
+        {
+          "kind": "must_visit",
+          "value": "故宫",
+          "strength": "hard",
+          "source": "user_explicit",
+          "confirmed": true
+        }
+      ],
+      "expected_constraint_count": 1,
+      "actual_constraint_count": 1,
+      "semantic_match_count": 1,
+      "confirmation_match_count": 1,
+      "clarification_match": true,
+      "latency_ms": 3166,
+      "usage": {
+        "prompt_tokens": 933,
+        "completion_tokens": 83,
+        "total_tokens": 1016
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "protocol_success",
+          "passed": true
+        },
+        {
+          "code": "semantic_constraints_exact",
+          "passed": true
+        },
+        {
+          "code": "source_confirmation_exact",
+          "passed": true
+        },
+        {
+          "code": "clarification_set_exact",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-hard-unconfirmed-must-visit-v1",
+      "tier": "hard",
+      "passed": true,
+      "expected_constraints": [
+        {
+          "kind": "must_visit",
+          "value": "故宫",
+          "strength": "hard",
+          "source": "agent_inferred",
+          "confirmed": false
+        }
+      ],
+      "actual_constraints": [
+        {
+          "kind": "must_visit",
+          "value": "故宫",
+          "strength": "hard",
+          "source": "agent_inferred",
+          "confirmed": false
+        }
+      ],
+      "expected_constraint_count": 1,
+      "actual_constraint_count": 1,
+      "semantic_match_count": 1,
+      "confirmation_match_count": 1,
+      "clarification_match": true,
+      "latency_ms": 2794,
+      "usage": {
+        "prompt_tokens": 925,
+        "completion_tokens": 94,
+        "total_tokens": 1019
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "protocol_success",
+          "passed": true
+        },
+        {
+          "code": "semantic_constraints_exact",
+          "passed": true
+        },
+        {
+          "code": "source_confirmation_exact",
+          "passed": true
+        },
+        {
+          "code": "clarification_set_exact",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-hard-provider-timeout-v1",
+      "tier": "hard",
+      "passed": true,
+      "expected_constraints": [
+        {
+          "kind": "must_visit",
+          "value": "故宫",
+          "strength": "hard",
+          "source": "user_explicit",
+          "confirmed": true
+        }
+      ],
+      "actual_constraints": [
+        {
+          "kind": "must_visit",
+          "value": "故宫",
+          "strength": "hard",
+          "source": "user_explicit",
+          "confirmed": true
+        }
+      ],
+      "expected_constraint_count": 1,
+      "actual_constraint_count": 1,
+      "semantic_match_count": 1,
+      "confirmation_match_count": 1,
+      "clarification_match": true,
+      "latency_ms": 2996,
+      "usage": {
+        "prompt_tokens": 922,
+        "completion_tokens": 83,
+        "total_tokens": 1005
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "protocol_success",
+          "passed": true
+        },
+        {
+          "code": "semantic_constraints_exact",
+          "passed": true
+        },
+        {
+          "code": "source_confirmation_exact",
+          "passed": true
+        },
+        {
+          "code": "clarification_set_exact",
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "评测只覆盖 10 条冻结中文请求, 不能外推为生产抽取质量。",
+    "精确匹配基于当前 ConstraintKind、规范值、strength、source 和 confirmed 契约。",
+    "本阶段只替换 TripRequest 的 constraints slice, 不解析日期、人数、预算或城市。",
+    "Constraint Agent 不生成景点事实、价格、天气、路线或逐日行程。",
+    "live 结果是单次 point-in-time 样本, 会随模型和服务状态变化。"
+  ]
+}

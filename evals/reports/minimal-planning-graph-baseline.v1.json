@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "suite": "planning-seed-v1",
   "workflow_version": "minimal-planning-graph-v1",
-  "dataset_sha256": "597f1a5a5a804e059b3241cd993a8558511b0a78f53caf413218cc6f75c82f2c",
+  "dataset_sha256": "e4bc2529b052beca15d31041ed5c8c2d88fe87b38bb4797f28ff8aff36c6d7cd",
   "case_count": 10,
   "standard_case_count": 6,
   "hard_case_count": 4,

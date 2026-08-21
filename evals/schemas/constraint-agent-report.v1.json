@@ -1,0 +1,466 @@
+{
+  "$defs": {
+    "ConstraintAgentCaseResult": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "tier": {
+          "$ref": "#/$defs/SeedTier"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "expected_constraints": {
+          "items": {
+            "$ref": "#/$defs/ConstraintEvaluationLabel"
+          },
+          "title": "Expected Constraints",
+          "type": "array"
+        },
+        "actual_constraints": {
+          "items": {
+            "$ref": "#/$defs/ConstraintEvaluationLabel"
+          },
+          "title": "Actual Constraints",
+          "type": "array"
+        },
+        "expected_constraint_count": {
+          "minimum": 0,
+          "title": "Expected Constraint Count",
+          "type": "integer"
+        },
+        "actual_constraint_count": {
+          "minimum": 0,
+          "title": "Actual Constraint Count",
+          "type": "integer"
+        },
+        "semantic_match_count": {
+          "minimum": 0,
+          "title": "Semantic Match Count",
+          "type": "integer"
+        },
+        "confirmation_match_count": {
+          "minimum": 0,
+          "title": "Confirmation Match Count",
+          "type": "integer"
+        },
+        "clarification_match": {
+          "title": "Clarification Match",
+          "type": "boolean"
+        },
+        "latency_ms": {
+          "minimum": 0,
+          "title": "Latency Ms",
+          "type": "integer"
+        },
+        "usage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelTokenUsage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/EvaluationCheck"
+          },
+          "minItems": 1,
+          "title": "Checks",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "tier",
+        "passed",
+        "expected_constraints",
+        "actual_constraints",
+        "expected_constraint_count",
+        "actual_constraint_count",
+        "semantic_match_count",
+        "confirmation_match_count",
+        "clarification_match",
+        "latency_ms",
+        "checks"
+      ],
+      "title": "ConstraintAgentCaseResult",
+      "type": "object"
+    },
+    "ConstraintEvaluationLabel": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/ConstraintKind"
+        },
+        "value": {
+          "minLength": 1,
+          "title": "Value",
+          "type": "string"
+        },
+        "strength": {
+          "$ref": "#/$defs/ConstraintStrength"
+        },
+        "source": {
+          "$ref": "#/$defs/ConstraintSource"
+        },
+        "confirmed": {
+          "title": "Confirmed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "value",
+        "strength",
+        "source",
+        "confirmed"
+      ],
+      "title": "ConstraintEvaluationLabel",
+      "type": "object"
+    },
+    "ConstraintKind": {
+      "enum": [
+        "must_visit",
+        "avoid",
+        "interest",
+        "walking_intensity",
+        "transport_mode",
+        "accommodation",
+        "meal",
+        "accessibility",
+        "schedule"
+      ],
+      "title": "ConstraintKind",
+      "type": "string"
+    },
+    "ConstraintSource": {
+      "enum": [
+        "user_explicit",
+        "user_confirmed",
+        "agent_inferred",
+        "system"
+      ],
+      "title": "ConstraintSource",
+      "type": "string"
+    },
+    "ConstraintStrength": {
+      "enum": [
+        "hard",
+        "soft"
+      ],
+      "title": "ConstraintStrength",
+      "type": "string"
+    },
+    "EvaluationCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Code",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "passed"
+      ],
+      "title": "EvaluationCheck",
+      "type": "object"
+    },
+    "ModelTokenUsage": {
+      "additionalProperties": false,
+      "properties": {
+        "prompt_tokens": {
+          "minimum": 0,
+          "title": "Prompt Tokens",
+          "type": "integer"
+        },
+        "completion_tokens": {
+          "minimum": 0,
+          "title": "Completion Tokens",
+          "type": "integer"
+        },
+        "total_tokens": {
+          "minimum": 0,
+          "title": "Total Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens"
+      ],
+      "title": "ModelTokenUsage",
+      "type": "object"
+    },
+    "SeedTier": {
+      "enum": [
+        "standard",
+        "hard"
+      ],
+      "title": "SeedTier",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "suite": {
+      "const": "constraint-agent-planning-seed-v1",
+      "default": "constraint-agent-planning-seed-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "agent_version": {
+      "const": "constraint-agent-v1",
+      "default": "constraint-agent-v1",
+      "title": "Agent Version",
+      "type": "string"
+    },
+    "prompt_version": {
+      "const": "constraint-extraction-v1",
+      "default": "constraint-extraction-v1",
+      "title": "Prompt Version",
+      "type": "string"
+    },
+    "execution_mode": {
+      "enum": [
+        "fixture",
+        "live"
+      ],
+      "title": "Execution Mode",
+      "type": "string"
+    },
+    "model": {
+      "minLength": 1,
+      "title": "Model",
+      "type": "string"
+    },
+    "dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Dataset Sha256",
+      "type": "string"
+    },
+    "case_count": {
+      "const": 10,
+      "default": 10,
+      "title": "Case Count",
+      "type": "integer"
+    },
+    "passed_case_count": {
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Passed Case Count",
+      "type": "integer"
+    },
+    "exact_case_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Exact Case Rate"
+    },
+    "expected_constraint_count": {
+      "minimum": 0,
+      "title": "Expected Constraint Count",
+      "type": "integer"
+    },
+    "actual_constraint_count": {
+      "minimum": 0,
+      "title": "Actual Constraint Count",
+      "type": "integer"
+    },
+    "semantic_match_count": {
+      "minimum": 0,
+      "title": "Semantic Match Count",
+      "type": "integer"
+    },
+    "semantic_precision": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Semantic Precision"
+    },
+    "semantic_recall": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Semantic Recall"
+    },
+    "confirmation_match_count": {
+      "minimum": 0,
+      "title": "Confirmation Match Count",
+      "type": "integer"
+    },
+    "confirmation_accuracy": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Confirmation Accuracy"
+    },
+    "clarification_match_case_count": {
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Clarification Match Case Count",
+      "type": "integer"
+    },
+    "clarification_case_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Clarification Case Rate"
+    },
+    "usage_case_count": {
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Usage Case Count",
+      "type": "integer"
+    },
+    "total_prompt_tokens": {
+      "minimum": 0,
+      "title": "Total Prompt Tokens",
+      "type": "integer"
+    },
+    "total_completion_tokens": {
+      "minimum": 0,
+      "title": "Total Completion Tokens",
+      "type": "integer"
+    },
+    "total_tokens": {
+      "minimum": 0,
+      "title": "Total Tokens",
+      "type": "integer"
+    },
+    "p50_latency_ms": {
+      "minimum": 0,
+      "title": "P50 Latency Ms",
+      "type": "integer"
+    },
+    "p95_latency_ms": {
+      "minimum": 0,
+      "title": "P95 Latency Ms",
+      "type": "integer"
+    },
+    "results": {
+      "items": {
+        "$ref": "#/$defs/ConstraintAgentCaseResult"
+      },
+      "maxItems": 10,
+      "minItems": 10,
+      "title": "Results",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Limitations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "execution_mode",
+    "model",
+    "dataset_sha256",
+    "passed_case_count",
+    "exact_case_rate",
+    "expected_constraint_count",
+    "actual_constraint_count",
+    "semantic_match_count",
+    "semantic_precision",
+    "semantic_recall",
+    "confirmation_match_count",
+    "confirmation_accuracy",
+    "clarification_match_case_count",
+    "clarification_case_rate",
+    "usage_case_count",
+    "total_prompt_tokens",
+    "total_completion_tokens",
+    "total_tokens",
+    "p50_latency_ms",
+    "p95_latency_ms",
+    "results",
+    "limitations"
+  ],
+  "title": "ConstraintAgentBaselineReport",
+  "type": "object"
+}

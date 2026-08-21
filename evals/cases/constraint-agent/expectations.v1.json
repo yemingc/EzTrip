@@ -1,0 +1,73 @@
+{
+  "suite": "constraint-agent-expectations-v1",
+  "version": 1,
+  "source_planning_seed_sha256": "e4bc2529b052beca15d31041ed5c8c2d88fe87b38bb4797f28ff8aff36c6d7cd",
+  "cases": [
+    {
+      "case_id": "seed-standard-beijing-history-v1",
+      "expected_constraints": [
+        {"kind": "must_visit", "value": "故宫", "strength": "hard", "source": "user_explicit", "confirmed": true},
+        {"kind": "interest", "value": "历史文化", "strength": "soft", "source": "user_explicit", "confirmed": true},
+        {"kind": "walking_intensity", "value": "low", "strength": "soft", "source": "user_explicit", "confirmed": true}
+      ]
+    },
+    {
+      "case_id": "seed-standard-beijing-no-budget-v1",
+      "expected_constraints": [
+        {"kind": "must_visit", "value": "故宫", "strength": "hard", "source": "user_explicit", "confirmed": true}
+      ]
+    },
+    {
+      "case_id": "seed-standard-beijing-no-must-visit-v1",
+      "expected_constraints": [
+        {"kind": "interest", "value": "历史文化", "strength": "soft", "source": "user_explicit", "confirmed": true}
+      ]
+    },
+    {
+      "case_id": "seed-standard-shanghai-bund-v1",
+      "expected_constraints": [
+        {"kind": "must_visit", "value": "外滩", "strength": "hard", "source": "user_explicit", "confirmed": true},
+        {"kind": "interest", "value": "城市风光", "strength": "soft", "source": "user_explicit", "confirmed": true}
+      ]
+    },
+    {
+      "case_id": "seed-standard-chengdu-family-panda-v1",
+      "expected_constraints": [
+        {"kind": "must_visit", "value": "成都大熊猫繁育研究基地", "strength": "hard", "source": "user_explicit", "confirmed": true},
+        {"kind": "interest", "value": "亲子活动", "strength": "soft", "source": "user_explicit", "confirmed": true}
+      ]
+    },
+    {
+      "case_id": "seed-standard-beijing-senior-low-budget-v1",
+      "expected_constraints": [
+        {"kind": "must_visit", "value": "故宫", "strength": "hard", "source": "user_explicit", "confirmed": true},
+        {"kind": "walking_intensity", "value": "low", "strength": "soft", "source": "user_explicit", "confirmed": true},
+        {"kind": "accessibility", "value": "减少台阶", "strength": "hard", "source": "user_explicit", "confirmed": true}
+      ]
+    },
+    {
+      "case_id": "seed-hard-unsupported-nanjing-v1",
+      "expected_constraints": [
+        {"kind": "must_visit", "value": "中山陵", "strength": "hard", "source": "user_explicit", "confirmed": true}
+      ]
+    },
+    {
+      "case_id": "seed-hard-missing-rooms-lodging-v1",
+      "expected_constraints": [
+        {"kind": "must_visit", "value": "故宫", "strength": "hard", "source": "user_explicit", "confirmed": true}
+      ]
+    },
+    {
+      "case_id": "seed-hard-unconfirmed-must-visit-v1",
+      "expected_constraints": [
+        {"kind": "must_visit", "value": "故宫", "strength": "hard", "source": "agent_inferred", "confirmed": false}
+      ]
+    },
+    {
+      "case_id": "seed-hard-provider-timeout-v1",
+      "expected_constraints": [
+        {"kind": "must_visit", "value": "故宫", "strength": "hard", "source": "user_explicit", "confirmed": true}
+      ]
+    }
+  ]
+}

@@ -7,6 +7,7 @@
 - V1 只支持中国单城市、2–5 个自然日、人民币预算；
 - `PlannerContext` 记录对 `TripRequest` 的唯一确定性解释、输入哈希、澄清问题和能力就绪状态；
 - `MinimalPlanningResult` 记录首条 LangGraph 的节点事件、候选查询来源、provider 候选与 typed failure；
+- `ConstraintProposalBatch` 限制模型只能提交约束语义和原文 evidence，`ConstraintAgentResult` 记录确定性生成的 ID、source、confirmed 与 HITL 集合；
 - 金额使用 `Decimal` 语义，`CostItem` 可确定性重算最小/最大总额；
 - POI、住宿、天气和路线数据携带 provider、数据模式与获取时间；
 - `WeatherRisk` 只能由 live/fixture 天气工具数据产生，不能伪装成用户追加输入；
@@ -27,6 +28,7 @@
 ```powershell
 Set-Location backend
 uv run python -m scripts.export_domain_schemas
+uv run python -m scripts.export_constraint_agent_schemas
 uv run python -m scripts.export_planner_context_example
 uv run python -m scripts.run_minimal_planning_graph --write-example
 ```

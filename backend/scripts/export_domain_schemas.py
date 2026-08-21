@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from app.agents import ConstraintAgentResult, ConstraintProposalBatch
 from app.domain import (
     BudgetConstraint,
     CandidatePOI,
@@ -29,6 +30,8 @@ SCHEMA_MODELS: tuple[type[DomainModel], ...] = (
     TripRequest,
     PlannerContext,
     MinimalPlanningResult,
+    ConstraintProposalBatch,
+    ConstraintAgentResult,
     Party,
     BudgetConstraint,
     ConstraintSet,

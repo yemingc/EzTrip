@@ -26,7 +26,7 @@ EZ-008 冻结 10 条面向中国用户的结构化旅行请求，并用当前 `m
 - 10/10 cases 的当前预期通过；
 - 120/120 个确定性检查通过；
 - 6/6 个返回候选具有 provider、provider ID 和 fixture 数据模式；
-- 数据集 SHA256：`597f1a5a5a804e059b3241cd993a8558511b0a78f53caf413218cc6f75c82f2c`。
+- 数据集 SHA256：`e4bc2529b052beca15d31041ed5c8c2d88fe87b38bb4797f28ff8aff36c6d7cd`。
 
 每条 case 固定检查：结果契约、workflow status、readiness、ready/blocked capability partition、三个约束桶、候选数量/名称、provider 调用参数和来源追溯。报告不使用 LLM judge，因此相同代码和数据集会得到相同结果。
 
@@ -47,4 +47,4 @@ uv run python -m scripts.run_planning_seed_eval --write-report
 uv run pytest tests/test_planning_seed_eval.py --no-cov
 ```
 
-默认 runner 显式关闭 LangSmith 上传，也不会访问网络。下一阶段可以在同一数据集上增加 Constraint / Explore Agent，再比较结构正确率、约束保留、来源追溯、延迟与 token；只有新节点带来可解释收益时才保留。
+默认 runner 显式关闭 LangSmith 上传，也不会访问网络。EZ-101 已在同一批中文输入上增加 Constraint Agent 的独立期望标签和 live DeepSeek 报告，见 [`constraint-agent-baseline.md`](constraint-agent-baseline.md)；下一阶段建立单 Agent/单 Planner 纵向基线，达到 Gate 2 后才增加 Explore、Stay 等专业 Agent。
