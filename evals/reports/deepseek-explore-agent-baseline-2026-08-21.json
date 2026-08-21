@@ -1,0 +1,438 @@
+{
+  "schema_version": "1.0",
+  "suite": "explore-agent-v1",
+  "agent_version": "explore-agent-v1",
+  "query_prompt_version": "explore-query-strategy-v1",
+  "selection_prompt_version": "explore-candidate-selection-v1",
+  "execution_mode": "live",
+  "model": "deepseek-v4-pro",
+  "dataset_sha256": "c2d0f9953ddb554b1d60e305e256abd4a5a8338d6b5604097d5ce82ad45d5912",
+  "case_count": 6,
+  "passed_case_count": 6,
+  "case_pass_rate": "1.0000",
+  "model_call_count": 12,
+  "provider_call_count": 24,
+  "required_query_kind_count": 9,
+  "matched_query_kind_count": 9,
+  "query_kind_coverage_rate": "1.0000",
+  "recommendation_count": 12,
+  "grounded_recommendation_count": 12,
+  "grounding_rate": "1.0000",
+  "traceable_recommendation_count": 12,
+  "source_traceability_rate": "1.0000",
+  "allowed_recommendation_count": 12,
+  "labelled_relevance_rate": "1.0000",
+  "required_recommendation_group_count": 9,
+  "matched_recommendation_group_count": 9,
+  "recommendation_group_coverage_rate": "1.0000",
+  "usage_call_count": 12,
+  "total_prompt_tokens": 14479,
+  "total_completion_tokens": 3200,
+  "total_tokens": 17679,
+  "p50_case_latency_ms": 7408,
+  "p95_case_latency_ms": 7742,
+  "results": [
+    {
+      "case_id": "explore-beijing-history-v1",
+      "passed": true,
+      "model_call_count": 2,
+      "provider_call_count": 4,
+      "query_count": 4,
+      "required_query_kind_count": 1,
+      "matched_query_kind_count": 1,
+      "recommendation_count": 2,
+      "grounded_recommendation_count": 2,
+      "traceable_recommendation_count": 2,
+      "allowed_recommendation_count": 2,
+      "required_recommendation_group_count": 1,
+      "matched_recommendation_group_count": 1,
+      "query_latency_ms": 4040,
+      "selection_latency_ms": 3459,
+      "query_usage": {
+        "prompt_tokens": 889,
+        "completion_tokens": 256,
+        "total_tokens": 1145
+      },
+      "selection_usage": {
+        "prompt_tokens": 1561,
+        "completion_tokens": 266,
+        "total_tokens": 1827
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "explore_protocol_succeeded",
+          "passed": true
+        },
+        {
+          "code": "request_and_context_match",
+          "passed": true
+        },
+        {
+          "code": "query_kind_coverage",
+          "passed": true
+        },
+        {
+          "code": "context_reference_coverage",
+          "passed": true
+        },
+        {
+          "code": "provider_calls_match_queries",
+          "passed": true
+        },
+        {
+          "code": "candidate_grounding",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "labelled_relevance",
+          "passed": true
+        },
+        {
+          "code": "recommendation_group_coverage",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "explore-beijing-open-history-v1",
+      "passed": true,
+      "model_call_count": 2,
+      "provider_call_count": 4,
+      "query_count": 4,
+      "required_query_kind_count": 1,
+      "matched_query_kind_count": 1,
+      "recommendation_count": 2,
+      "grounded_recommendation_count": 2,
+      "traceable_recommendation_count": 2,
+      "allowed_recommendation_count": 2,
+      "required_recommendation_group_count": 1,
+      "matched_recommendation_group_count": 1,
+      "query_latency_ms": 4129,
+      "selection_latency_ms": 3279,
+      "query_usage": {
+        "prompt_tokens": 830,
+        "completion_tokens": 266,
+        "total_tokens": 1096
+      },
+      "selection_usage": {
+        "prompt_tokens": 1523,
+        "completion_tokens": 255,
+        "total_tokens": 1778
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "explore_protocol_succeeded",
+          "passed": true
+        },
+        {
+          "code": "request_and_context_match",
+          "passed": true
+        },
+        {
+          "code": "query_kind_coverage",
+          "passed": true
+        },
+        {
+          "code": "context_reference_coverage",
+          "passed": true
+        },
+        {
+          "code": "provider_calls_match_queries",
+          "passed": true
+        },
+        {
+          "code": "candidate_grounding",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "labelled_relevance",
+          "passed": true
+        },
+        {
+          "code": "recommendation_group_coverage",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "explore-beijing-hutong-food-v1",
+      "passed": true,
+      "model_call_count": 2,
+      "provider_call_count": 4,
+      "query_count": 4,
+      "required_query_kind_count": 2,
+      "matched_query_kind_count": 2,
+      "recommendation_count": 2,
+      "grounded_recommendation_count": 2,
+      "traceable_recommendation_count": 2,
+      "allowed_recommendation_count": 2,
+      "required_recommendation_group_count": 2,
+      "matched_recommendation_group_count": 2,
+      "query_latency_ms": 3965,
+      "selection_latency_ms": 3776,
+      "query_usage": {
+        "prompt_tokens": 850,
+        "completion_tokens": 264,
+        "total_tokens": 1114
+      },
+      "selection_usage": {
+        "prompt_tokens": 1556,
+        "completion_tokens": 264,
+        "total_tokens": 1820
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "explore_protocol_succeeded",
+          "passed": true
+        },
+        {
+          "code": "request_and_context_match",
+          "passed": true
+        },
+        {
+          "code": "query_kind_coverage",
+          "passed": true
+        },
+        {
+          "code": "context_reference_coverage",
+          "passed": true
+        },
+        {
+          "code": "provider_calls_match_queries",
+          "passed": true
+        },
+        {
+          "code": "candidate_grounding",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "labelled_relevance",
+          "passed": true
+        },
+        {
+          "code": "recommendation_group_coverage",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "explore-shanghai-view-food-v1",
+      "passed": true,
+      "model_call_count": 2,
+      "provider_call_count": 4,
+      "query_count": 4,
+      "required_query_kind_count": 2,
+      "matched_query_kind_count": 2,
+      "recommendation_count": 2,
+      "grounded_recommendation_count": 2,
+      "traceable_recommendation_count": 2,
+      "allowed_recommendation_count": 2,
+      "required_recommendation_group_count": 2,
+      "matched_recommendation_group_count": 2,
+      "query_latency_ms": 4130,
+      "selection_latency_ms": 3074,
+      "query_usage": {
+        "prompt_tokens": 853,
+        "completion_tokens": 289,
+        "total_tokens": 1142
+      },
+      "selection_usage": {
+        "prompt_tokens": 1597,
+        "completion_tokens": 260,
+        "total_tokens": 1857
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "explore_protocol_succeeded",
+          "passed": true
+        },
+        {
+          "code": "request_and_context_match",
+          "passed": true
+        },
+        {
+          "code": "query_kind_coverage",
+          "passed": true
+        },
+        {
+          "code": "context_reference_coverage",
+          "passed": true
+        },
+        {
+          "code": "provider_calls_match_queries",
+          "passed": true
+        },
+        {
+          "code": "candidate_grounding",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "labelled_relevance",
+          "passed": true
+        },
+        {
+          "code": "recommendation_group_coverage",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "explore-chengdu-family-panda-v1",
+      "passed": true,
+      "model_call_count": 2,
+      "provider_call_count": 4,
+      "query_count": 4,
+      "required_query_kind_count": 1,
+      "matched_query_kind_count": 1,
+      "recommendation_count": 2,
+      "grounded_recommendation_count": 2,
+      "traceable_recommendation_count": 2,
+      "allowed_recommendation_count": 2,
+      "required_recommendation_group_count": 1,
+      "matched_recommendation_group_count": 1,
+      "query_latency_ms": 3570,
+      "selection_latency_ms": 3630,
+      "query_usage": {
+        "prompt_tokens": 850,
+        "completion_tokens": 252,
+        "total_tokens": 1102
+      },
+      "selection_usage": {
+        "prompt_tokens": 1531,
+        "completion_tokens": 289,
+        "total_tokens": 1820
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "explore_protocol_succeeded",
+          "passed": true
+        },
+        {
+          "code": "request_and_context_match",
+          "passed": true
+        },
+        {
+          "code": "query_kind_coverage",
+          "passed": true
+        },
+        {
+          "code": "context_reference_coverage",
+          "passed": true
+        },
+        {
+          "code": "provider_calls_match_queries",
+          "passed": true
+        },
+        {
+          "code": "candidate_grounding",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "labelled_relevance",
+          "passed": true
+        },
+        {
+          "code": "recommendation_group_coverage",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "explore-chengdu-culture-food-v1",
+      "passed": true,
+      "model_call_count": 2,
+      "provider_call_count": 4,
+      "query_count": 4,
+      "required_query_kind_count": 2,
+      "matched_query_kind_count": 2,
+      "recommendation_count": 2,
+      "grounded_recommendation_count": 2,
+      "traceable_recommendation_count": 2,
+      "allowed_recommendation_count": 2,
+      "required_recommendation_group_count": 2,
+      "matched_recommendation_group_count": 2,
+      "query_latency_ms": 3853,
+      "selection_latency_ms": 3889,
+      "query_usage": {
+        "prompt_tokens": 851,
+        "completion_tokens": 271,
+        "total_tokens": 1122
+      },
+      "selection_usage": {
+        "prompt_tokens": 1588,
+        "completion_tokens": 268,
+        "total_tokens": 1856
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "explore_protocol_succeeded",
+          "passed": true
+        },
+        {
+          "code": "request_and_context_match",
+          "passed": true
+        },
+        {
+          "code": "query_kind_coverage",
+          "passed": true
+        },
+        {
+          "code": "context_reference_coverage",
+          "passed": true
+        },
+        {
+          "code": "provider_calls_match_queries",
+          "passed": true
+        },
+        {
+          "code": "candidate_grounding",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "labelled_relevance",
+          "passed": true
+        },
+        {
+          "code": "recommendation_group_coverage",
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "六条案例使用显式 fixture 候选目录, 不评估实时高德搜索覆盖率或数据新鲜度。",
+    "每条查询返回同一案例的三项目录以隔离 Agent 决策, 不把关键词召回率计入结果。",
+    "人工标签只判断候选与给定偏好的相关性, 不代表景点质量、热度或个性化满意度。",
+    "本报告不评估酒店、天气、路线、营业时间、票价、预算可行性或完整行程。"
+  ]
+}

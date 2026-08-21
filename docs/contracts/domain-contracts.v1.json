@@ -2443,6 +2443,699 @@
       "title": "ConstraintAgentResult",
       "type": "object"
     },
+    "ExploreQueryProposalBatch": {
+      "$defs": {
+        "ExploreQueryKind": {
+          "enum": [
+            "attraction",
+            "dining"
+          ],
+          "title": "ExploreQueryKind",
+          "type": "string"
+        },
+        "ExploreQueryProposal": {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "$ref": "#/$defs/ExploreQueryKind"
+            },
+            "keywords": {
+              "maxLength": 40,
+              "minLength": 1,
+              "title": "Keywords",
+              "type": "string"
+            },
+            "reason": {
+              "maxLength": 160,
+              "minLength": 1,
+              "title": "Reason",
+              "type": "string"
+            },
+            "context_refs": {
+              "default": [],
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "maxItems": 4,
+              "title": "Context Refs",
+              "type": "array"
+            }
+          },
+          "required": [
+            "kind",
+            "keywords",
+            "reason"
+          ],
+          "title": "ExploreQueryProposal",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/ExploreQueryProposal"
+          },
+          "maxItems": 4,
+          "minItems": 1,
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "ExploreQueryProposalBatch",
+      "type": "object"
+    },
+    "ExploreSelectionProposalBatch": {
+      "$defs": {
+        "ExploreCandidateSelectionProposal": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Candidate Id",
+              "type": "string"
+            },
+            "rank": {
+              "maximum": 6,
+              "minimum": 1,
+              "title": "Rank",
+              "type": "integer"
+            },
+            "reason": {
+              "maxLength": 160,
+              "minLength": 1,
+              "title": "Reason",
+              "type": "string"
+            },
+            "evidence": {
+              "items": {
+                "$ref": "#/$defs/ExploreEvidenceReference"
+              },
+              "maxItems": 4,
+              "minItems": 1,
+              "title": "Evidence",
+              "type": "array"
+            }
+          },
+          "required": [
+            "candidate_id",
+            "rank",
+            "reason",
+            "evidence"
+          ],
+          "title": "ExploreCandidateSelectionProposal",
+          "type": "object"
+        },
+        "ExploreEvidenceKind": {
+          "enum": [
+            "query_match",
+            "category",
+            "district",
+            "environment",
+            "tag"
+          ],
+          "title": "ExploreEvidenceKind",
+          "type": "string"
+        },
+        "ExploreEvidenceReference": {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "$ref": "#/$defs/ExploreEvidenceKind"
+            },
+            "value": {
+              "minLength": 1,
+              "title": "Value",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ],
+          "title": "ExploreEvidenceReference",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/ExploreCandidateSelectionProposal"
+          },
+          "maxItems": 6,
+          "minItems": 1,
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "ExploreSelectionProposalBatch",
+      "type": "object"
+    },
+    "ExploreAgentResult": {
+      "$defs": {
+        "ActivityEnvironment": {
+          "enum": [
+            "indoor",
+            "outdoor",
+            "mixed",
+            "unknown"
+          ],
+          "title": "ActivityEnvironment",
+          "type": "string"
+        },
+        "CandidatePOI": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Candidate Id",
+              "type": "string"
+            },
+            "name": {
+              "minLength": 1,
+              "title": "Name",
+              "type": "string"
+            },
+            "city": {
+              "minLength": 1,
+              "title": "City",
+              "type": "string"
+            },
+            "district": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "District"
+            },
+            "address": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Address"
+            },
+            "location": {
+              "$ref": "#/$defs/GeoPoint"
+            },
+            "categories": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Categories",
+              "type": "array"
+            },
+            "environment": {
+              "$ref": "#/$defs/ActivityEnvironment",
+              "default": "unknown"
+            },
+            "suggested_duration_minutes": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "maximum": 720,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Suggested Duration Minutes"
+            },
+            "tags": {
+              "default": [],
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "Tags",
+              "type": "array"
+            },
+            "source": {
+              "$ref": "#/$defs/SourceReference"
+            }
+          },
+          "required": [
+            "candidate_id",
+            "name",
+            "city",
+            "location",
+            "categories",
+            "source"
+          ],
+          "title": "CandidatePOI",
+          "type": "object"
+        },
+        "DataMode": {
+          "enum": [
+            "live",
+            "fixture",
+            "user_input",
+            "estimate"
+          ],
+          "title": "DataMode",
+          "type": "string"
+        },
+        "ExploreCandidateObservation": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate": {
+              "$ref": "#/$defs/CandidatePOI"
+            },
+            "query_ids": {
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "maxItems": 4,
+              "minItems": 1,
+              "title": "Query Ids",
+              "type": "array"
+            }
+          },
+          "required": [
+            "candidate",
+            "query_ids"
+          ],
+          "title": "ExploreCandidateObservation",
+          "type": "object"
+        },
+        "ExploreCandidateSelectionProposal": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Candidate Id",
+              "type": "string"
+            },
+            "rank": {
+              "maximum": 6,
+              "minimum": 1,
+              "title": "Rank",
+              "type": "integer"
+            },
+            "reason": {
+              "maxLength": 160,
+              "minLength": 1,
+              "title": "Reason",
+              "type": "string"
+            },
+            "evidence": {
+              "items": {
+                "$ref": "#/$defs/ExploreEvidenceReference"
+              },
+              "maxItems": 4,
+              "minItems": 1,
+              "title": "Evidence",
+              "type": "array"
+            }
+          },
+          "required": [
+            "candidate_id",
+            "rank",
+            "reason",
+            "evidence"
+          ],
+          "title": "ExploreCandidateSelectionProposal",
+          "type": "object"
+        },
+        "ExploreEvidenceKind": {
+          "enum": [
+            "query_match",
+            "category",
+            "district",
+            "environment",
+            "tag"
+          ],
+          "title": "ExploreEvidenceKind",
+          "type": "string"
+        },
+        "ExploreEvidenceReference": {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "$ref": "#/$defs/ExploreEvidenceKind"
+            },
+            "value": {
+              "minLength": 1,
+              "title": "Value",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ],
+          "title": "ExploreEvidenceReference",
+          "type": "object"
+        },
+        "ExploreQueryKind": {
+          "enum": [
+            "attraction",
+            "dining"
+          ],
+          "title": "ExploreQueryKind",
+          "type": "string"
+        },
+        "ExploreRecommendation": {
+          "additionalProperties": false,
+          "properties": {
+            "proposal": {
+              "$ref": "#/$defs/ExploreCandidateSelectionProposal"
+            },
+            "candidate": {
+              "$ref": "#/$defs/CandidatePOI"
+            },
+            "query_ids": {
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "maxItems": 4,
+              "minItems": 1,
+              "title": "Query Ids",
+              "type": "array"
+            }
+          },
+          "required": [
+            "proposal",
+            "candidate",
+            "query_ids"
+          ],
+          "title": "ExploreRecommendation",
+          "type": "object"
+        },
+        "ExploreSearchQuery": {
+          "additionalProperties": false,
+          "properties": {
+            "query_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Query Id",
+              "type": "string"
+            },
+            "kind": {
+              "$ref": "#/$defs/ExploreQueryKind"
+            },
+            "keywords": {
+              "maxLength": 40,
+              "minLength": 1,
+              "title": "Keywords",
+              "type": "string"
+            },
+            "reason": {
+              "maxLength": 160,
+              "minLength": 1,
+              "title": "Reason",
+              "type": "string"
+            },
+            "context_refs": {
+              "default": [],
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "maxItems": 4,
+              "title": "Context Refs",
+              "type": "array"
+            }
+          },
+          "required": [
+            "query_id",
+            "kind",
+            "keywords",
+            "reason"
+          ],
+          "title": "ExploreSearchQuery",
+          "type": "object"
+        },
+        "GeoPoint": {
+          "additionalProperties": false,
+          "properties": {
+            "latitude": {
+              "maximum": 90,
+              "minimum": -90,
+              "title": "Latitude",
+              "type": "number"
+            },
+            "longitude": {
+              "maximum": 180,
+              "minimum": -180,
+              "title": "Longitude",
+              "type": "number"
+            }
+          },
+          "required": [
+            "latitude",
+            "longitude"
+          ],
+          "title": "GeoPoint",
+          "type": "object"
+        },
+        "ModelTokenUsage": {
+          "additionalProperties": false,
+          "properties": {
+            "prompt_tokens": {
+              "minimum": 0,
+              "title": "Prompt Tokens",
+              "type": "integer"
+            },
+            "completion_tokens": {
+              "minimum": 0,
+              "title": "Completion Tokens",
+              "type": "integer"
+            },
+            "total_tokens": {
+              "minimum": 0,
+              "title": "Total Tokens",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "prompt_tokens",
+            "completion_tokens",
+            "total_tokens"
+          ],
+          "title": "ModelTokenUsage",
+          "type": "object"
+        },
+        "SourceReference": {
+          "additionalProperties": false,
+          "description": "Traceable origin for provider data or an explicit estimate.",
+          "properties": {
+            "provider": {
+              "minLength": 1,
+              "title": "Provider",
+              "type": "string"
+            },
+            "provider_id": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Provider Id"
+            },
+            "data_mode": {
+              "$ref": "#/$defs/DataMode"
+            },
+            "retrieved_at": {
+              "format": "date-time",
+              "title": "Retrieved At",
+              "type": "string"
+            },
+            "raw_response_sha256": {
+              "anyOf": [
+                {
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Raw Response Sha256"
+            }
+          },
+          "required": [
+            "provider",
+            "data_mode",
+            "retrieved_at"
+          ],
+          "title": "SourceReference",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "agent_version": {
+          "const": "explore-agent-v1",
+          "default": "explore-agent-v1",
+          "title": "Agent Version",
+          "type": "string"
+        },
+        "query_prompt_version": {
+          "const": "explore-query-strategy-v1",
+          "default": "explore-query-strategy-v1",
+          "title": "Query Prompt Version",
+          "type": "string"
+        },
+        "selection_prompt_version": {
+          "const": "explore-candidate-selection-v1",
+          "default": "explore-candidate-selection-v1",
+          "title": "Selection Prompt Version",
+          "type": "string"
+        },
+        "request_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "context_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Context Id",
+          "type": "string"
+        },
+        "candidate_set_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Candidate Set Sha256",
+          "type": "string"
+        },
+        "queries": {
+          "items": {
+            "$ref": "#/$defs/ExploreSearchQuery"
+          },
+          "maxItems": 4,
+          "minItems": 1,
+          "title": "Queries",
+          "type": "array"
+        },
+        "observations": {
+          "items": {
+            "$ref": "#/$defs/ExploreCandidateObservation"
+          },
+          "maxItems": 12,
+          "minItems": 1,
+          "title": "Observations",
+          "type": "array"
+        },
+        "recommendations": {
+          "items": {
+            "$ref": "#/$defs/ExploreRecommendation"
+          },
+          "maxItems": 6,
+          "minItems": 1,
+          "title": "Recommendations",
+          "type": "array"
+        },
+        "query_model": {
+          "minLength": 1,
+          "title": "Query Model",
+          "type": "string"
+        },
+        "selection_model": {
+          "minLength": 1,
+          "title": "Selection Model",
+          "type": "string"
+        },
+        "query_latency_ms": {
+          "minimum": 0,
+          "title": "Query Latency Ms",
+          "type": "integer"
+        },
+        "selection_latency_ms": {
+          "minimum": 0,
+          "title": "Selection Latency Ms",
+          "type": "integer"
+        },
+        "query_usage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelTokenUsage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "selection_usage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelTokenUsage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "request_id",
+        "context_id",
+        "candidate_set_sha256",
+        "queries",
+        "observations",
+        "recommendations",
+        "query_model",
+        "selection_model",
+        "query_latency_ms",
+        "selection_latency_ms"
+      ],
+      "title": "ExploreAgentResult",
+      "type": "object"
+    },
     "PlannerProposalBatch": {
       "$defs": {
         "PlannerPlacementProposal": {

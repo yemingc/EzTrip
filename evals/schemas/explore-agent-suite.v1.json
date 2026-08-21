@@ -1,0 +1,620 @@
+{
+  "$defs": {
+    "ActivityEnvironment": {
+      "enum": [
+        "indoor",
+        "outdoor",
+        "mixed",
+        "unknown"
+      ],
+      "title": "ActivityEnvironment",
+      "type": "string"
+    },
+    "BudgetCategory": {
+      "enum": [
+        "lodging",
+        "transport",
+        "food",
+        "admission",
+        "activity",
+        "other"
+      ],
+      "title": "BudgetCategory",
+      "type": "string"
+    },
+    "BudgetConstraint": {
+      "additionalProperties": false,
+      "properties": {
+        "total_limit": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+              "type": "string"
+            }
+          ],
+          "title": "Total Limit"
+        },
+        "currency": {
+          "const": "CNY",
+          "default": "CNY",
+          "title": "Currency",
+          "type": "string"
+        },
+        "scope": {
+          "const": "party_total",
+          "default": "party_total",
+          "title": "Scope",
+          "type": "string"
+        },
+        "period": {
+          "const": "whole_trip",
+          "default": "whole_trip",
+          "title": "Period",
+          "type": "string"
+        },
+        "included_categories": {
+          "items": {
+            "$ref": "#/$defs/BudgetCategory"
+          },
+          "minItems": 1,
+          "title": "Included Categories",
+          "type": "array"
+        },
+        "hard_limit": {
+          "default": true,
+          "title": "Hard Limit",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "total_limit",
+        "included_categories"
+      ],
+      "title": "BudgetConstraint",
+      "type": "object"
+    },
+    "Constraint": {
+      "additionalProperties": false,
+      "properties": {
+        "constraint_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Constraint Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/ConstraintKind"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "title": "Value"
+        },
+        "strength": {
+          "$ref": "#/$defs/ConstraintStrength"
+        },
+        "priority": {
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Priority",
+          "type": "integer"
+        },
+        "source": {
+          "$ref": "#/$defs/ConstraintSource"
+        },
+        "applies_to_dates": {
+          "default": [],
+          "items": {
+            "format": "date",
+            "type": "string"
+          },
+          "title": "Applies To Dates",
+          "type": "array"
+        },
+        "confirmed": {
+          "title": "Confirmed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "constraint_id",
+        "kind",
+        "value",
+        "strength",
+        "priority",
+        "source",
+        "confirmed"
+      ],
+      "title": "Constraint",
+      "type": "object"
+    },
+    "ConstraintKind": {
+      "enum": [
+        "must_visit",
+        "avoid",
+        "interest",
+        "walking_intensity",
+        "transport_mode",
+        "accommodation",
+        "meal",
+        "accessibility",
+        "schedule"
+      ],
+      "title": "ConstraintKind",
+      "type": "string"
+    },
+    "ConstraintSet": {
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Constraint"
+          },
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "title": "ConstraintSet",
+      "type": "object"
+    },
+    "ConstraintSource": {
+      "enum": [
+        "user_explicit",
+        "user_confirmed",
+        "agent_inferred",
+        "system"
+      ],
+      "title": "ConstraintSource",
+      "type": "string"
+    },
+    "ConstraintStrength": {
+      "enum": [
+        "hard",
+        "soft"
+      ],
+      "title": "ConstraintStrength",
+      "type": "string"
+    },
+    "ExploreAgentEvalCase": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "request": {
+          "$ref": "#/$defs/TripRequest"
+        },
+        "provider_candidates": {
+          "items": {
+            "$ref": "#/$defs/ExploreFixtureCandidateSpec"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "title": "Provider Candidates",
+          "type": "array"
+        },
+        "expected": {
+          "$ref": "#/$defs/ExploreAgentExpectation"
+        },
+        "boundary_notes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Boundary Notes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "title",
+        "request",
+        "provider_candidates",
+        "expected",
+        "boundary_notes"
+      ],
+      "title": "ExploreAgentEvalCase",
+      "type": "object"
+    },
+    "ExploreAgentExpectation": {
+      "additionalProperties": false,
+      "properties": {
+        "required_query_kinds": {
+          "items": {
+            "$ref": "#/$defs/ExploreQueryKind"
+          },
+          "maxItems": 2,
+          "minItems": 1,
+          "title": "Required Query Kinds",
+          "type": "array"
+        },
+        "required_context_refs": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Required Context Refs",
+          "type": "array"
+        },
+        "allowed_recommendation_ids": {
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Allowed Recommendation Ids",
+          "type": "array"
+        },
+        "forbidden_recommendation_ids": {
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "maxItems": 2,
+          "title": "Forbidden Recommendation Ids",
+          "type": "array"
+        },
+        "required_recommendation_groups": {
+          "items": {
+            "items": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "maxItems": 2,
+          "minItems": 1,
+          "title": "Required Recommendation Groups",
+          "type": "array"
+        }
+      },
+      "required": [
+        "required_query_kinds",
+        "allowed_recommendation_ids",
+        "forbidden_recommendation_ids",
+        "required_recommendation_groups"
+      ],
+      "title": "ExploreAgentExpectation",
+      "type": "object"
+    },
+    "ExploreFixtureCandidateSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Candidate Id",
+          "type": "string"
+        },
+        "provider_id": {
+          "minLength": 1,
+          "title": "Provider Id",
+          "type": "string"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "city": {
+          "minLength": 1,
+          "title": "City",
+          "type": "string"
+        },
+        "district": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "District"
+        },
+        "address": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Address"
+        },
+        "location": {
+          "$ref": "#/$defs/GeoPoint"
+        },
+        "categories": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Categories",
+          "type": "array"
+        },
+        "environment": {
+          "$ref": "#/$defs/ActivityEnvironment"
+        },
+        "tags": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "data_mode": {
+          "const": "fixture",
+          "default": "fixture",
+          "title": "Data Mode",
+          "type": "string"
+        }
+      },
+      "required": [
+        "candidate_id",
+        "provider_id",
+        "name",
+        "city",
+        "location",
+        "categories",
+        "environment"
+      ],
+      "title": "ExploreFixtureCandidateSpec",
+      "type": "object"
+    },
+    "ExploreQueryKind": {
+      "enum": [
+        "attraction",
+        "dining"
+      ],
+      "title": "ExploreQueryKind",
+      "type": "string"
+    },
+    "GeoPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "latitude": {
+          "maximum": 90,
+          "minimum": -90,
+          "title": "Latitude",
+          "type": "number"
+        },
+        "longitude": {
+          "maximum": 180,
+          "minimum": -180,
+          "title": "Longitude",
+          "type": "number"
+        }
+      },
+      "required": [
+        "latitude",
+        "longitude"
+      ],
+      "title": "GeoPoint",
+      "type": "object"
+    },
+    "Party": {
+      "additionalProperties": false,
+      "properties": {
+        "adults": {
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Adults",
+          "type": "integer"
+        },
+        "children": {
+          "default": 0,
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Children",
+          "type": "integer"
+        },
+        "seniors": {
+          "default": 0,
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Seniors",
+          "type": "integer"
+        },
+        "rooms": {
+          "anyOf": [
+            {
+              "maximum": 20,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rooms"
+        }
+      },
+      "required": [
+        "adults"
+      ],
+      "title": "Party",
+      "type": "object"
+    },
+    "TripRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "request_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "locale": {
+          "const": "zh-CN",
+          "default": "zh-CN",
+          "title": "Locale",
+          "type": "string"
+        },
+        "raw_text": {
+          "minLength": 1,
+          "title": "Raw Text",
+          "type": "string"
+        },
+        "origin_city": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Origin City"
+        },
+        "destination_city": {
+          "minLength": 1,
+          "title": "Destination City",
+          "type": "string"
+        },
+        "start_date": {
+          "format": "date",
+          "title": "Start Date",
+          "type": "string"
+        },
+        "end_date": {
+          "format": "date",
+          "title": "End Date",
+          "type": "string"
+        },
+        "party": {
+          "$ref": "#/$defs/Party"
+        },
+        "budget": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BudgetConstraint"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "travel_styles": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Travel Styles",
+          "type": "array"
+        },
+        "constraints": {
+          "$ref": "#/$defs/ConstraintSet"
+        }
+      },
+      "required": [
+        "request_id",
+        "raw_text",
+        "destination_city",
+        "start_date",
+        "end_date",
+        "party"
+      ],
+      "title": "TripRequest",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "suite": {
+      "const": "explore-agent-v1",
+      "default": "explore-agent-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "version": {
+      "const": 1,
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "data_mode": {
+      "const": "fixture",
+      "default": "fixture",
+      "title": "Data Mode",
+      "type": "string"
+    },
+    "cases": {
+      "items": {
+        "$ref": "#/$defs/ExploreAgentEvalCase"
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "title": "Cases",
+      "type": "array"
+    }
+  },
+  "required": [
+    "cases"
+  ],
+  "title": "ExploreAgentEvalSuite",
+  "type": "object"
+}

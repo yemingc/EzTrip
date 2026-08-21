@@ -1,6 +1,6 @@
 # EzTrip API
 
-Gate 0 FastAPI service plus the first offline Gate 2 vertical slice and recoverable HITL wrapper. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, the first three-node planning Graph, an isolated schema-constrained Constraint Agent, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, and a SQLite-checkpointed main Graph using native LangGraph interrupt/resume. These components are not yet exposed as a product planning API and never auto-finalize the Gate 2 draft.
+Gate 0 FastAPI service plus the first offline Gate 2 vertical slice and recoverable HITL wrapper. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, the first three-node planning Graph, isolated schema-constrained Constraint and Explore Agents, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, and a SQLite-checkpointed main Graph using native LangGraph interrupt/resume. These components are not yet exposed as a product planning API and never auto-finalize the Gate 2 draft.
 
 ```powershell
 uv sync --all-groups
@@ -22,6 +22,7 @@ Regenerate the committed domain JSON Schema bundle after changing a contract:
 uv run python -m scripts.export_domain_schemas
 uv run python -m scripts.export_constraint_agent_schemas
 uv run python -m scripts.export_single_planner_schema
+uv run python -m scripts.export_explore_agent_schemas
 uv run python -m scripts.export_checkpoint_hitl_schemas
 uv run python -m scripts.export_plan_validation_example
 uv run python -m scripts.export_planner_context_example
@@ -74,6 +75,15 @@ uv run python -m scripts.run_single_planner_eval --live
 ```
 
 The Planner can place only the candidate IDs returned by the upstream fixture provider. Deterministic code enforces exact candidate coverage, copies names and sources, validates trip dates and non-overlapping timelines, and assembles partial `DayPlan` objects. The live baseline invokes DeepSeek for 6 eligible cases and stops before the model for 4 ineligible cases. It does not measure itinerary quality and does not generate a complete `TripPlan`.
+
+Run the Explore Agent tests offline or explicitly refresh its live development-set baseline:
+
+```powershell
+uv run pytest tests/test_explore_agent.py tests/test_explore_agent_evaluation.py --no-cov
+uv run python -m scripts.run_explore_agent_eval --live
+```
+
+The four-node subgraph asks the model for attraction/dining search strategies, calls only the injected POI provider, then asks the model to rank provider candidate IDs with typed evidence. Deterministic code owns IDs, facts, source lineage, deduplication and evidence validation. The six-case live report is a prompt-development regression result over fixture catalogs, not a real-time recommendation-accuracy or holdout score, and the subgraph is not yet connected to the stateful main orchestration.
 
 Run the deterministic plan validator and regenerate its committed example:
 

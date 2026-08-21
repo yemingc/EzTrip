@@ -2,7 +2,7 @@
 
 面向中国城市自由行的可验证、可调整、可追溯旅行规划助手。
 
-当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、确定性预算/基础计划 Validator、北京三日 Gate 2 最小纵向切片，以及基于 SQLite checkpoint 的可恢复主编排与原生 HITL。两个 Agent 都有真实 DeepSeek/LangSmith 隔离评测；纵向切片和恢复评测使用固定模型提案与 fixture 来证明可重放组件闭环，仓库尚未实现多 Agent 完整工作流、前端人工审核或产品规划 API。
+当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、开放式景点/餐饮 Explore Agent、确定性预算/基础计划 Validator、北京三日 Gate 2 最小纵向切片，以及基于 SQLite checkpoint 的可恢复主编排与原生 HITL。三个 Agent 都有真实 DeepSeek/LangSmith 隔离评测；纵向切片和恢复评测使用固定模型提案与 fixture 来证明可重放组件闭环，仓库尚未实现多 Agent 并行工作流、前端人工审核或产品规划 API。
 
 ## 技术基线
 
@@ -167,6 +167,20 @@ uv run python -m scripts.run_single_planner_eval --live
 
 这些指标验证候选 grounding、停止路由和契约，不是行程质量分数。该单 Planner 基线每条成功案例只有一个 fixture 必去候选，且自身没有营业时间、路线、天气、酒店或预算输入，因此输出不能称为完整旅行计划；预算与基础冲突由下一节的独立确定性 Validator 处理。
 
+## Explore Agent
+
+[`docs/agents/explore-agent.md`](docs/agents/explore-agent.md) 实现 `propose_queries → search_candidates → select_candidates → validate_selection` 子图。模型可以根据已确认约束和旅行风格设计景点/餐饮搜索策略，并且只能排序 Provider 返回的 candidate ID；代码负责候选事实、来源、跨查询去重和证据引用校验。
+
+[`docs/evaluation/explore-agent-baseline.md`](docs/evaluation/explore-agent-baseline.md) 记录 6 条北京/上海/成都开发案例的真实 `deepseek-v4-pro` point-in-time 结果：6/6 cases、9/9 required query kinds、12/12 grounded/source-traceable/labelled-relevant recommendations、9/9 required recommendation groups，17679 tokens，单案例两次模型调用合计延迟 p50/p95 为 7408/7742 ms。
+
+```powershell
+Set-Location backend
+uv run pytest tests/test_explore_agent.py tests/test_explore_agent_evaluation.py --no-cov
+uv run python -m scripts.run_explore_agent_eval --live
+```
+
+候选目录是显式 fixture，且该 6-case 套件用于提示词开发后回归，不是未触碰 holdout；这些指标不能写成实时推荐准确率或泛化能力。Explore Agent 当前仍是隔离子图，尚未与 Stay/Weather 并行接入可恢复主编排。
+
 ## 确定性预算与基础计划校验
 
 [`docs/planning/deterministic-plan-validator.md`](docs/planning/deterministic-plan-validator.md) 实现普通代码 `validate_trip_plan(request, plan)`。它跨 `TripRequest` 与 `TripPlan` 检查请求 ID、目的地和日期一致性、重复 candidate ID、推荐来源模式，并用 `Decimal` 重新汇总预算范围内的 `CostItem`。
@@ -242,6 +256,6 @@ uv run python -m scripts.run_amap_provider_smoke --live
 - 不提供订票、订房、支付或实时房价；
 - 当前健康页不是旅行规划产品完成度；
 - 当前三节点探针只证明观测链路可接入，不证明模型规划质量；
-- 当前领域契约、PlannerContext 编译器、provider adapter、Single Planner 和 Validator 已在 Gate 2 fixture 纵向切片及可恢复 HITL 主编排中连通；Constraint Agent 尚未进入该主链，固定 Planner 提案不代表模型质量，多 Agent 协作仍未实现；
+- 当前领域契约、PlannerContext 编译器、provider adapter、Single Planner 和 Validator 已在 Gate 2 fixture 纵向切片及可恢复 HITL 主编排中连通；Constraint Agent 与 Explore Agent 仍是隔离子图，固定 Planner 提案不代表模型质量，多 Agent 并行协作仍未实现；
 - 高德 live fixture 是 2026-08-20 的点时样本，不是当前天气、实时酒店价格或生产 SLA；
 - 后续功能必须通过真实 provider contract、固定评测和可回放 trace 验证后再写入项目成果。

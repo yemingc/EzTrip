@@ -5,6 +5,9 @@ from typing import Any
 from app.agents import (
     ConstraintAgentResult,
     ConstraintProposalBatch,
+    ExploreAgentResult,
+    ExploreQueryProposalBatch,
+    ExploreSelectionProposalBatch,
     PlannerProposalBatch,
     SinglePlannerAgentResult,
 )
@@ -43,6 +46,9 @@ SCHEMA_MODELS: tuple[type[DomainModel], ...] = (
     MinimalPlanningResult,
     ConstraintProposalBatch,
     ConstraintAgentResult,
+    ExploreQueryProposalBatch,
+    ExploreSelectionProposalBatch,
+    ExploreAgentResult,
     PlannerProposalBatch,
     SinglePlannerAgentResult,
     BudgetValidationSummary,
