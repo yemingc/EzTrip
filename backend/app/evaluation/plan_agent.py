@@ -410,7 +410,8 @@ async def evaluate_plan_agent_suite(
             "候选、住宿、天气与路线来自显式 fixture, 不代表实时高德数据质量。",
             "评测验证候选 grounding、材料消费和停止路由, 不等于行程主观质量准确率。",
             "预算 allocation 是目标 envelope; 当前没有价格事实, 因而不生成 CostItem。",
-            "营业时间、must/avoid 硬校验与定向修复属于后续 Validator 和 Repair Router。",
+            "本隔离套件不评估营业时间、must/avoid 等定稿规则; "
+            "下游 Hard Validator 另行评测, Repair Router 尚未实现。",
             "live 模式只替换 Plan Agent 模型, 上游 specialist 保持 fixture 以隔离变量。",
         ),
     )

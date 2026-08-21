@@ -1,0 +1,232 @@
+{
+  "$defs": {
+    "ExpectedValidationIssue": {
+      "additionalProperties": false,
+      "properties": {
+        "rule_code": {
+          "minLength": 1,
+          "title": "Rule Code",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/IssueSeverity"
+        },
+        "responsible_node": {
+          "$ref": "#/$defs/ResponsibleNode"
+        },
+        "repair_action": {
+          "$ref": "#/$defs/RepairAction"
+        }
+      },
+      "required": [
+        "rule_code",
+        "severity",
+        "responsible_node",
+        "repair_action"
+      ],
+      "title": "ExpectedValidationIssue",
+      "type": "object"
+    },
+    "HardConstraintScenario": {
+      "enum": [
+        "preserve",
+        "missing_must_visit",
+        "scheduled_avoid",
+        "hard_budget"
+      ],
+      "title": "HardConstraintScenario",
+      "type": "string"
+    },
+    "HardMaterialMutation": {
+      "enum": [
+        "none",
+        "poi_cross_city",
+        "stay_cross_city"
+      ],
+      "title": "HardMaterialMutation",
+      "type": "string"
+    },
+    "HardPlanMutation": {
+      "enum": [
+        "none",
+        "missing_route",
+        "tight_transfer",
+        "candidate_source_mismatch",
+        "route_source_mismatch"
+      ],
+      "title": "HardPlanMutation",
+      "type": "string"
+    },
+    "HardValidatorEvalCase": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "source_plan_case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Source Plan Case Id",
+          "type": "string"
+        },
+        "constraint_scenario": {
+          "$ref": "#/$defs/HardConstraintScenario",
+          "default": "preserve"
+        },
+        "plan_mutation": {
+          "$ref": "#/$defs/HardPlanMutation",
+          "default": "none"
+        },
+        "material_mutation": {
+          "$ref": "#/$defs/HardMaterialMutation",
+          "default": "none"
+        },
+        "opening_evidence": {
+          "$ref": "#/$defs/OpeningEvidenceScenario",
+          "default": "complete"
+        },
+        "expected": {
+          "$ref": "#/$defs/HardValidatorExpectation"
+        },
+        "boundary_notes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Boundary Notes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "title",
+        "source_plan_case_id",
+        "expected",
+        "boundary_notes"
+      ],
+      "title": "HardValidatorEvalCase",
+      "type": "object"
+    },
+    "HardValidatorExpectation": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/PlanValidationStatus"
+        },
+        "can_finalize": {
+          "title": "Can Finalize",
+          "type": "boolean"
+        },
+        "issues": {
+          "items": {
+            "$ref": "#/$defs/ExpectedValidationIssue"
+          },
+          "minItems": 1,
+          "title": "Issues",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status",
+        "can_finalize",
+        "issues"
+      ],
+      "title": "HardValidatorExpectation",
+      "type": "object"
+    },
+    "IssueSeverity": {
+      "enum": [
+        "warning",
+        "error"
+      ],
+      "title": "IssueSeverity",
+      "type": "string"
+    },
+    "OpeningEvidenceScenario": {
+      "enum": [
+        "complete",
+        "missing_one",
+        "outside_one"
+      ],
+      "title": "OpeningEvidenceScenario",
+      "type": "string"
+    },
+    "PlanValidationStatus": {
+      "enum": [
+        "passed",
+        "warning",
+        "conflicted"
+      ],
+      "title": "PlanValidationStatus",
+      "type": "string"
+    },
+    "RepairAction": {
+      "enum": [
+        "none",
+        "rerun_constraint",
+        "rerun_explore",
+        "rerun_stay",
+        "rerun_route",
+        "replan_day",
+        "recalculate_budget",
+        "ask_user"
+      ],
+      "title": "RepairAction",
+      "type": "string"
+    },
+    "ResponsibleNode": {
+      "enum": [
+        "constraint",
+        "explore",
+        "stay",
+        "weather",
+        "route",
+        "plan",
+        "budget",
+        "validator"
+      ],
+      "title": "ResponsibleNode",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "suite": {
+      "const": "hard-validator-v1",
+      "default": "hard-validator-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "version": {
+      "const": 1,
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "cases": {
+      "items": {
+        "$ref": "#/$defs/HardValidatorEvalCase"
+      },
+      "maxItems": 12,
+      "minItems": 12,
+      "title": "Cases",
+      "type": "array"
+    }
+  },
+  "required": [
+    "cases"
+  ],
+  "title": "HardValidatorEvalSuite",
+  "type": "object"
+}

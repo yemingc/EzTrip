@@ -2,7 +2,7 @@
 
 面向中国城市自由行的可验证、可调整、可追溯旅行规划助手。
 
-当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、开放式景点/餐饮 Explore Agent、住宿区域筛选 Stay Agent、确定性预算/基础计划 Validator、北京三日 Gate 2 最小纵向切片、基于 SQLite checkpoint 的可恢复主编排与原生 HITL、Explore/Stay/主动天气三分支并行编排、有界路线矩阵和确定性预算材料层，以及把这些专业信息包合成为同构完整 `TripPlan` 草案的 schema-constrained Plan Agent。模型路径都有真实 DeepSeek/LangSmith 隔离评测；纵向切片、恢复、fan-out、材料层和 Plan Agent 都有 fixture 可重放证据。仓库尚未实现 Hard Validators、Repair Router、前端人工审核或产品规划 API。
+当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、开放式景点/餐饮 Explore Agent、住宿区域筛选 Stay Agent、确定性预算/基础计划 Validator、北京三日 Gate 2 最小纵向切片、基于 SQLite checkpoint 的可恢复主编排与原生 HITL、Explore/Stay/主动天气三分支并行编排、有界路线矩阵和确定性预算材料层、把这些专业信息包合成为同构完整 `TripPlan` 草案的 schema-constrained Plan Agent，以及阻止不可靠草案定稿的 Hard Validators。模型路径都有真实 DeepSeek/LangSmith 隔离评测；纵向切片、恢复、fan-out、材料层、Plan Agent 与 Hard Validators 都有 fixture 可重放证据。仓库尚未实现 Repair Router、天气触发局部修复、前端人工审核或产品规划 API。
 
 ## 技术基线
 
@@ -276,7 +276,22 @@ uv run python -m scripts.run_plan_agent_eval --live
 uv run pytest tests/test_plan_agent.py tests/test_plan_agent_evaluation.py --no-cov
 ```
 
-预算 allocation 仍是目标 envelope，不是价格；Plan Agent 不会据此制造 `CostItem` 或宣称预算满足。住宿候选当前仅作路线锚点，不代表价格、库存或预订。营业时间、must/avoid、路线时间窗等 Hard Validators 及 Repair Router 属于下一阶段，所以 1.0000 指标是 grounding/lineage 回归，不是行程主观质量准确率或生产 SLA。
+预算 allocation 仍是目标 envelope，不是价格；Plan Agent 不会据此制造 `CostItem` 或宣称预算满足。住宿候选当前仅作路线锚点，不代表价格、库存或预订。Plan Agent 的 1.0000 指标只是 grounding/lineage 回归，不是行程主观质量准确率或生产 SLA；其草案由下一节独立 Hard Validator 再做定稿门禁。
+
+## Hard Validators
+
+[`docs/planning/hard-validators.md`](docs/planning/hard-validators.md) 实现零模型调用的 `validate_hard_trip_plan(request, plan, materials, opening_hours)`。它在基础 Validator 之上机械检查：已确认 hard must/avoid、shortlist 精确覆盖、候选与路线来源血缘、POI/住宿跨城、住宿锚点与相邻活动路线、转场时间窗、带 Provider 来源的营业时间窗口，以及硬预算是否拥有完整价格事实。
+
+每个错误都输出稳定 `ValidationIssue`、`responsible_node` 和 `repair_action`。例如缺路线归给 Route，转场或营业窗口冲突归给 Plan，跨城 POI/住宿分别归给 Explore/Stay；没有营业时间证据不会被当作“全天开放”。
+
+```powershell
+Set-Location backend
+uv run python -m scripts.export_hard_validator_schemas
+uv run python -m scripts.run_hard_validator_eval
+uv run pytest tests/test_hard_validator.py tests/test_hard_validator_evaluation.py --no-cov
+```
+
+提交的 fixture 报告记录 12/12 cases、22/22 预期 issue 责任路由、12/12 确定性重放和 0 Validator 模型调用。这些数字证明规则和路由契约，不代表实时营业时间正确、价格完整或自动修复成功；Repair Router 尚未执行这些动作。
 
 ## AMap live contract probe
 
@@ -315,6 +330,6 @@ uv run python -m scripts.run_amap_provider_smoke --live
 - 不提供订票、订房、支付或实时房价；
 - 当前健康页不是旅行规划产品完成度；
 - 当前三节点探针只证明观测链路可接入，不证明模型规划质量；
-- 当前领域契约、PlannerContext 编译器、provider adapter、Single Planner 和 Validator 已在 Gate 2 fixture 纵向切片及可恢复 HITL 主编排中连通；Explore、Stay 与主动 Weather 的信息包已经通过路线/预算材料层进入 Plan Agent，并合成为同构完整 `TripPlan` 草案，但尚未经过下一阶段 Hard Validators、Repair Router 或产品 API，Constraint Agent 也尚未接入产品入口；
+- 当前领域契约、PlannerContext 编译器、provider adapter、Single Planner 和基础 Validator 已在 Gate 2 fixture 纵向切片及可恢复 HITL 主编排中连通；Explore、Stay 与主动 Weather 的信息包已经通过路线/预算材料层进入 Plan Agent，并合成为同构完整 `TripPlan` 草案；独立 Hard Validator 已能阻止违反 must/avoid、城市、路线、营业时间证据和硬预算的草案定稿，但 Repair Router、产品 API 与 Constraint Agent 产品入口仍未接入；
 - 高德 live fixture 是 2026-08-20 的点时样本，不是当前天气、实时酒店价格或生产 SLA；
 - 后续功能必须通过真实 provider contract、固定评测和可回放 trace 验证后再写入项目成果。

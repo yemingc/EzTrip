@@ -17,6 +17,7 @@ from app.domain.context import (
     PlanningClarification,
 )
 from app.domain.money import BudgetCategory, CostItem, MoneyRange
+from app.domain.opening_hours import OpeningHoursEvidence, OpeningHoursEvidenceBundle
 from app.domain.planning import (
     ActivityKind,
     DayPlan,
@@ -93,6 +94,8 @@ __all__ = [
     "ItineraryItem",
     "MinimalPlanningResult",
     "MoneyRange",
+    "OpeningHoursEvidence",
+    "OpeningHoursEvidenceBundle",
     "Party",
     "PartyPlanningContext",
     "PlanStatus",

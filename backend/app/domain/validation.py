@@ -137,9 +137,10 @@ class PlanValidationStatus(StrEnum):
 
 class PlanValidationReport(DomainModel):
     schema_version: Literal["1.0"] = "1.0"
-    validator_version: Literal["deterministic-plan-validator-v1"] = (
-        "deterministic-plan-validator-v1"
-    )
+    validator_version: Literal[
+        "deterministic-plan-validator-v1",
+        "hard-trip-plan-validator-v1",
+    ] = "deterministic-plan-validator-v1"
     request_id: Identifier
     plan_id: Identifier
     status: PlanValidationStatus

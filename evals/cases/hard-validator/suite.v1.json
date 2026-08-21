@@ -1,0 +1,317 @@
+{
+  "suite": "hard-validator-v1",
+  "version": 1,
+  "cases": [
+    {
+      "case_id": "hard-validator-confirmed-must-pass-v1",
+      "title": "成都已确认必去地点和完整证据通过硬规则",
+      "source_plan_case_id": "plan-agent-chengdu-family-v1",
+      "expected": {
+        "status": "warning",
+        "can_finalize": true,
+        "issues": [
+          {
+            "rule_code": "budget.incomplete_category_coverage",
+            "severity": "warning",
+            "responsible_node": "budget",
+            "repair_action": "recalculate_budget"
+          }
+        ]
+      },
+      "boundary_notes": [
+        "已确认的成都大熊猫繁育研究基地必须在计划中精确出现；预算缺少价格事实仍保留 warning。"
+      ]
+    },
+    {
+      "case_id": "hard-validator-missing-must-v1",
+      "title": "未安排已确认必去地点时定向重跑 Explore",
+      "source_plan_case_id": "plan-agent-beijing-history-v1",
+      "constraint_scenario": "missing_must_visit",
+      "expected": {
+        "status": "conflicted",
+        "can_finalize": false,
+        "issues": [
+          {
+            "rule_code": "budget.incomplete_category_coverage",
+            "severity": "warning",
+            "responsible_node": "budget",
+            "repair_action": "recalculate_budget"
+          },
+          {
+            "rule_code": "constraint.hard_must_visit_missing",
+            "severity": "error",
+            "responsible_node": "explore",
+            "repair_action": "rerun_explore"
+          }
+        ]
+      },
+      "boundary_notes": [
+        "Validator 只执行已确认 hard constraint，不把模型推断当成用户批准。"
+      ]
+    },
+    {
+      "case_id": "hard-validator-scheduled-avoid-v1",
+      "title": "安排明确避开地点时定向重跑 Explore",
+      "source_plan_case_id": "plan-agent-beijing-history-v1",
+      "constraint_scenario": "scheduled_avoid",
+      "expected": {
+        "status": "conflicted",
+        "can_finalize": false,
+        "issues": [
+          {
+            "rule_code": "budget.incomplete_category_coverage",
+            "severity": "warning",
+            "responsible_node": "budget",
+            "repair_action": "recalculate_budget"
+          },
+          {
+            "rule_code": "constraint.hard_avoid_scheduled",
+            "severity": "error",
+            "responsible_node": "explore",
+            "repair_action": "rerun_explore"
+          }
+        ]
+      },
+      "boundary_notes": [
+        "avoid 命中已有候选时交给 Explore 换候选，而不是让 Plan Agent 只改措辞。"
+      ]
+    },
+    {
+      "case_id": "hard-validator-missing-route-v1",
+      "title": "行程活动缺少到达路线时定向重跑 Route",
+      "source_plan_case_id": "plan-agent-beijing-history-v1",
+      "plan_mutation": "missing_route",
+      "expected": {
+        "status": "conflicted",
+        "can_finalize": false,
+        "issues": [
+          {
+            "rule_code": "budget.incomplete_category_coverage",
+            "severity": "warning",
+            "responsible_node": "budget",
+            "repair_action": "recalculate_budget"
+          },
+          {
+            "rule_code": "route.missing_for_grounded_item",
+            "severity": "error",
+            "responsible_node": "route",
+            "repair_action": "rerun_route"
+          }
+        ]
+      },
+      "boundary_notes": [
+        "缺路线不能由模型猜测耗时，Repair Router 应只重跑路线节点。"
+      ]
+    },
+    {
+      "case_id": "hard-validator-tight-transfer-v1",
+      "title": "相邻活动转场时间不足时只重排当天",
+      "source_plan_case_id": "plan-agent-beijing-history-v1",
+      "plan_mutation": "tight_transfer",
+      "expected": {
+        "status": "conflicted",
+        "can_finalize": false,
+        "issues": [
+          {
+            "rule_code": "budget.incomplete_category_coverage",
+            "severity": "warning",
+            "responsible_node": "budget",
+            "repair_action": "recalculate_budget"
+          },
+          {
+            "rule_code": "route.insufficient_transfer_window",
+            "severity": "error",
+            "responsible_node": "plan",
+            "repair_action": "replan_day"
+          }
+        ]
+      },
+      "boundary_notes": [
+        "转场冲突来自时间算术，责任是当天排程而不是重新搜索路线。"
+      ]
+    },
+    {
+      "case_id": "hard-validator-missing-opening-evidence-v1",
+      "title": "缺少营业时间证据时禁止定稿",
+      "source_plan_case_id": "plan-agent-beijing-history-v1",
+      "opening_evidence": "missing_one",
+      "expected": {
+        "status": "conflicted",
+        "can_finalize": false,
+        "issues": [
+          {
+            "rule_code": "budget.incomplete_category_coverage",
+            "severity": "warning",
+            "responsible_node": "budget",
+            "repair_action": "recalculate_budget"
+          },
+          {
+            "rule_code": "opening_hours.evidence_missing",
+            "severity": "error",
+            "responsible_node": "explore",
+            "repair_action": "rerun_explore"
+          }
+        ]
+      },
+      "boundary_notes": [
+        "没有 Provider 证据不等于全天营业，必须回到候选详情获取证据。"
+      ]
+    },
+    {
+      "case_id": "hard-validator-outside-opening-window-v1",
+      "title": "活动超出已验证营业窗口时只重排当天",
+      "source_plan_case_id": "plan-agent-beijing-history-v1",
+      "opening_evidence": "outside_one",
+      "expected": {
+        "status": "conflicted",
+        "can_finalize": false,
+        "issues": [
+          {
+            "rule_code": "budget.incomplete_category_coverage",
+            "severity": "warning",
+            "responsible_node": "budget",
+            "repair_action": "recalculate_budget"
+          },
+          {
+            "rule_code": "opening_hours.schedule_outside_verified_window",
+            "severity": "error",
+            "responsible_node": "plan",
+            "repair_action": "replan_day"
+          }
+        ]
+      },
+      "boundary_notes": [
+        "营业证据存在但排程越界时不需要重新搜索 POI，只需调整时间。"
+      ]
+    },
+    {
+      "case_id": "hard-validator-candidate-source-lineage-v1",
+      "title": "候选来源与 shortlist 不一致时视为代码血缘错误",
+      "source_plan_case_id": "plan-agent-beijing-history-v1",
+      "plan_mutation": "candidate_source_mismatch",
+      "expected": {
+        "status": "conflicted",
+        "can_finalize": false,
+        "issues": [
+          {
+            "rule_code": "budget.incomplete_category_coverage",
+            "severity": "warning",
+            "responsible_node": "budget",
+            "repair_action": "recalculate_budget"
+          },
+          {
+            "rule_code": "source.candidate_lineage_mismatch",
+            "severity": "error",
+            "responsible_node": "validator",
+            "repair_action": "none"
+          }
+        ]
+      },
+      "boundary_notes": [
+        "Normalizer 改写 Provider 事实属于程序不变量破坏，不能靠 Agent 自动掩盖。"
+      ]
+    },
+    {
+      "case_id": "hard-validator-route-source-lineage-v1",
+      "title": "行程路线与矩阵来源不一致时定向重跑 Route",
+      "source_plan_case_id": "plan-agent-beijing-history-v1",
+      "plan_mutation": "route_source_mismatch",
+      "expected": {
+        "status": "conflicted",
+        "can_finalize": false,
+        "issues": [
+          {
+            "rule_code": "budget.incomplete_category_coverage",
+            "severity": "warning",
+            "responsible_node": "budget",
+            "repair_action": "recalculate_budget"
+          },
+          {
+            "rule_code": "route.lineage_mismatch",
+            "severity": "error",
+            "responsible_node": "route",
+            "repair_action": "rerun_route"
+          }
+        ]
+      },
+      "boundary_notes": [
+        "路线必须精确来自当前矩阵快照，不能仅凭 candidate_id 看起来正确。"
+      ]
+    },
+    {
+      "case_id": "hard-validator-poi-cross-city-v1",
+      "title": "跨城 POI 候选定向重跑 Explore",
+      "source_plan_case_id": "plan-agent-beijing-history-v1",
+      "material_mutation": "poi_cross_city",
+      "expected": {
+        "status": "conflicted",
+        "can_finalize": false,
+        "issues": [
+          {
+            "rule_code": "budget.incomplete_category_coverage",
+            "severity": "warning",
+            "responsible_node": "budget",
+            "repair_action": "recalculate_budget"
+          },
+          {
+            "rule_code": "city.poi_candidate_mismatch",
+            "severity": "error",
+            "responsible_node": "explore",
+            "repair_action": "rerun_explore"
+          }
+        ]
+      },
+      "boundary_notes": [
+        "跨城候选是搜索责任，不应让 Plan Agent 静默删除或改名。"
+      ]
+    },
+    {
+      "case_id": "hard-validator-stay-cross-city-v1",
+      "title": "跨城住宿锚点定向重跑 Stay",
+      "source_plan_case_id": "plan-agent-beijing-history-v1",
+      "material_mutation": "stay_cross_city",
+      "expected": {
+        "status": "conflicted",
+        "can_finalize": false,
+        "issues": [
+          {
+            "rule_code": "budget.incomplete_category_coverage",
+            "severity": "warning",
+            "responsible_node": "budget",
+            "repair_action": "recalculate_budget"
+          },
+          {
+            "rule_code": "city.stay_candidate_mismatch",
+            "severity": "error",
+            "responsible_node": "stay",
+            "repair_action": "rerun_stay"
+          }
+        ]
+      },
+      "boundary_notes": [
+        "住宿锚点跨城时只重跑 Stay，不丢弃已经有效的景点候选。"
+      ]
+    },
+    {
+      "case_id": "hard-validator-hard-budget-incomplete-v1",
+      "title": "硬预算缺少价格事实时禁止定稿",
+      "source_plan_case_id": "plan-agent-beijing-history-v1",
+      "constraint_scenario": "hard_budget",
+      "expected": {
+        "status": "conflicted",
+        "can_finalize": false,
+        "issues": [
+          {
+            "rule_code": "budget.incomplete_category_coverage",
+            "severity": "error",
+            "responsible_node": "budget",
+            "repair_action": "recalculate_budget"
+          }
+        ]
+      },
+      "boundary_notes": [
+        "预算目标 envelope 不是价格；硬预算缺少 CostItem 时不能声称满足。"
+      ]
+    }
+  ]
+}

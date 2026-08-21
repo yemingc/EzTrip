@@ -53,6 +53,8 @@ uv run python -m scripts.export_plan_validation_example
 uv run pytest tests/test_plan_validator.py tests/test_domain_contract_examples.py --no-cov
 ```
 
-## 当前边界
+## 与 Hard Validator 的边界
 
-V1 尚未验证 must/avoid 覆盖、路线可行性、营业时间、天气影响或酒店间夜，也没有 Repair Router。`RECALCULATE_BUDGET`、`REPLAN_DAY`、`RERUN_EXPLORE` 和 `ASK_USER` 目前只是 typed responsibility/repair contract，不表示修复工作流已经执行。
+EZ-103 的基础 Validator 保持稳定，继续服务旧纵向切片和 Plan Agent 草案装配。EZ-303 的 [`hard-validators.md`](./hard-validators.md) 在它之上消费 planning materials 与独立营业时间证据，新增 must/avoid、路线可行性、候选城市/血缘和营业窗口规则。
+
+当前仍没有 Repair Router、天气风险局部修复或酒店间夜价格/库存校验。`RECALCULATE_BUDGET`、`REPLAN_DAY`、`RERUN_EXPLORE`、`RERUN_ROUTE` 和 `ASK_USER` 已是可评测的 typed responsibility/repair contract，但不表示修复工作流已经执行。

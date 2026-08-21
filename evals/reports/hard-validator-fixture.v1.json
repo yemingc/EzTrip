@@ -1,0 +1,842 @@
+{
+  "schema_version": "1.0",
+  "suite": "hard-validator-v1",
+  "validator_version": "hard-trip-plan-validator-v1",
+  "execution_mode": "fixture",
+  "dataset_sha256": "096689291a375deb2a53da0ac9d8b43e7d2cb202b7e60dd557ee25a0146fe611",
+  "case_count": 12,
+  "passed_case_count": 12,
+  "case_pass_rate": "1.0000",
+  "exact_issue_set_case_count": 12,
+  "exact_issue_set_rate": "1.0000",
+  "expected_issue_count": 22,
+  "routing_match_count": 22,
+  "routing_accuracy": "1.0000",
+  "deterministic_replay_case_count": 12,
+  "validator_model_call_count": 0,
+  "results": [
+    {
+      "case_id": "hard-validator-confirmed-must-pass-v1",
+      "passed": true,
+      "expected_status": "warning",
+      "actual_status": "warning",
+      "expected_can_finalize": true,
+      "actual_can_finalize": true,
+      "expected_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        }
+      ],
+      "actual_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        }
+      ],
+      "routing_match_count": 1,
+      "deterministic_replay": true,
+      "validator_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "validator_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_set",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_routing",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "hard-validator-missing-must-v1",
+      "passed": true,
+      "expected_status": "conflicted",
+      "actual_status": "conflicted",
+      "expected_can_finalize": false,
+      "actual_can_finalize": false,
+      "expected_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        },
+        {
+          "rule_code": "constraint.hard_must_visit_missing",
+          "severity": "error",
+          "responsible_node": "explore",
+          "repair_action": "rerun_explore"
+        }
+      ],
+      "actual_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        },
+        {
+          "rule_code": "constraint.hard_must_visit_missing",
+          "severity": "error",
+          "responsible_node": "explore",
+          "repair_action": "rerun_explore"
+        }
+      ],
+      "routing_match_count": 2,
+      "deterministic_replay": true,
+      "validator_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "validator_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_set",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_routing",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "hard-validator-scheduled-avoid-v1",
+      "passed": true,
+      "expected_status": "conflicted",
+      "actual_status": "conflicted",
+      "expected_can_finalize": false,
+      "actual_can_finalize": false,
+      "expected_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        },
+        {
+          "rule_code": "constraint.hard_avoid_scheduled",
+          "severity": "error",
+          "responsible_node": "explore",
+          "repair_action": "rerun_explore"
+        }
+      ],
+      "actual_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        },
+        {
+          "rule_code": "constraint.hard_avoid_scheduled",
+          "severity": "error",
+          "responsible_node": "explore",
+          "repair_action": "rerun_explore"
+        }
+      ],
+      "routing_match_count": 2,
+      "deterministic_replay": true,
+      "validator_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "validator_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_set",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_routing",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "hard-validator-missing-route-v1",
+      "passed": true,
+      "expected_status": "conflicted",
+      "actual_status": "conflicted",
+      "expected_can_finalize": false,
+      "actual_can_finalize": false,
+      "expected_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        },
+        {
+          "rule_code": "route.missing_for_grounded_item",
+          "severity": "error",
+          "responsible_node": "route",
+          "repair_action": "rerun_route"
+        }
+      ],
+      "actual_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        },
+        {
+          "rule_code": "route.missing_for_grounded_item",
+          "severity": "error",
+          "responsible_node": "route",
+          "repair_action": "rerun_route"
+        }
+      ],
+      "routing_match_count": 2,
+      "deterministic_replay": true,
+      "validator_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "validator_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_set",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_routing",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "hard-validator-tight-transfer-v1",
+      "passed": true,
+      "expected_status": "conflicted",
+      "actual_status": "conflicted",
+      "expected_can_finalize": false,
+      "actual_can_finalize": false,
+      "expected_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        },
+        {
+          "rule_code": "route.insufficient_transfer_window",
+          "severity": "error",
+          "responsible_node": "plan",
+          "repair_action": "replan_day"
+        }
+      ],
+      "actual_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        },
+        {
+          "rule_code": "route.insufficient_transfer_window",
+          "severity": "error",
+          "responsible_node": "plan",
+          "repair_action": "replan_day"
+        }
+      ],
+      "routing_match_count": 2,
+      "deterministic_replay": true,
+      "validator_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "validator_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_set",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_routing",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "hard-validator-missing-opening-evidence-v1",
+      "passed": true,
+      "expected_status": "conflicted",
+      "actual_status": "conflicted",
+      "expected_can_finalize": false,
+      "actual_can_finalize": false,
+      "expected_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        },
+        {
+          "rule_code": "opening_hours.evidence_missing",
+          "severity": "error",
+          "responsible_node": "explore",
+          "repair_action": "rerun_explore"
+        }
+      ],
+      "actual_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        },
+        {
+          "rule_code": "opening_hours.evidence_missing",
+          "severity": "error",
+          "responsible_node": "explore",
+          "repair_action": "rerun_explore"
+        }
+      ],
+      "routing_match_count": 2,
+      "deterministic_replay": true,
+      "validator_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "validator_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_set",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_routing",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "hard-validator-outside-opening-window-v1",
+      "passed": true,
+      "expected_status": "conflicted",
+      "actual_status": "conflicted",
+      "expected_can_finalize": false,
+      "actual_can_finalize": false,
+      "expected_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        },
+        {
+          "rule_code": "opening_hours.schedule_outside_verified_window",
+          "severity": "error",
+          "responsible_node": "plan",
+          "repair_action": "replan_day"
+        }
+      ],
+      "actual_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        },
+        {
+          "rule_code": "opening_hours.schedule_outside_verified_window",
+          "severity": "error",
+          "responsible_node": "plan",
+          "repair_action": "replan_day"
+        }
+      ],
+      "routing_match_count": 2,
+      "deterministic_replay": true,
+      "validator_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "validator_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_set",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_routing",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "hard-validator-candidate-source-lineage-v1",
+      "passed": true,
+      "expected_status": "conflicted",
+      "actual_status": "conflicted",
+      "expected_can_finalize": false,
+      "actual_can_finalize": false,
+      "expected_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        },
+        {
+          "rule_code": "source.candidate_lineage_mismatch",
+          "severity": "error",
+          "responsible_node": "validator",
+          "repair_action": "none"
+        }
+      ],
+      "actual_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        },
+        {
+          "rule_code": "source.candidate_lineage_mismatch",
+          "severity": "error",
+          "responsible_node": "validator",
+          "repair_action": "none"
+        }
+      ],
+      "routing_match_count": 2,
+      "deterministic_replay": true,
+      "validator_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "validator_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_set",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_routing",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "hard-validator-route-source-lineage-v1",
+      "passed": true,
+      "expected_status": "conflicted",
+      "actual_status": "conflicted",
+      "expected_can_finalize": false,
+      "actual_can_finalize": false,
+      "expected_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        },
+        {
+          "rule_code": "route.lineage_mismatch",
+          "severity": "error",
+          "responsible_node": "route",
+          "repair_action": "rerun_route"
+        }
+      ],
+      "actual_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        },
+        {
+          "rule_code": "route.lineage_mismatch",
+          "severity": "error",
+          "responsible_node": "route",
+          "repair_action": "rerun_route"
+        }
+      ],
+      "routing_match_count": 2,
+      "deterministic_replay": true,
+      "validator_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "validator_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_set",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_routing",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "hard-validator-poi-cross-city-v1",
+      "passed": true,
+      "expected_status": "conflicted",
+      "actual_status": "conflicted",
+      "expected_can_finalize": false,
+      "actual_can_finalize": false,
+      "expected_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        },
+        {
+          "rule_code": "city.poi_candidate_mismatch",
+          "severity": "error",
+          "responsible_node": "explore",
+          "repair_action": "rerun_explore"
+        }
+      ],
+      "actual_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        },
+        {
+          "rule_code": "city.poi_candidate_mismatch",
+          "severity": "error",
+          "responsible_node": "explore",
+          "repair_action": "rerun_explore"
+        }
+      ],
+      "routing_match_count": 2,
+      "deterministic_replay": true,
+      "validator_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "validator_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_set",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_routing",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "hard-validator-stay-cross-city-v1",
+      "passed": true,
+      "expected_status": "conflicted",
+      "actual_status": "conflicted",
+      "expected_can_finalize": false,
+      "actual_can_finalize": false,
+      "expected_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        },
+        {
+          "rule_code": "city.stay_candidate_mismatch",
+          "severity": "error",
+          "responsible_node": "stay",
+          "repair_action": "rerun_stay"
+        }
+      ],
+      "actual_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "warning",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        },
+        {
+          "rule_code": "city.stay_candidate_mismatch",
+          "severity": "error",
+          "responsible_node": "stay",
+          "repair_action": "rerun_stay"
+        }
+      ],
+      "routing_match_count": 2,
+      "deterministic_replay": true,
+      "validator_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "validator_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_set",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_routing",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "hard-validator-hard-budget-incomplete-v1",
+      "passed": true,
+      "expected_status": "conflicted",
+      "actual_status": "conflicted",
+      "expected_can_finalize": false,
+      "actual_can_finalize": false,
+      "expected_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "error",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        }
+      ],
+      "actual_issues": [
+        {
+          "rule_code": "budget.incomplete_category_coverage",
+          "severity": "error",
+          "responsible_node": "budget",
+          "repair_action": "recalculate_budget"
+        }
+      ],
+      "routing_match_count": 1,
+      "deterministic_replay": true,
+      "validator_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "validator_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_set",
+          "passed": true
+        },
+        {
+          "code": "exact_issue_routing",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "所有 POI、住宿、路线与营业时间均为显式 fixture, 不代表当前实时 Provider 数据。",
+    "营业时间只验证给定窗口与排程的机械关系; 当前高德候选尚未稳定提供该证据。",
+    "must/avoid V1 使用规范化后的精确地点名匹配, 别名消歧仍需上游约束绑定。",
+    "预算沿用 CostItem 事实边界; 缺少价格时硬预算阻断, 软预算只告警。",
+    "本报告验证规则定位与责任路由, Repair Router 尚未执行任何自动修复。"
+  ]
+}

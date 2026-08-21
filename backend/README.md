@@ -1,6 +1,6 @@
 # EzTrip API
 
-Gate 0 FastAPI service plus the first offline Gate 2 vertical slice, recoverable HITL wrapper, specialist fan-out, deterministic planning-material layer, and schema-constrained multi-Agent Plan Agent. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, schema-constrained Constraint/Explore/Stay Agents, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, a SQLite-checkpointed main Graph using native LangGraph interrupt/resume, an independent parallel Explore/Stay/proactive-Weather information-gathering Graph, a bounded route matrix plus auditable budget allocator, and a Plan Agent that consumes those materials into the shared `TripPlan` contract. These components are not yet exposed as a product planning API; hard validators and repair routing remain later stages.
+Gate 0 FastAPI service plus the first offline Gate 2 vertical slice, recoverable HITL wrapper, specialist fan-out, deterministic planning-material layer, schema-constrained multi-Agent Plan Agent, and deterministic Hard Validators. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, schema-constrained Constraint/Explore/Stay Agents, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, a SQLite-checkpointed main Graph using native LangGraph interrupt/resume, an independent parallel Explore/Stay/proactive-Weather information-gathering Graph, a bounded route matrix plus auditable budget allocator, a Plan Agent that consumes those materials into the shared `TripPlan` contract, and a zero-model finalization gate for must/avoid, city, source, route, opening-hours evidence, and hard-budget rules. These components are not yet exposed as a product planning API; repair routing remains a later stage.
 
 ```powershell
 uv sync --all-groups
@@ -105,7 +105,7 @@ uv run pytest tests/test_plan_validator.py --no-cov
 uv run python -m scripts.export_plan_validation_example
 ```
 
-The validator cross-checks request/plan identity, city and dates, duplicate candidates, recommendation source modes, and budget scope. Budget totals are recomputed from `Decimal` `CostItem` values; missing included categories remain incomplete instead of becoming zero-cost assumptions. Hard errors block finalization through typed `ValidationIssue` results. Route feasibility, must/avoid rule coverage, repair routing, and a product-ready itinerary remain later work.
+The base validator cross-checks request/plan identity, city and dates, duplicate candidates, recommendation source modes, and budget scope. Budget totals are recomputed from `Decimal` `CostItem` values; missing included categories remain incomplete instead of becoming zero-cost assumptions. Hard errors block finalization through typed `ValidationIssue` results. The downstream Hard Validator described below adds route feasibility, must/avoid, candidate city/lineage, and opening-hours evidence; repair routing and a product-ready itinerary remain later work.
 
 Run the complete offline Beijing three-day Gate 2 vertical slice:
 
@@ -157,7 +157,17 @@ uv run python -m scripts.run_plan_agent_eval --live
 uv run pytest tests/test_plan_agent.py tests/test_plan_agent_evaluation.py --no-cov
 ```
 
-The Plan Agent makes one schema-constrained placement call only for ready material bundles, while deterministic code preserves candidate facts, sources, route edges, weather risks, complete dates, IDs, and validation lineage. The committed fixture and DeepSeek reports both record 6/6 cases, 12/12 grounded and route-backed scheduled candidates, and two zero-model-call stops. Budget allocations remain targets rather than verified prices, so the Plan Agent emits no fabricated `CostItem`; opening-hours and must/avoid hard checks plus repair routing remain later work.
+The Plan Agent makes one schema-constrained placement call only for ready material bundles, while deterministic code preserves candidate facts, sources, route edges, weather risks, complete dates, IDs, and validation lineage. The committed fixture and DeepSeek reports both record 6/6 cases, 12/12 grounded and route-backed scheduled candidates, and two zero-model-call stops. Budget allocations remain targets rather than verified prices, so the Plan Agent emits no fabricated `CostItem`. Its isolated baseline does not evaluate finalization rules; the downstream Hard Validator does.
+
+Run the deterministic Hard Validator regression:
+
+```powershell
+uv run python -m scripts.export_hard_validator_schemas
+uv run python -m scripts.run_hard_validator_eval
+uv run pytest tests/test_hard_validator.py tests/test_hard_validator_evaluation.py --no-cov
+```
+
+The Hard Validator requires a grounded Plan draft, its exact planning-material bundle, and a separate provider-backed opening-hours evidence bundle. It checks confirmed hard must/avoid rules, shortlist/source lineage, POI and stay city, route presence/endpoints/matrix lineage, transfer windows, opening-hours coverage, and the existing hard-budget assessment without any LLM call. The committed fixture report records 12/12 cases, 22/22 exact issue routings, and 12/12 deterministic replays. This proves rule and responsibility contracts over fixtures, not live opening-hours accuracy or successful automatic repair.
 
 Run the live observability probe only after configuring the local root `.env`:
 
