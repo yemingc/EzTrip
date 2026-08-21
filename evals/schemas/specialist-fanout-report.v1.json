@@ -1,0 +1,434 @@
+{
+  "$defs": {
+    "EvaluationCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Code",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "passed"
+      ],
+      "title": "EvaluationCheck",
+      "type": "object"
+    },
+    "SpecialistFanoutCaseResult": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "expected_status": {
+          "$ref": "#/$defs/SpecialistFanoutStatus"
+        },
+        "actual_status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SpecialistFanoutStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "expected_branch_count": {
+          "const": 3,
+          "default": 3,
+          "title": "Expected Branch Count",
+          "type": "integer"
+        },
+        "actual_branch_count": {
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Actual Branch Count",
+          "type": "integer"
+        },
+        "branch_status_match_count": {
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Branch Status Match Count",
+          "type": "integer"
+        },
+        "exact_ordered_merge": {
+          "title": "Exact Ordered Merge",
+          "type": "boolean"
+        },
+        "typed_provider_failure_count": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Typed Provider Failure Count",
+          "type": "integer"
+        },
+        "preserved_success_count": {
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Preserved Success Count",
+          "type": "integer"
+        },
+        "proactive_weather_call_count": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Proactive Weather Call Count",
+          "type": "integer"
+        },
+        "model_call_count": {
+          "maximum": 4,
+          "minimum": 0,
+          "title": "Model Call Count",
+          "type": "integer"
+        },
+        "provider_call_count": {
+          "maximum": 9,
+          "minimum": 0,
+          "title": "Provider Call Count",
+          "type": "integer"
+        },
+        "usage_call_count": {
+          "maximum": 4,
+          "minimum": 0,
+          "title": "Usage Call Count",
+          "type": "integer"
+        },
+        "prompt_tokens": {
+          "minimum": 0,
+          "title": "Prompt Tokens",
+          "type": "integer"
+        },
+        "completion_tokens": {
+          "minimum": 0,
+          "title": "Completion Tokens",
+          "type": "integer"
+        },
+        "total_tokens": {
+          "minimum": 0,
+          "title": "Total Tokens",
+          "type": "integer"
+        },
+        "parallel_provider_peak": {
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Parallel Provider Peak",
+          "type": "integer"
+        },
+        "source_traceability_passed": {
+          "title": "Source Traceability Passed",
+          "type": "boolean"
+        },
+        "fanout_latency_ms": {
+          "minimum": 0,
+          "title": "Fanout Latency Ms",
+          "type": "integer"
+        },
+        "branch_latency_sum_ms": {
+          "minimum": 0,
+          "title": "Branch Latency Sum Ms",
+          "type": "integer"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/EvaluationCheck"
+          },
+          "minItems": 1,
+          "title": "Checks",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "expected_status",
+        "passed",
+        "actual_branch_count",
+        "branch_status_match_count",
+        "exact_ordered_merge",
+        "typed_provider_failure_count",
+        "preserved_success_count",
+        "proactive_weather_call_count",
+        "model_call_count",
+        "provider_call_count",
+        "usage_call_count",
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+        "parallel_provider_peak",
+        "source_traceability_passed",
+        "fanout_latency_ms",
+        "branch_latency_sum_ms",
+        "checks"
+      ],
+      "title": "SpecialistFanoutCaseResult",
+      "type": "object"
+    },
+    "SpecialistFanoutStatus": {
+      "enum": [
+        "complete",
+        "partial",
+        "blocked",
+        "failed"
+      ],
+      "title": "SpecialistFanoutStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "suite": {
+      "const": "specialist-fanout-v1",
+      "default": "specialist-fanout-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "workflow_version": {
+      "const": "specialist-fanout-v1",
+      "default": "specialist-fanout-v1",
+      "title": "Workflow Version",
+      "type": "string"
+    },
+    "execution_mode": {
+      "enum": [
+        "fixture",
+        "live"
+      ],
+      "title": "Execution Mode",
+      "type": "string"
+    },
+    "explore_model": {
+      "minLength": 1,
+      "title": "Explore Model",
+      "type": "string"
+    },
+    "stay_model": {
+      "minLength": 1,
+      "title": "Stay Model",
+      "type": "string"
+    },
+    "dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Dataset Sha256",
+      "type": "string"
+    },
+    "case_count": {
+      "const": 5,
+      "default": 5,
+      "title": "Case Count",
+      "type": "integer"
+    },
+    "passed_case_count": {
+      "maximum": 5,
+      "minimum": 0,
+      "title": "Passed Case Count",
+      "type": "integer"
+    },
+    "case_pass_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Case Pass Rate"
+    },
+    "branch_expectation_count": {
+      "const": 15,
+      "default": 15,
+      "title": "Branch Expectation Count",
+      "type": "integer"
+    },
+    "branch_status_match_count": {
+      "maximum": 15,
+      "minimum": 0,
+      "title": "Branch Status Match Count",
+      "type": "integer"
+    },
+    "branch_status_accuracy": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Branch Status Accuracy"
+    },
+    "exact_ordered_merge_case_count": {
+      "maximum": 5,
+      "minimum": 0,
+      "title": "Exact Ordered Merge Case Count",
+      "type": "integer"
+    },
+    "typed_provider_failure_count": {
+      "maximum": 2,
+      "minimum": 0,
+      "title": "Typed Provider Failure Count",
+      "type": "integer"
+    },
+    "preserved_success_count": {
+      "maximum": 4,
+      "minimum": 0,
+      "title": "Preserved Success Count",
+      "type": "integer"
+    },
+    "proactive_weather_call_count": {
+      "maximum": 4,
+      "minimum": 0,
+      "title": "Proactive Weather Call Count",
+      "type": "integer"
+    },
+    "blocked_zero_call_case_count": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Blocked Zero Call Case Count",
+      "type": "integer"
+    },
+    "parallel_provider_entry_case_count": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Parallel Provider Entry Case Count",
+      "type": "integer"
+    },
+    "source_traceability_case_count": {
+      "maximum": 4,
+      "minimum": 0,
+      "title": "Source Traceability Case Count",
+      "type": "integer"
+    },
+    "model_call_count": {
+      "maximum": 20,
+      "minimum": 0,
+      "title": "Model Call Count",
+      "type": "integer"
+    },
+    "provider_call_count": {
+      "maximum": 45,
+      "minimum": 0,
+      "title": "Provider Call Count",
+      "type": "integer"
+    },
+    "usage_call_count": {
+      "maximum": 20,
+      "minimum": 0,
+      "title": "Usage Call Count",
+      "type": "integer"
+    },
+    "total_prompt_tokens": {
+      "minimum": 0,
+      "title": "Total Prompt Tokens",
+      "type": "integer"
+    },
+    "total_completion_tokens": {
+      "minimum": 0,
+      "title": "Total Completion Tokens",
+      "type": "integer"
+    },
+    "total_tokens": {
+      "minimum": 0,
+      "title": "Total Tokens",
+      "type": "integer"
+    },
+    "p50_fanout_latency_ms": {
+      "minimum": 0,
+      "title": "P50 Fanout Latency Ms",
+      "type": "integer"
+    },
+    "p95_fanout_latency_ms": {
+      "minimum": 0,
+      "title": "P95 Fanout Latency Ms",
+      "type": "integer"
+    },
+    "results": {
+      "items": {
+        "$ref": "#/$defs/SpecialistFanoutCaseResult"
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "title": "Results",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Limitations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "execution_mode",
+    "explore_model",
+    "stay_model",
+    "dataset_sha256",
+    "passed_case_count",
+    "case_pass_rate",
+    "branch_status_match_count",
+    "branch_status_accuracy",
+    "exact_ordered_merge_case_count",
+    "typed_provider_failure_count",
+    "preserved_success_count",
+    "proactive_weather_call_count",
+    "blocked_zero_call_case_count",
+    "parallel_provider_entry_case_count",
+    "source_traceability_case_count",
+    "model_call_count",
+    "provider_call_count",
+    "usage_call_count",
+    "total_prompt_tokens",
+    "total_completion_tokens",
+    "total_tokens",
+    "p50_fanout_latency_ms",
+    "p95_fanout_latency_ms",
+    "results",
+    "limitations"
+  ],
+  "title": "SpecialistFanoutBaselineReport",
+  "type": "object"
+}

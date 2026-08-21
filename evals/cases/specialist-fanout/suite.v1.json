@@ -1,0 +1,234 @@
+{
+  "suite": "specialist-fanout-v1",
+  "version": 1,
+  "data_mode": "fixture",
+  "cases": [
+    {
+      "case_id": "specialist-fanout-complete-v1",
+      "title": "三专业分支并行完成并无覆盖合并",
+      "request": {
+        "request_id": "specialist_fanout_complete_request",
+        "raw_text": "两位成年人去北京三天，想住在东城区或前门附近，偏好历史文化和轻步行。",
+        "destination_city": "北京市",
+        "start_date": "2026-10-02",
+        "end_date": "2026-10-04",
+        "party": { "adults": 2, "rooms": 1 },
+        "travel_styles": ["历史文化", "轻步行"],
+        "constraints": {
+          "items": [
+            {
+              "constraint_id": "fanout_complete_area",
+              "kind": "accommodation",
+              "value": "东城区或前门附近",
+              "strength": "soft",
+              "priority": 5,
+              "source": "user_explicit",
+              "confirmed": true
+            },
+            {
+              "constraint_id": "fanout_complete_walking",
+              "kind": "walking_intensity",
+              "value": "low",
+              "strength": "soft",
+              "priority": 4,
+              "source": "user_explicit",
+              "confirmed": true
+            }
+          ]
+        }
+      },
+      "explore_fixture_case_id": "explore-beijing-history-v1",
+      "stay_fixture_case_id": "stay-beijing-history-low-walking-v1",
+      "expected": {
+        "status": "complete",
+        "branches": [
+          { "specialist": "explore", "status": "succeeded" },
+          { "specialist": "stay", "status": "succeeded" },
+          { "specialist": "weather", "status": "succeeded" }
+        ],
+        "require_parallel_provider_entry": true
+      },
+      "boundary_notes": [
+        "请求没有天气提示词；天气分支应由系统主动触发。",
+        "三个分支必须各保留一个有序结果，不能覆盖同一状态字段。"
+      ]
+    },
+    {
+      "case_id": "specialist-fanout-explore-timeout-v1",
+      "title": "景点 Provider 超时但住宿与天气保留",
+      "request": {
+        "request_id": "specialist_fanout_explore_timeout_request",
+        "raw_text": "两位成年人去北京三天，想住在东城区或前门附近，偏好历史文化和轻步行。",
+        "destination_city": "北京市",
+        "start_date": "2026-10-02",
+        "end_date": "2026-10-04",
+        "party": { "adults": 2, "rooms": 1 },
+        "travel_styles": ["历史文化", "轻步行"],
+        "constraints": {
+          "items": [
+            {
+              "constraint_id": "fanout_explore_timeout_area",
+              "kind": "accommodation",
+              "value": "东城区或前门附近",
+              "strength": "soft",
+              "priority": 5,
+              "source": "user_explicit",
+              "confirmed": true
+            },
+            {
+              "constraint_id": "fanout_explore_timeout_walking",
+              "kind": "walking_intensity",
+              "value": "low",
+              "strength": "soft",
+              "priority": 4,
+              "source": "user_explicit",
+              "confirmed": true
+            }
+          ]
+        }
+      },
+      "explore_fixture_case_id": "explore-beijing-history-v1",
+      "stay_fixture_case_id": "stay-beijing-history-low-walking-v1",
+      "injected_provider_failure": "explore",
+      "expected": {
+        "status": "partial",
+        "branches": [
+          {
+            "specialist": "explore",
+            "status": "failed",
+            "provider_failure_category": "timeout"
+          },
+          { "specialist": "stay", "status": "succeeded" },
+          { "specialist": "weather", "status": "succeeded" }
+        ]
+      },
+      "boundary_notes": [
+        "超时必须保留为可重试的类型化 Provider 失败。",
+        "失败分支不能抹掉住宿与天气结果。"
+      ]
+    },
+    {
+      "case_id": "specialist-fanout-missing-rooms-v1",
+      "title": "缺少房间数时仅跳过住宿分支",
+      "request": {
+        "request_id": "specialist_fanout_missing_rooms_request",
+        "raw_text": "两位成年人去北京三天，包含酒店的总预算是3500元，但还没确定订几间房。",
+        "destination_city": "北京市",
+        "start_date": "2026-10-19",
+        "end_date": "2026-10-21",
+        "party": { "adults": 2 },
+        "budget": {
+          "total_limit": "3500.00",
+          "included_categories": ["lodging", "transport", "food", "admission", "activity"]
+        }
+      },
+      "explore_fixture_case_id": "explore-beijing-history-v1",
+      "stay_fixture_case_id": "stay-beijing-history-low-walking-v1",
+      "expected": {
+        "status": "partial",
+        "branches": [
+          { "specialist": "explore", "status": "succeeded" },
+          { "specialist": "stay", "status": "skipped" },
+          { "specialist": "weather", "status": "succeeded" }
+        ]
+      },
+      "boundary_notes": [
+        "缺少住宿预算归一化所需的房间数，不应调用 Stay 模型或 Provider。",
+        "Explore 与主动天气查询仍可独立完成。"
+      ]
+    },
+    {
+      "case_id": "specialist-fanout-weather-timeout-v1",
+      "title": "天气 Provider 超时但景点与住宿保留",
+      "request": {
+        "request_id": "specialist_fanout_weather_timeout_request",
+        "raw_text": "两位成年人去北京三天，想住在东城区或前门附近，偏好历史文化和轻步行。",
+        "destination_city": "北京市",
+        "start_date": "2026-10-02",
+        "end_date": "2026-10-04",
+        "party": { "adults": 2, "rooms": 1 },
+        "travel_styles": ["历史文化", "轻步行"],
+        "constraints": {
+          "items": [
+            {
+              "constraint_id": "fanout_weather_timeout_area",
+              "kind": "accommodation",
+              "value": "东城区或前门附近",
+              "strength": "soft",
+              "priority": 5,
+              "source": "user_explicit",
+              "confirmed": true
+            },
+            {
+              "constraint_id": "fanout_weather_timeout_walking",
+              "kind": "walking_intensity",
+              "value": "low",
+              "strength": "soft",
+              "priority": 4,
+              "source": "user_explicit",
+              "confirmed": true
+            }
+          ]
+        }
+      },
+      "explore_fixture_case_id": "explore-beijing-history-v1",
+      "stay_fixture_case_id": "stay-beijing-history-low-walking-v1",
+      "injected_provider_failure": "weather",
+      "expected": {
+        "status": "partial",
+        "branches": [
+          { "specialist": "explore", "status": "succeeded" },
+          { "specialist": "stay", "status": "succeeded" },
+          {
+            "specialist": "weather",
+            "status": "failed",
+            "provider_failure_category": "timeout"
+          }
+        ]
+      },
+      "boundary_notes": [
+        "天气是零模型调用的确定性工具分支。",
+        "天气失败不能伪造成无风险，也不能删除景点与住宿结果。"
+      ]
+    },
+    {
+      "case_id": "specialist-fanout-unsupported-city-v1",
+      "title": "不支持的城市在依赖调用前阻断全部分支",
+      "request": {
+        "request_id": "specialist_fanout_unsupported_city_request",
+        "raw_text": "两位成年人去南京两天，想住在中心城区。",
+        "destination_city": "南京市",
+        "start_date": "2026-10-17",
+        "end_date": "2026-10-18",
+        "party": { "adults": 2, "rooms": 1 },
+        "constraints": {
+          "items": [
+            {
+              "constraint_id": "fanout_unsupported_city_area",
+              "kind": "accommodation",
+              "value": "中心城区",
+              "strength": "soft",
+              "priority": 4,
+              "source": "user_explicit",
+              "confirmed": true
+            }
+          ]
+        }
+      },
+      "explore_fixture_case_id": "explore-beijing-history-v1",
+      "stay_fixture_case_id": "stay-beijing-history-low-walking-v1",
+      "expected": {
+        "status": "blocked",
+        "branches": [
+          { "specialist": "explore", "status": "skipped" },
+          { "specialist": "stay", "status": "skipped" },
+          { "specialist": "weather", "status": "skipped" }
+        ]
+      },
+      "boundary_notes": [
+        "V1 城市目录不支持南京，应在模型和 Provider 调用前完成能力路由。",
+        "阻断结果不得携带伪造的推荐或天气数据。"
+      ]
+    }
+  ]
+}

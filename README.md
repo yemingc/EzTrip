@@ -2,7 +2,7 @@
 
 面向中国城市自由行的可验证、可调整、可追溯旅行规划助手。
 
-当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、开放式景点/餐饮 Explore Agent、住宿区域筛选 Stay Agent、确定性预算/基础计划 Validator、北京三日 Gate 2 最小纵向切片，以及基于 SQLite checkpoint 的可恢复主编排与原生 HITL。四条模型路径都有真实 DeepSeek/LangSmith 隔离评测；纵向切片和恢复评测使用固定模型提案与 fixture 来证明可重放组件闭环，仓库尚未实现多 Agent 并行工作流、前端人工审核或产品规划 API。
+当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、开放式景点/餐饮 Explore Agent、住宿区域筛选 Stay Agent、确定性预算/基础计划 Validator、北京三日 Gate 2 最小纵向切片、基于 SQLite checkpoint 的可恢复主编排与原生 HITL，以及 Explore/Stay/主动天气三分支并行编排。模型路径都有真实 DeepSeek/LangSmith 隔离评测；纵向切片、恢复和 fan-out 评测使用 fixture 来建立可重放证据。仓库尚未把专业信息包合成为完整多 Agent `TripPlan`，也未实现前端人工审核或产品规划 API。
 
 ## 技术基线
 
@@ -179,7 +179,7 @@ uv run pytest tests/test_explore_agent.py tests/test_explore_agent_evaluation.py
 uv run python -m scripts.run_explore_agent_eval --live
 ```
 
-候选目录是显式 fixture，且该 6-case 套件用于提示词开发后回归，不是未触碰 holdout；这些指标不能写成实时推荐准确率或泛化能力。Explore Agent 当前仍是隔离子图，尚未与 Stay/Weather 并行接入可恢复主编排。
+候选目录是显式 fixture，且该 6-case 套件用于提示词开发后回归，不是未触碰 holdout；这些指标不能写成实时推荐准确率或泛化能力。Explore Agent 已进入独立 specialist fan-out，但尚未接入最终 `TripPlan` 的路线、预算与排程阶段。
 
 ## Stay Agent
 
@@ -193,7 +193,7 @@ uv run pytest tests/test_stay_agent.py tests/test_stay_agent_evaluation.py --no-
 uv run python -m scripts.run_stay_agent_eval --live
 ```
 
-Stay Agent 不提供酒店价格或预订：高德住宿 POI 只用于候选位置/区域，输出价格字段为空、availability 为 `unknown`、booking 为 `false`。评测使用显式 fixture 目录并属于开发集回归，不是 OTA 数据质量、实时可订性或推荐准确率。Stay Agent 当前仍是隔离子图，EZ-204 才会接入 Explore/Stay/Weather 并行编排。
+Stay Agent 不提供酒店价格或预订：高德住宿 POI 只用于候选位置/区域，输出价格字段为空、availability 为 `unknown`、booking 为 `false`。评测使用显式 fixture 目录并属于开发集回归，不是 OTA 数据质量、实时可订性或推荐准确率。Stay Agent 已进入独立 specialist fan-out，但尚未接入最终 `TripPlan` 的路线、预算与排程阶段。
 
 ## 确定性预算与基础计划校验
 
@@ -233,6 +233,21 @@ uv run pytest tests/test_stateful_planning.py --no-cov
 
 提交报告为 2/2 cases、20/20 checks、2/2 runtime reconstructions，恢复阶段 provider/model 调用均为 0。正常案例只能批准为 `approved_draft`；预算硬冲突不允许批准，只能显式确认冲突、请求修改或取消。SQLite 目前是本地恢复证据，不是生产级并发、高可用或加密方案；检查点仍含结构化用户数据。
 
+## Specialist 并行 fan-out
+
+[`docs/planning/specialist-fanout.md`](docs/planning/specialist-fanout.md) 实现 `compile_context → [Explore Agent, Stay Agent, Weather tool] → merge_specialists`。三个分支各写一个 reducer 累积结果，merge 强制恰好一个有序结果；单分支超时转换为 typed partial failure，其他结果不会被覆盖。天气是主动 Provider 查询而非额外 LLM Agent，eligible 请求无需包含天气提示词。
+
+[`docs/evaluation/specialist-fanout-baseline.md`](docs/evaluation/specialist-fanout-baseline.md) 冻结 5 条 complete/partial/blocked 案例。2026-08-21 的 DeepSeek/LangSmith 点时报告为 5/5 cases、15/15 分支状态、2/2 类型化 Provider 故障、4/4 非故障分支保留；13 次模型调用都有 usage 记录，共 18857 tokens，fan-out p50/p95 为 7044/8984 ms。
+
+```powershell
+Set-Location backend
+uv run pytest tests/test_specialist_fanout.py tests/test_specialist_fanout_eval.py --no-cov
+uv run python -m scripts.run_specialist_fanout_eval
+uv run python -m scripts.run_specialist_fanout_eval --live
+```
+
+离线与 live 评测都使用显式 fixture Provider；`--live` 只把 Explore/Stay 模型替换为 DeepSeek 并上传 LangSmith trace。这证明并发、合并、降级、成本记录与恢复契约，不证明实时高德效果或多 Agent 已提升最终行程质量。
+
 ## AMap live contract probe
 
 [`docs/probes/amap-mcp-live-probe-2026-08-20.md`](docs/probes/amap-mcp-live-probe-2026-08-20.md) 记录一次固定北京真实探针：官方 MCP 当前发现 15 个工具，并验证 POI、天气、距离、步行和公交响应；版本化 fixture 只保留字段白名单并执行凭据/PII 脱敏。CI 回放 fixture，不读取 Key 或访问高德。
@@ -270,6 +285,6 @@ uv run python -m scripts.run_amap_provider_smoke --live
 - 不提供订票、订房、支付或实时房价；
 - 当前健康页不是旅行规划产品完成度；
 - 当前三节点探针只证明观测链路可接入，不证明模型规划质量；
-- 当前领域契约、PlannerContext 编译器、provider adapter、Single Planner 和 Validator 已在 Gate 2 fixture 纵向切片及可恢复 HITL 主编排中连通；Constraint、Explore 与 Stay Agent 仍是隔离子图，固定 Planner 提案不代表模型质量，多 Agent 并行协作仍未实现；
+- 当前领域契约、PlannerContext 编译器、provider adapter、Single Planner 和 Validator 已在 Gate 2 fixture 纵向切片及可恢复 HITL 主编排中连通；Explore、Stay 与主动 Weather 已在独立 fan-out 中并行，但该专业信息包尚未进入路线、预算和最终排程，Constraint Agent 也尚未接入产品入口；
 - 高德 live fixture 是 2026-08-20 的点时样本，不是当前天气、实时酒店价格或生产 SLA；
 - 后续功能必须通过真实 provider contract、固定评测和可回放 trace 验证后再写入项目成果。
