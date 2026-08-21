@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import TypeVar
 
 from app.core.config import Settings
-from app.domain.candidates import ActivityEnvironment, CandidatePOI, GeoPoint
+from app.domain.candidates import ActivityEnvironment, CandidatePOI, CandidateStay, GeoPoint
 from app.domain.provider import ProviderErrorCategory
 from app.domain.sources import DataMode, SourceReference
 from app.domain.travel_data import (
@@ -34,6 +34,7 @@ from app.providers.ports import (
     RetryPolicy,
     RouteRequest,
     Sleep,
+    StaySearchRequest,
     WeatherRiskRequest,
 )
 
@@ -44,6 +45,7 @@ DEFAULT_RETRY_POLICY = RetryPolicy()
 
 INDOOR_TERMS = ("博物馆", "美术馆", "科技馆", "展览馆", "室内", "剧院", "影院")
 OUTDOOR_TERMS = ("公园", "风景名胜", "世界遗产", "山", "湖", "古迹", "广场")
+HOTEL_TERMS = ("住宿服务", "宾馆酒店", "酒店", "旅馆", "公寓式酒店")
 
 
 def _provider_error(
@@ -405,6 +407,7 @@ class AmapTravelDataProvider:
                     candidate_id=f"amap-poi-{provider_id.casefold()}",
                     name=name,
                     city=city,
+                    district=_optional_text(detail_payload.get("district")),
                     address=_optional_text(detail_payload.get("address")),
                     location=_parse_location(
                         detail_payload.get("location"),
@@ -423,6 +426,43 @@ class AmapTravelDataProvider:
                 )
             )
         return tuple(candidates)
+
+    async def search_stays(self, request: StaySearchRequest) -> tuple[CandidateStay, ...]:
+        pois = await self.search_pois(
+            POISearchRequest(
+                keywords=request.keywords,
+                city_adcode=request.city_adcode,
+                limit=request.limit,
+            )
+        )
+        stays: list[CandidateStay] = []
+        for poi in pois:
+            classification_text = " ".join((poi.name, *poi.categories))
+            if not any(term in classification_text for term in HOTEL_TERMS):
+                continue
+            provider_id = poi.source.provider_id
+            assert provider_id is not None
+            category_tags = tuple(f"category:{item}" for item in poi.categories)
+            stays.append(
+                CandidateStay(
+                    candidate_id=f"amap-stay-{provider_id.casefold()}",
+                    name=poi.name,
+                    city=poi.city,
+                    district=poi.district,
+                    address=poi.address,
+                    location=poi.location,
+                    area_name=poi.district or poi.city,
+                    tags=category_tags,
+                    source=poi.source,
+                )
+            )
+        if not stays:
+            raise _provider_error(
+                "search_stays",
+                ProviderErrorCategory.EMPTY_RESULT,
+                "POI search returned no hotel-classified candidates",
+            )
+        return tuple(stays)
 
     async def get_weather_risks(
         self,

@@ -12,7 +12,13 @@ from app.providers.amap_adapter import AmapTravelDataProvider, load_fixture_amap
 from app.providers.amap_clients import AmapFixtureToolClient
 from app.providers.amap_protocol import build_amap_failure
 from app.providers.errors import ProviderRequestError
-from app.providers.ports import POISearchRequest, RetryPolicy, RouteRequest, WeatherRiskRequest
+from app.providers.ports import (
+    POISearchRequest,
+    RetryPolicy,
+    RouteRequest,
+    StaySearchRequest,
+    WeatherRiskRequest,
+)
 
 FIXED_LIVE_TIME = datetime(2026, 8, 20, 9, 0, tzinfo=UTC)
 
@@ -34,6 +40,74 @@ class ReplayAsLiveClient:
         return await self._fixture.fetch_weather_freshness(city_adcode)
 
 
+class SyntheticHotelClient:
+    captured_at: datetime | None = FIXED_LIVE_TIME
+
+    def __init__(self, *, include_hotels: bool = True) -> None:
+        hotel_type = "住宿服务;宾馆酒店" if include_hotels else "餐饮服务;中餐厅"
+        first_name = "前门示例酒店" if include_hotels else "前门示例餐厅"
+        second_name = "西单示例旅馆" if include_hotels else "西单示例茶馆"
+        self.details: dict[str, dict[str, object]] = {
+            "HOTEL001": {
+                "id": "HOTEL001",
+                "name": first_name,
+                "city": "北京",
+                "district": "东城区",
+                "address": "前门示例路 1 号",
+                "location": "116.397000,39.899000",
+                "type": hotel_type,
+                "rating": "4.7",
+            },
+            "FOOD001": {
+                "id": "FOOD001",
+                "name": "示例餐厅",
+                "city": "北京",
+                "district": "东城区",
+                "address": "东城示例路 2 号",
+                "location": "116.399000,39.901000",
+                "type": "餐饮服务;中餐厅",
+            },
+            "HOTEL002": {
+                "id": "HOTEL002",
+                "name": second_name,
+                "city": "北京",
+                "district": "西城区",
+                "address": "西单示例路 3 号",
+                "location": "116.374000,39.908000",
+                "type": hotel_type,
+                "level": "经济型",
+            },
+        }
+
+    async def call_tool(
+        self,
+        operation: str,
+        arguments: dict[str, Any],
+    ) -> dict[str, object]:
+        del arguments
+        if operation == "maps_text_search":
+            return {"pois": [{"id": provider_id} for provider_id in self.details]}
+        if operation == "maps_search_detail":
+            raise AssertionError("detail calls require the provider id argument")
+        raise AssertionError(f"unexpected operation: {operation}")
+
+    async def fetch_weather_freshness(self, city_adcode: str) -> dict[str, object]:
+        raise AssertionError(f"unexpected weather freshness request: {city_adcode}")
+
+
+class SyntheticHotelDetailClient(SyntheticHotelClient):
+    async def call_tool(
+        self,
+        operation: str,
+        arguments: dict[str, Any],
+    ) -> dict[str, object]:
+        if operation == "maps_text_search":
+            return {"pois": [{"id": provider_id} for provider_id in self.details]}
+        if operation == "maps_search_detail":
+            return self.details[str(arguments["id"])]
+        raise AssertionError(f"unexpected operation: {operation}")
+
+
 def make_provider(mode: DataMode) -> AmapTravelDataProvider:
     if mode == DataMode.FIXTURE:
         return load_fixture_amap_provider()
@@ -42,6 +116,51 @@ def make_provider(mode: DataMode) -> AmapTravelDataProvider:
         data_mode=DataMode.LIVE,
         clock=lambda: FIXED_LIVE_TIME,
     )
+
+
+def test_stay_search_filters_hotel_pois_without_inventing_commercial_facts() -> None:
+    provider = AmapTravelDataProvider(
+        SyntheticHotelDetailClient(),
+        data_mode=DataMode.FIXTURE,
+    )
+
+    stays = asyncio.run(
+        provider.search_stays(
+            StaySearchRequest(keywords="北京中心住宿", city_adcode="110000", limit=3)
+        )
+    )
+
+    assert [item.candidate_id for item in stays] == [
+        "amap-stay-hotel001",
+        "amap-stay-hotel002",
+    ]
+    assert [item.area_name for item in stays] == ["东城区", "西城区"]
+    assert "category:住宿服务" in stays[0].tags
+    assert all(not tag.startswith(("rating:", "level:")) for tag in stays[0].tags)
+    assert stays[0].nightly_price_estimate is None
+    assert stays[0].price_basis is None
+    assert stays[0].price_source is None
+    assert stays[0].availability_status == "unknown"
+    assert stays[0].booking_supported is False
+    assert stays[0].source.provider_id == "HOTEL001"
+    assert stays[0].source.data_mode == DataMode.FIXTURE
+
+
+def test_stay_search_returns_typed_empty_result_when_no_poi_is_hotel_classified() -> None:
+    provider = AmapTravelDataProvider(
+        SyntheticHotelDetailClient(include_hotels=False),
+        data_mode=DataMode.FIXTURE,
+    )
+
+    with pytest.raises(ProviderRequestError) as error:
+        asyncio.run(
+            provider.search_stays(
+                StaySearchRequest(keywords="北京中心住宿", city_adcode="110000", limit=3)
+            )
+        )
+
+    assert error.value.failure.category == ProviderErrorCategory.EMPTY_RESULT
+    assert error.value.failure.retryable is False
 
 
 async def collect_contract_outputs(

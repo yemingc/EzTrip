@@ -1,0 +1,469 @@
+{
+  "schema_version": "1.0",
+  "suite": "stay-agent-v1",
+  "agent_version": "stay-agent-v1",
+  "query_prompt_version": "stay-query-strategy-v1",
+  "selection_prompt_version": "stay-candidate-selection-v1",
+  "execution_mode": "live",
+  "model": "deepseek-v4-pro",
+  "dataset_sha256": "9d57f2064f8881679b247a4c3170fe2554f933988645a375e2b604e963671181",
+  "case_count": 6,
+  "recommendation_case_count": 4,
+  "blocked_case_count": 2,
+  "passed_case_count": 6,
+  "case_pass_rate": "1.0000",
+  "model_call_count": 8,
+  "provider_call_count": 12,
+  "required_context_ref_count": 13,
+  "matched_context_ref_count": 13,
+  "context_reference_coverage_rate": "1.0000",
+  "recommendation_count": 8,
+  "grounded_recommendation_count": 8,
+  "grounding_rate": "1.0000",
+  "traceable_recommendation_count": 8,
+  "source_traceability_rate": "1.0000",
+  "allowed_recommendation_count": 8,
+  "labelled_relevance_rate": "1.0000",
+  "required_recommendation_group_count": 4,
+  "matched_recommendation_group_count": 4,
+  "recommendation_group_coverage_rate": "1.0000",
+  "unverified_price_field_count": 0,
+  "unknown_availability_count": 8,
+  "booking_disabled_count": 8,
+  "commercial_truth_boundary_passed": true,
+  "usage_call_count": 8,
+  "total_prompt_tokens": 10140,
+  "total_completion_tokens": 2181,
+  "total_tokens": 12321,
+  "p50_case_latency_ms": 7755,
+  "p95_case_latency_ms": 8184,
+  "results": [
+    {
+      "case_id": "stay-beijing-history-low-walking-v1",
+      "expected_outcome": "recommendations",
+      "passed": true,
+      "model_call_count": 2,
+      "provider_call_count": 3,
+      "query_count": 3,
+      "required_context_ref_count": 3,
+      "matched_context_ref_count": 3,
+      "recommendation_count": 2,
+      "grounded_recommendation_count": 2,
+      "traceable_recommendation_count": 2,
+      "allowed_recommendation_count": 2,
+      "required_recommendation_group_count": 1,
+      "matched_recommendation_group_count": 1,
+      "unverified_price_field_count": 0,
+      "unknown_availability_count": 2,
+      "booking_disabled_count": 2,
+      "query_latency_ms": 4262,
+      "selection_latency_ms": 3456,
+      "query_usage": {
+        "prompt_tokens": 969,
+        "completion_tokens": 266,
+        "total_tokens": 1235
+      },
+      "selection_usage": {
+        "prompt_tokens": 1572,
+        "completion_tokens": 256,
+        "total_tokens": 1828
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "stay_protocol_succeeded",
+          "passed": true
+        },
+        {
+          "code": "stay_capability_ready",
+          "passed": true
+        },
+        {
+          "code": "request_and_context_match",
+          "passed": true
+        },
+        {
+          "code": "context_reference_coverage",
+          "passed": true
+        },
+        {
+          "code": "provider_calls_match_queries",
+          "passed": true
+        },
+        {
+          "code": "candidate_grounding",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "labelled_relevance",
+          "passed": true
+        },
+        {
+          "code": "recommendation_group_coverage",
+          "passed": true
+        },
+        {
+          "code": "no_unverified_price_fields",
+          "passed": true
+        },
+        {
+          "code": "availability_remains_unknown",
+          "passed": true
+        },
+        {
+          "code": "booking_remains_disabled",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "stay-shanghai-bund-city-view-v1",
+      "expected_outcome": "recommendations",
+      "passed": true,
+      "model_call_count": 2,
+      "provider_call_count": 3,
+      "query_count": 3,
+      "required_context_ref_count": 2,
+      "matched_context_ref_count": 2,
+      "recommendation_count": 2,
+      "grounded_recommendation_count": 2,
+      "traceable_recommendation_count": 2,
+      "allowed_recommendation_count": 2,
+      "required_recommendation_group_count": 1,
+      "matched_recommendation_group_count": 1,
+      "unverified_price_field_count": 0,
+      "unknown_availability_count": 2,
+      "booking_disabled_count": 2,
+      "query_latency_ms": 3820,
+      "selection_latency_ms": 3935,
+      "query_usage": {
+        "prompt_tokens": 912,
+        "completion_tokens": 239,
+        "total_tokens": 1151
+      },
+      "selection_usage": {
+        "prompt_tokens": 1503,
+        "completion_tokens": 286,
+        "total_tokens": 1789
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "stay_protocol_succeeded",
+          "passed": true
+        },
+        {
+          "code": "stay_capability_ready",
+          "passed": true
+        },
+        {
+          "code": "request_and_context_match",
+          "passed": true
+        },
+        {
+          "code": "context_reference_coverage",
+          "passed": true
+        },
+        {
+          "code": "provider_calls_match_queries",
+          "passed": true
+        },
+        {
+          "code": "candidate_grounding",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "labelled_relevance",
+          "passed": true
+        },
+        {
+          "code": "recommendation_group_coverage",
+          "passed": true
+        },
+        {
+          "code": "no_unverified_price_fields",
+          "passed": true
+        },
+        {
+          "code": "availability_remains_unknown",
+          "passed": true
+        },
+        {
+          "code": "booking_remains_disabled",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "stay-chengdu-family-panda-v1",
+      "expected_outcome": "recommendations",
+      "passed": true,
+      "model_call_count": 2,
+      "provider_call_count": 3,
+      "query_count": 3,
+      "required_context_ref_count": 4,
+      "matched_context_ref_count": 4,
+      "recommendation_count": 2,
+      "grounded_recommendation_count": 2,
+      "traceable_recommendation_count": 2,
+      "allowed_recommendation_count": 2,
+      "required_recommendation_group_count": 1,
+      "matched_recommendation_group_count": 1,
+      "unverified_price_field_count": 0,
+      "unknown_availability_count": 2,
+      "booking_disabled_count": 2,
+      "query_latency_ms": 4329,
+      "selection_latency_ms": 3701,
+      "query_usage": {
+        "prompt_tokens": 974,
+        "completion_tokens": 259,
+        "total_tokens": 1233
+      },
+      "selection_usage": {
+        "prompt_tokens": 1563,
+        "completion_tokens": 282,
+        "total_tokens": 1845
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "stay_protocol_succeeded",
+          "passed": true
+        },
+        {
+          "code": "stay_capability_ready",
+          "passed": true
+        },
+        {
+          "code": "request_and_context_match",
+          "passed": true
+        },
+        {
+          "code": "context_reference_coverage",
+          "passed": true
+        },
+        {
+          "code": "provider_calls_match_queries",
+          "passed": true
+        },
+        {
+          "code": "candidate_grounding",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "labelled_relevance",
+          "passed": true
+        },
+        {
+          "code": "recommendation_group_coverage",
+          "passed": true
+        },
+        {
+          "code": "no_unverified_price_fields",
+          "passed": true
+        },
+        {
+          "code": "availability_remains_unknown",
+          "passed": true
+        },
+        {
+          "code": "booking_remains_disabled",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "stay-beijing-senior-accessible-v1",
+      "expected_outcome": "recommendations",
+      "passed": true,
+      "model_call_count": 2,
+      "provider_call_count": 3,
+      "query_count": 3,
+      "required_context_ref_count": 4,
+      "matched_context_ref_count": 4,
+      "recommendation_count": 2,
+      "grounded_recommendation_count": 2,
+      "traceable_recommendation_count": 2,
+      "allowed_recommendation_count": 2,
+      "required_recommendation_group_count": 1,
+      "matched_recommendation_group_count": 1,
+      "unverified_price_field_count": 0,
+      "unknown_availability_count": 2,
+      "booking_disabled_count": 2,
+      "query_latency_ms": 4443,
+      "selection_latency_ms": 3741,
+      "query_usage": {
+        "prompt_tokens": 1017,
+        "completion_tokens": 300,
+        "total_tokens": 1317
+      },
+      "selection_usage": {
+        "prompt_tokens": 1630,
+        "completion_tokens": 293,
+        "total_tokens": 1923
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "stay_protocol_succeeded",
+          "passed": true
+        },
+        {
+          "code": "stay_capability_ready",
+          "passed": true
+        },
+        {
+          "code": "request_and_context_match",
+          "passed": true
+        },
+        {
+          "code": "context_reference_coverage",
+          "passed": true
+        },
+        {
+          "code": "provider_calls_match_queries",
+          "passed": true
+        },
+        {
+          "code": "candidate_grounding",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "labelled_relevance",
+          "passed": true
+        },
+        {
+          "code": "recommendation_group_coverage",
+          "passed": true
+        },
+        {
+          "code": "no_unverified_price_fields",
+          "passed": true
+        },
+        {
+          "code": "availability_remains_unknown",
+          "passed": true
+        },
+        {
+          "code": "booking_remains_disabled",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "stay-blocked-missing-rooms-v1",
+      "expected_outcome": "blocked",
+      "passed": true,
+      "model_call_count": 0,
+      "provider_call_count": 0,
+      "query_count": 0,
+      "required_context_ref_count": 0,
+      "matched_context_ref_count": 0,
+      "recommendation_count": 0,
+      "grounded_recommendation_count": 0,
+      "traceable_recommendation_count": 0,
+      "allowed_recommendation_count": 0,
+      "required_recommendation_group_count": 0,
+      "matched_recommendation_group_count": 0,
+      "unverified_price_field_count": 0,
+      "unknown_availability_count": 0,
+      "booking_disabled_count": 0,
+      "query_latency_ms": 0,
+      "selection_latency_ms": 0,
+      "query_usage": null,
+      "selection_usage": null,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "stay_capability_blocked",
+          "passed": true
+        },
+        {
+          "code": "expected_clarification_present",
+          "passed": true
+        },
+        {
+          "code": "model_call_skipped",
+          "passed": true
+        },
+        {
+          "code": "provider_call_skipped",
+          "passed": true
+        },
+        {
+          "code": "no_fabricated_recommendations",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "stay-blocked-unsupported-nanjing-v1",
+      "expected_outcome": "blocked",
+      "passed": true,
+      "model_call_count": 0,
+      "provider_call_count": 0,
+      "query_count": 0,
+      "required_context_ref_count": 0,
+      "matched_context_ref_count": 0,
+      "recommendation_count": 0,
+      "grounded_recommendation_count": 0,
+      "traceable_recommendation_count": 0,
+      "allowed_recommendation_count": 0,
+      "required_recommendation_group_count": 0,
+      "matched_recommendation_group_count": 0,
+      "unverified_price_field_count": 0,
+      "unknown_availability_count": 0,
+      "booking_disabled_count": 0,
+      "query_latency_ms": 0,
+      "selection_latency_ms": 0,
+      "query_usage": null,
+      "selection_usage": null,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "stay_capability_blocked",
+          "passed": true
+        },
+        {
+          "code": "expected_clarification_present",
+          "passed": true
+        },
+        {
+          "code": "model_call_skipped",
+          "passed": true
+        },
+        {
+          "code": "provider_call_skipped",
+          "passed": true
+        },
+        {
+          "code": "no_fabricated_recommendations",
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "四条可执行案例使用显式 fixture 住宿目录, 不评估实时高德搜索覆盖率或数据新鲜度。",
+    "两条阻断案例在评测路由层跳过 Agent, 分别验证缺少房间数和目的地不受支持。",
+    "高德住宿 POI 不是 OTA 房价或库存; 本报告不评估价格、房型、评分、设施或可订性。",
+    "人工标签只判断区域和已表达偏好的相关性, 不代表住宿质量或用户满意度。",
+    "该开发集可用于提示词回归, 不应解释为未见数据上的泛化准确率。"
+  ]
+}

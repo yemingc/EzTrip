@@ -5,11 +5,17 @@ from typing import Protocol
 from pydantic import Field
 
 from app.domain.base import DomainModel, NonEmptyText
-from app.domain.candidates import CandidatePOI
+from app.domain.candidates import CandidatePOI, CandidateStay
 from app.domain.travel_data import RouteEndpoint, RouteLeg, RouteMode, WeatherRisk
 
 
 class POISearchRequest(DomainModel):
+    keywords: NonEmptyText
+    city_adcode: str = Field(pattern=r"^\d{6}$")
+    limit: int = Field(default=1, ge=1, le=3)
+
+
+class StaySearchRequest(DomainModel):
     keywords: NonEmptyText
     city_adcode: str = Field(pattern=r"^\d{6}$")
     limit: int = Field(default=1, ge=1, le=3)
@@ -49,9 +55,15 @@ class RetryPolicy:
 Sleep = Callable[[float], Awaitable[None]]
 
 
-class TravelDataProvider(Protocol):
+class POISearchProvider(Protocol):
     async def search_pois(self, request: POISearchRequest) -> tuple[CandidatePOI, ...]: ...
 
+
+class StaySearchProvider(Protocol):
+    async def search_stays(self, request: StaySearchRequest) -> tuple[CandidateStay, ...]: ...
+
+
+class TravelDataProvider(POISearchProvider, Protocol):
     async def get_weather_risks(
         self,
         request: WeatherRiskRequest,

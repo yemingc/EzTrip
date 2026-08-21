@@ -1,0 +1,175 @@
+{
+  "suite": "stay-agent-v1",
+  "version": 1,
+  "data_mode": "fixture",
+  "cases": [
+    {
+      "case_id": "stay-beijing-history-low-walking-v1",
+      "title": "北京历史文化与轻步行住宿区域",
+      "request": {
+        "request_id": "stay_request_beijing_history_low_walking",
+        "raw_text": "两位成年人去北京三天，想住在东城区或前门附近，偏好历史文化和轻步行。",
+        "destination_city": "北京市",
+        "start_date": "2026-10-02",
+        "end_date": "2026-10-04",
+        "party": {"adults": 2, "rooms": 1},
+        "travel_styles": ["历史文化", "轻步行"],
+        "constraints": {"items": [
+          {"constraint_id": "stay_bj_area_dongcheng", "kind": "accommodation", "value": "东城区或前门附近", "strength": "soft", "priority": 5, "source": "user_explicit", "confirmed": true},
+          {"constraint_id": "stay_bj_walking_low", "kind": "walking_intensity", "value": "low", "strength": "soft", "priority": 4, "source": "user_explicit", "confirmed": true}
+        ]}
+      },
+      "provider_candidates": [
+        {"candidate_id": "fixture-stay-beijing-qianmen", "provider_id": "STAY-BJ-QIANMEN", "name": "前门示例住宿A", "city": "北京市", "district": "东城区", "address": "前门示例路1号", "location": {"latitude": 39.8992, "longitude": 116.3976}, "area_name": "前门片区", "tags": ["历史文化区", "category:住宿服务"], "data_mode": "fixture"},
+        {"candidate_id": "fixture-stay-beijing-wangfujing", "provider_id": "STAY-BJ-WANGFUJING", "name": "王府井示例住宿B", "city": "北京市", "district": "东城区", "address": "王府井示例路2号", "location": {"latitude": 39.9144, "longitude": 116.4122}, "area_name": "王府井片区", "tags": ["东城区", "category:住宿服务"], "data_mode": "fixture"},
+        {"candidate_id": "fixture-stay-beijing-tongzhou", "provider_id": "STAY-BJ-TONGZHOU", "name": "通州示例住宿C", "city": "北京市", "district": "通州区", "location": {"latitude": 39.9021, "longitude": 116.6570}, "area_name": "通州片区", "tags": ["远离中心城区", "category:住宿服务"], "data_mode": "fixture"}
+      ],
+      "expected": {
+        "outcome": "recommendations",
+        "required_context_refs": ["constraint:stay_bj_area_dongcheng", "constraint:stay_bj_walking_low", "travel_style:历史文化"],
+        "allowed_recommendation_ids": ["fixture-stay-beijing-qianmen", "fixture-stay-beijing-wangfujing"],
+        "forbidden_recommendation_ids": ["fixture-stay-beijing-tongzhou"],
+        "required_recommendation_groups": [["fixture-stay-beijing-qianmen", "fixture-stay-beijing-wangfujing"]]
+      },
+      "boundary_notes": ["区域和标签为评测 fixture；不包含真实房价、库存、评分或设施。"]
+    },
+    {
+      "case_id": "stay-shanghai-bund-city-view-v1",
+      "title": "上海外滩城市风光住宿区域",
+      "request": {
+        "request_id": "stay_request_shanghai_bund_city_view",
+        "raw_text": "两位成年人去上海两天，想住在黄浦区靠近外滩，偏好城市风光。",
+        "destination_city": "上海市",
+        "start_date": "2026-10-10",
+        "end_date": "2026-10-11",
+        "party": {"adults": 2, "rooms": 1},
+        "travel_styles": ["城市风光"],
+        "constraints": {"items": [
+          {"constraint_id": "stay_sh_area_bund", "kind": "accommodation", "value": "黄浦区靠近外滩", "strength": "soft", "priority": 5, "source": "user_explicit", "confirmed": true}
+        ]}
+      },
+      "provider_candidates": [
+        {"candidate_id": "fixture-stay-shanghai-bund", "provider_id": "STAY-SH-BUND", "name": "外滩示例住宿A", "city": "上海市", "district": "黄浦区", "address": "中山东一路示例1号", "location": {"latitude": 31.2401, "longitude": 121.4901}, "area_name": "外滩片区", "tags": ["城市风光", "category:住宿服务"], "data_mode": "fixture"},
+        {"candidate_id": "fixture-stay-shanghai-nanjing-road", "provider_id": "STAY-SH-NANJING-ROAD", "name": "南京东路示例住宿B", "city": "上海市", "district": "黄浦区", "address": "南京东路示例2号", "location": {"latitude": 31.2352, "longitude": 121.4750}, "area_name": "南京东路片区", "tags": ["黄浦区", "category:住宿服务"], "data_mode": "fixture"},
+        {"candidate_id": "fixture-stay-shanghai-disney", "provider_id": "STAY-SH-DISNEY", "name": "川沙示例住宿C", "city": "上海市", "district": "浦东新区", "location": {"latitude": 31.1450, "longitude": 121.6600}, "area_name": "川沙片区", "tags": ["远离外滩", "category:住宿服务"], "data_mode": "fixture"}
+      ],
+      "expected": {
+        "outcome": "recommendations",
+        "required_context_refs": ["constraint:stay_sh_area_bund", "travel_style:城市风光"],
+        "allowed_recommendation_ids": ["fixture-stay-shanghai-bund", "fixture-stay-shanghai-nanjing-road"],
+        "forbidden_recommendation_ids": ["fixture-stay-shanghai-disney"],
+        "required_recommendation_groups": [["fixture-stay-shanghai-bund", "fixture-stay-shanghai-nanjing-road"]]
+      },
+      "boundary_notes": ["靠近外滩仅来自人工区域标签，不声明房间景观或步行时间。"]
+    },
+    {
+      "case_id": "stay-chengdu-family-panda-v1",
+      "title": "成都亲子熊猫行程住宿区域",
+      "request": {
+        "request_id": "stay_request_chengdu_family_panda",
+        "raw_text": "两位成年人带一名儿童去成都三天，必须去熊猫基地，想住在成华区附近。",
+        "destination_city": "成都市",
+        "start_date": "2026-10-20",
+        "end_date": "2026-10-22",
+        "party": {"adults": 2, "children": 1, "rooms": 1},
+        "travel_styles": ["亲子", "动物"],
+        "constraints": {"items": [
+          {"constraint_id": "stay_cd_must_panda", "kind": "must_visit", "value": "成都大熊猫繁育研究基地", "strength": "hard", "priority": 5, "source": "user_explicit", "confirmed": true},
+          {"constraint_id": "stay_cd_area_chenghua", "kind": "accommodation", "value": "成华区附近", "strength": "soft", "priority": 5, "source": "user_explicit", "confirmed": true}
+        ]}
+      },
+      "provider_candidates": [
+        {"candidate_id": "fixture-stay-chengdu-chenghua", "provider_id": "STAY-CD-CHENGHUA", "name": "成华示例住宿A", "city": "成都市", "district": "成华区", "address": "熊猫大道示例1号", "location": {"latitude": 30.7350, "longitude": 104.1420}, "area_name": "熊猫基地周边", "tags": ["成华区", "亲子行程区域", "category:住宿服务"], "data_mode": "fixture"},
+        {"candidate_id": "fixture-stay-chengdu-jianshe-road", "provider_id": "STAY-CD-JIANSHE", "name": "建设路示例住宿B", "city": "成都市", "district": "成华区", "address": "建设路示例2号", "location": {"latitude": 30.6720, "longitude": 104.1050}, "area_name": "建设路片区", "tags": ["成华区", "category:住宿服务"], "data_mode": "fixture"},
+        {"candidate_id": "fixture-stay-chengdu-tianfu", "provider_id": "STAY-CD-TIANFU", "name": "天府新区示例住宿C", "city": "成都市", "district": "双流区", "location": {"latitude": 30.4500, "longitude": 104.0700}, "area_name": "天府新区", "tags": ["远离熊猫基地", "category:住宿服务"], "data_mode": "fixture"}
+      ],
+      "expected": {
+        "outcome": "recommendations",
+        "required_context_refs": ["constraint:stay_cd_must_panda", "constraint:stay_cd_area_chenghua", "party:children", "travel_style:亲子"],
+        "allowed_recommendation_ids": ["fixture-stay-chengdu-chenghua", "fixture-stay-chengdu-jianshe-road"],
+        "forbidden_recommendation_ids": ["fixture-stay-chengdu-tianfu"],
+        "required_recommendation_groups": [["fixture-stay-chengdu-chenghua", "fixture-stay-chengdu-jianshe-road"]]
+      },
+      "boundary_notes": ["亲子行程区域是人工相关性标签，不代表酒店提供儿童设施。"]
+    },
+    {
+      "case_id": "stay-beijing-senior-accessible-v1",
+      "title": "北京老人同行与低步行住宿区域",
+      "request": {
+        "request_id": "stay_request_beijing_senior_accessible",
+        "raw_text": "一位成年人带一位老人去北京三天，想住中心城区，尽量少走路并方便乘公共交通。",
+        "destination_city": "北京市",
+        "start_date": "2026-10-25",
+        "end_date": "2026-10-27",
+        "party": {"adults": 1, "seniors": 1, "rooms": 1},
+        "travel_styles": ["轻步行", "公共交通"],
+        "constraints": {"items": [
+          {"constraint_id": "stay_bj_senior_center", "kind": "accommodation", "value": "中心城区", "strength": "soft", "priority": 5, "source": "user_explicit", "confirmed": true},
+          {"constraint_id": "stay_bj_senior_walking", "kind": "walking_intensity", "value": "low", "strength": "hard", "priority": 5, "source": "user_explicit", "confirmed": true},
+          {"constraint_id": "stay_bj_senior_transit", "kind": "transport_mode", "value": "public_transit", "strength": "soft", "priority": 4, "source": "user_explicit", "confirmed": true}
+        ]}
+      },
+      "provider_candidates": [
+        {"candidate_id": "fixture-stay-beijing-xidan", "provider_id": "STAY-BJ-XIDAN", "name": "西单示例住宿A", "city": "北京市", "district": "西城区", "address": "西单示例路1号", "location": {"latitude": 39.9078, "longitude": 116.3740}, "area_name": "西单片区", "tags": ["中心城区", "公共交通区域", "category:住宿服务"], "data_mode": "fixture"},
+        {"candidate_id": "fixture-stay-beijing-dongdan", "provider_id": "STAY-BJ-DONGDAN", "name": "东单示例住宿B", "city": "北京市", "district": "东城区", "address": "东单示例路2号", "location": {"latitude": 39.9080, "longitude": 116.4180}, "area_name": "东单片区", "tags": ["中心城区", "公共交通区域", "category:住宿服务"], "data_mode": "fixture"},
+        {"candidate_id": "fixture-stay-beijing-huairou", "provider_id": "STAY-BJ-HUAIROU", "name": "怀柔示例住宿C", "city": "北京市", "district": "怀柔区", "location": {"latitude": 40.3160, "longitude": 116.6310}, "area_name": "怀柔片区", "tags": ["远离中心城区", "category:住宿服务"], "data_mode": "fixture"}
+      ],
+      "expected": {
+        "outcome": "recommendations",
+        "required_context_refs": ["constraint:stay_bj_senior_center", "constraint:stay_bj_senior_walking", "constraint:stay_bj_senior_transit", "party:seniors"],
+        "allowed_recommendation_ids": ["fixture-stay-beijing-xidan", "fixture-stay-beijing-dongdan"],
+        "forbidden_recommendation_ids": ["fixture-stay-beijing-huairou"],
+        "required_recommendation_groups": [["fixture-stay-beijing-xidan", "fixture-stay-beijing-dongdan"]]
+      },
+      "boundary_notes": ["公共交通区域标签不等于已验证的车站距离或酒店无障碍设施。"]
+    },
+    {
+      "case_id": "stay-blocked-missing-rooms-v1",
+      "title": "住宿计入预算但房间数缺失",
+      "request": {
+        "request_id": "stay_request_blocked_missing_rooms",
+        "raw_text": "两位成年人去北京三天，包含酒店的总预算是3500元，但还没确定订几间房。",
+        "destination_city": "北京市",
+        "start_date": "2026-10-19",
+        "end_date": "2026-10-21",
+        "party": {"adults": 2},
+        "budget": {"total_limit": "3500.00", "included_categories": ["lodging", "transport", "food", "admission", "activity"]}
+      },
+      "provider_candidates": [],
+      "expected": {
+        "outcome": "blocked",
+        "required_context_refs": [],
+        "allowed_recommendation_ids": [],
+        "forbidden_recommendation_ids": [],
+        "required_recommendation_groups": [],
+        "expected_clarification_kind": "missing_rooms"
+      },
+      "boundary_notes": ["评测路由必须在模型和 Provider 调用前停止 Stay Agent。"]
+    },
+    {
+      "case_id": "stay-blocked-unsupported-nanjing-v1",
+      "title": "V1 未配置南京时阻断住宿搜索",
+      "request": {
+        "request_id": "stay_request_blocked_unsupported_nanjing",
+        "raw_text": "两位成年人去南京两天，想住在中心城区。",
+        "destination_city": "南京市",
+        "start_date": "2026-10-17",
+        "end_date": "2026-10-18",
+        "party": {"adults": 2, "rooms": 1},
+        "constraints": {"items": [
+          {"constraint_id": "stay_nj_center", "kind": "accommodation", "value": "中心城区", "strength": "soft", "priority": 4, "source": "user_explicit", "confirmed": true}
+        ]}
+      },
+      "provider_candidates": [],
+      "expected": {
+        "outcome": "blocked",
+        "required_context_refs": [],
+        "allowed_recommendation_ids": [],
+        "forbidden_recommendation_ids": [],
+        "required_recommendation_groups": [],
+        "expected_clarification_kind": "unsupported_destination"
+      },
+      "boundary_notes": ["未配置仅表示 EzTrip V1 能力边界，不代表高德不支持南京。"]
+    }
+  ]
+}

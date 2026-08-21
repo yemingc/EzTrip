@@ -1,6 +1,6 @@
 # EzTrip API
 
-Gate 0 FastAPI service plus the first offline Gate 2 vertical slice and recoverable HITL wrapper. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, the first three-node planning Graph, isolated schema-constrained Constraint and Explore Agents, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, and a SQLite-checkpointed main Graph using native LangGraph interrupt/resume. These components are not yet exposed as a product planning API and never auto-finalize the Gate 2 draft.
+Gate 0 FastAPI service plus the first offline Gate 2 vertical slice and recoverable HITL wrapper. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, the first three-node planning Graph, isolated schema-constrained Constraint, Explore and Stay Agents, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, and a SQLite-checkpointed main Graph using native LangGraph interrupt/resume. These components are not yet exposed as a product planning API and never auto-finalize the Gate 2 draft.
 
 ```powershell
 uv sync --all-groups
@@ -23,6 +23,7 @@ uv run python -m scripts.export_domain_schemas
 uv run python -m scripts.export_constraint_agent_schemas
 uv run python -m scripts.export_single_planner_schema
 uv run python -m scripts.export_explore_agent_schemas
+uv run python -m scripts.export_stay_agent_schemas
 uv run python -m scripts.export_checkpoint_hitl_schemas
 uv run python -m scripts.export_plan_validation_example
 uv run python -m scripts.export_planner_context_example
@@ -84,6 +85,15 @@ uv run python -m scripts.run_explore_agent_eval --live
 ```
 
 The four-node subgraph asks the model for attraction/dining search strategies, calls only the injected POI provider, then asks the model to rank provider candidate IDs with typed evidence. Deterministic code owns IDs, facts, source lineage, deduplication and evidence validation. The six-case live report is a prompt-development regression result over fixture catalogs, not a real-time recommendation-accuracy or holdout score, and the subgraph is not yet connected to the stateful main orchestration.
+
+Run the Stay Agent tests offline or explicitly refresh its live development-set baseline:
+
+```powershell
+uv run pytest tests/test_stay_agent.py tests/test_stay_agent_evaluation.py --no-cov
+uv run python -m scripts.run_stay_agent_eval --live
+```
+
+The four-node subgraph asks the model for accommodation-area search strategies, calls only the injected `StaySearchProvider`, then ranks Provider candidate IDs with typed evidence. Code owns candidate facts and rejects blocked contexts before model/Provider calls. The typed AMap adapter converts only hotel-classified POIs and leaves price empty, availability unknown and booking disabled. The six-case fixture-catalog report is a development regression result, not evidence of real-time hotel price, availability or recommendation quality; the subgraph is not yet connected to the stateful main orchestration.
 
 Run the deterministic plan validator and regenerate its committed example:
 
