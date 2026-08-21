@@ -2992,6 +2992,529 @@
       "title": "SinglePlannerAgentResult",
       "type": "object"
     },
+    "BudgetValidationSummary": {
+      "$defs": {
+        "BudgetAssessmentStatus": {
+          "enum": [
+            "not_requested",
+            "within_limit",
+            "possible_overrun",
+            "exceeded",
+            "incomplete"
+          ],
+          "title": "BudgetAssessmentStatus",
+          "type": "string"
+        },
+        "BudgetCategory": {
+          "enum": [
+            "lodging",
+            "transport",
+            "food",
+            "admission",
+            "activity",
+            "other"
+          ],
+          "title": "BudgetCategory",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/BudgetAssessmentStatus"
+        },
+        "currency": {
+          "const": "CNY",
+          "default": "CNY",
+          "title": "Currency",
+          "type": "string"
+        },
+        "total_limit": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total Limit"
+        },
+        "included_categories": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/BudgetCategory"
+          },
+          "title": "Included Categories",
+          "type": "array"
+        },
+        "missing_categories": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/BudgetCategory"
+          },
+          "title": "Missing Categories",
+          "type": "array"
+        },
+        "considered_cost_item_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Considered Cost Item Ids",
+          "type": "array"
+        },
+        "excluded_cost_item_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Excluded Cost Item Ids",
+          "type": "array"
+        },
+        "total_minimum": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+              "type": "string"
+            }
+          ],
+          "title": "Total Minimum"
+        },
+        "total_maximum": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+              "type": "string"
+            }
+          ],
+          "title": "Total Maximum"
+        },
+        "minimum_gap": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+              "type": "string"
+            }
+          ],
+          "title": "Minimum Gap"
+        },
+        "maximum_gap": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+              "type": "string"
+            }
+          ],
+          "title": "Maximum Gap"
+        }
+      },
+      "required": [
+        "status",
+        "total_minimum",
+        "total_maximum",
+        "minimum_gap",
+        "maximum_gap"
+      ],
+      "title": "BudgetValidationSummary",
+      "type": "object"
+    },
+    "PlanValidationReport": {
+      "$defs": {
+        "BudgetAssessmentStatus": {
+          "enum": [
+            "not_requested",
+            "within_limit",
+            "possible_overrun",
+            "exceeded",
+            "incomplete"
+          ],
+          "title": "BudgetAssessmentStatus",
+          "type": "string"
+        },
+        "BudgetCategory": {
+          "enum": [
+            "lodging",
+            "transport",
+            "food",
+            "admission",
+            "activity",
+            "other"
+          ],
+          "title": "BudgetCategory",
+          "type": "string"
+        },
+        "BudgetValidationSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/BudgetAssessmentStatus"
+            },
+            "currency": {
+              "const": "CNY",
+              "default": "CNY",
+              "title": "Currency",
+              "type": "string"
+            },
+            "total_limit": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Total Limit"
+            },
+            "included_categories": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/BudgetCategory"
+              },
+              "title": "Included Categories",
+              "type": "array"
+            },
+            "missing_categories": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/BudgetCategory"
+              },
+              "title": "Missing Categories",
+              "type": "array"
+            },
+            "considered_cost_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Considered Cost Item Ids",
+              "type": "array"
+            },
+            "excluded_cost_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Excluded Cost Item Ids",
+              "type": "array"
+            },
+            "total_minimum": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Total Minimum"
+            },
+            "total_maximum": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Total Maximum"
+            },
+            "minimum_gap": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Minimum Gap"
+            },
+            "maximum_gap": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Maximum Gap"
+            }
+          },
+          "required": [
+            "status",
+            "total_minimum",
+            "total_maximum",
+            "minimum_gap",
+            "maximum_gap"
+          ],
+          "title": "BudgetValidationSummary",
+          "type": "object"
+        },
+        "IssueSeverity": {
+          "enum": [
+            "warning",
+            "error"
+          ],
+          "title": "IssueSeverity",
+          "type": "string"
+        },
+        "PlanValidationStatus": {
+          "enum": [
+            "passed",
+            "warning",
+            "conflicted"
+          ],
+          "title": "PlanValidationStatus",
+          "type": "string"
+        },
+        "RepairAction": {
+          "enum": [
+            "none",
+            "rerun_constraint",
+            "rerun_explore",
+            "rerun_stay",
+            "rerun_route",
+            "replan_day",
+            "recalculate_budget",
+            "ask_user"
+          ],
+          "title": "RepairAction",
+          "type": "string"
+        },
+        "ResponsibleNode": {
+          "enum": [
+            "constraint",
+            "explore",
+            "stay",
+            "weather",
+            "route",
+            "plan",
+            "budget",
+            "validator"
+          ],
+          "title": "ResponsibleNode",
+          "type": "string"
+        },
+        "ValidationEvidence": {
+          "additionalProperties": false,
+          "properties": {
+            "field_path": {
+              "minLength": 1,
+              "title": "Field Path",
+              "type": "string"
+            },
+            "description": {
+              "minLength": 1,
+              "title": "Description",
+              "type": "string"
+            },
+            "observed_value": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Observed Value"
+            }
+          },
+          "required": [
+            "field_path",
+            "description"
+          ],
+          "title": "ValidationEvidence",
+          "type": "object"
+        },
+        "ValidationIssue": {
+          "additionalProperties": false,
+          "properties": {
+            "issue_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Issue Id",
+              "type": "string"
+            },
+            "rule_code": {
+              "minLength": 1,
+              "title": "Rule Code",
+              "type": "string"
+            },
+            "severity": {
+              "$ref": "#/$defs/IssueSeverity"
+            },
+            "message": {
+              "minLength": 1,
+              "title": "Message",
+              "type": "string"
+            },
+            "evidence": {
+              "items": {
+                "$ref": "#/$defs/ValidationEvidence"
+              },
+              "title": "Evidence",
+              "type": "array"
+            },
+            "responsible_node": {
+              "$ref": "#/$defs/ResponsibleNode"
+            },
+            "repairable": {
+              "title": "Repairable",
+              "type": "boolean"
+            },
+            "repair_action": {
+              "$ref": "#/$defs/RepairAction"
+            },
+            "requires_user_confirmation": {
+              "default": false,
+              "title": "Requires User Confirmation",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "issue_id",
+            "rule_code",
+            "severity",
+            "message",
+            "evidence",
+            "responsible_node",
+            "repairable",
+            "repair_action"
+          ],
+          "title": "ValidationIssue",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "validator_version": {
+          "const": "deterministic-plan-validator-v1",
+          "default": "deterministic-plan-validator-v1",
+          "title": "Validator Version",
+          "type": "string"
+        },
+        "request_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "plan_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Plan Id",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/PlanValidationStatus"
+        },
+        "can_finalize": {
+          "title": "Can Finalize",
+          "type": "boolean"
+        },
+        "budget": {
+          "$ref": "#/$defs/BudgetValidationSummary"
+        },
+        "issues": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ValidationIssue"
+          },
+          "title": "Issues",
+          "type": "array"
+        },
+        "passed_rule_codes": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Passed Rule Codes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "request_id",
+        "plan_id",
+        "status",
+        "can_finalize",
+        "budget"
+      ],
+      "title": "PlanValidationReport",
+      "type": "object"
+    },
     "Party": {
       "additionalProperties": false,
       "properties": {

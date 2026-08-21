@@ -2,7 +2,7 @@
 
 面向中国城市自由行的可验证、可调整、可追溯旅行规划助手。
 
-当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent，以及受 provider 候选约束的单 Planner 基线。两个 Agent 都有真实 DeepSeek/LangSmith 评测，但仍是隔离子图；仓库尚未实现多 Agent 完整工作流、产品规划 API 或完整逐日行程。
+当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线，以及确定性预算/基础计划 Validator。两个 Agent 都有真实 DeepSeek/LangSmith 评测，但仍是隔离子图；仓库尚未实现多 Agent 完整工作流、产品规划 API 或完整逐日行程。
 
 ## 技术基线
 
@@ -165,7 +165,21 @@ uv run pytest tests/test_single_planner.py tests/test_single_planner_evaluation.
 uv run python -m scripts.run_single_planner_eval --live
 ```
 
-这些指标验证候选 grounding、停止路由和契约，不是行程质量分数。当前每条成功案例只有一个 fixture 必去候选，也没有营业时间、路线、天气、酒店或预算校验，因此输出不能称为完整旅行计划。
+这些指标验证候选 grounding、停止路由和契约，不是行程质量分数。该单 Planner 基线每条成功案例只有一个 fixture 必去候选，且自身没有营业时间、路线、天气、酒店或预算输入，因此输出不能称为完整旅行计划；预算与基础冲突由下一节的独立确定性 Validator 处理。
+
+## 确定性预算与基础计划校验
+
+[`docs/planning/deterministic-plan-validator.md`](docs/planning/deterministic-plan-validator.md) 实现普通代码 `validate_trip_plan(request, plan)`。它跨 `TripRequest` 与 `TripPlan` 检查请求 ID、目的地和日期一致性、重复 candidate ID、推荐来源模式，并用 `Decimal` 重新汇总预算范围内的 `CostItem`。
+
+Validator 会区分费用下界已超预算、区间上界可能超支和预算类别缺失。缺失类别不会被静默当作 0 元；硬预算错误返回 typed `ValidationIssue` 并阻止 finalization，软预算超支返回 warning。没有预算的请求可以继续，但不会获得预算满足保证。
+
+```powershell
+Set-Location backend
+uv run pytest tests/test_plan_validator.py --no-cov
+uv run python -m scripts.export_plan_validation_example
+```
+
+提交的示例故意只含门票 `CostItem`，而请求预算还包含交通、餐饮和活动，因此报告稳定返回 `budget.incomplete_category_coverage`。这证明系统不会因为已知费用低于 3000 元就误称预算满足。
 
 ## AMap live contract probe
 
@@ -204,6 +218,6 @@ uv run python -m scripts.run_amap_provider_smoke --live
 - 不提供订票、订房、支付或实时房价；
 - 当前健康页不是旅行规划产品完成度；
 - 当前三节点探针只证明观测链路可接入，不证明模型规划质量；
-- 当前领域契约、PlannerContext 编译器和 provider adapter 已接入首条确定性 LangGraph；Constraint Agent 与单 Planner 已形成独立子图和 live 基线，但尚未接入产品主链，多 Agent 协作仍未实现；
+- 当前领域契约、PlannerContext 编译器和 provider adapter 已接入首条确定性 LangGraph；Constraint Agent 与单 Planner 已形成独立子图和 live 基线，确定性 Validator 已能定位基础计划/预算冲突，但这些组件尚未接入产品主链，多 Agent 协作仍未实现；
 - 高德 live fixture 是 2026-08-20 的点时样本，不是当前天气、实时酒店价格或生产 SLA；
 - 后续功能必须通过真实 provider contract、固定评测和可回放 trace 验证后再写入项目成果。

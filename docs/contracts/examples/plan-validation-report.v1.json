@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "validator_version": "deterministic-plan-validator-v1",
+  "request_id": "request_beijing_3d_001",
+  "plan_id": "plan_beijing_3d_001",
+  "status": "conflicted",
+  "can_finalize": false,
+  "budget": {
+    "status": "incomplete",
+    "currency": "CNY",
+    "total_limit": "3000.00",
+    "included_categories": [
+      "transport",
+      "food",
+      "admission",
+      "activity"
+    ],
+    "missing_categories": [
+      "transport",
+      "food",
+      "activity"
+    ],
+    "considered_cost_item_ids": [
+      "cost_forbidden_city_ticket"
+    ],
+    "excluded_cost_item_ids": [],
+    "total_minimum": "120.00",
+    "total_maximum": "120.00",
+    "minimum_gap": "0.00",
+    "maximum_gap": "0.00"
+  },
+  "issues": [
+    {
+      "issue_id": "issue-budget-incomplete-category-coverage-438be2083ecb",
+      "rule_code": "budget.incomplete_category_coverage",
+      "severity": "error",
+      "message": "预算包含的费用类别尚未全部形成 CostItem, 不能把缺失类别当作零元。",
+      "evidence": [
+        {
+          "field_path": "budget.missing_categories",
+          "description": "尚无费用项的预算类别",
+          "observed_value": "transport,food,activity"
+        }
+      ],
+      "responsible_node": "budget",
+      "repairable": true,
+      "repair_action": "recalculate_budget",
+      "requires_user_confirmation": false
+    }
+  ],
+  "passed_rule_codes": [
+    "plan.request_matches",
+    "plan.destination_matches",
+    "plan.date_window_matches",
+    "plan.candidate_ids_unique",
+    "source.grounded_items_traceable",
+    "plan.not_preconflicted",
+    "plan.final_status_allowed"
+  ]
+}

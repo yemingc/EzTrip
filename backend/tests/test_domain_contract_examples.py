@@ -7,12 +7,17 @@ from typing import Any
 from app.domain import (
     MinimalPlanningResult,
     PlannerContext,
+    PlanValidationReport,
     TripPlan,
     TripRequest,
     ValidationIssue,
 )
 from app.planning import compile_planner_context
 from scripts.export_domain_schemas import DEFAULT_OUTPUT_PATH, SCHEMA_MODELS, build_schema_bundle
+from scripts.export_plan_validation_example import (
+    DEFAULT_OUTPUT_PATH as PLAN_VALIDATION_EXAMPLE_PATH,
+)
+from scripts.export_plan_validation_example import build_plan_validation_example
 from scripts.export_planner_context_example import (
     DEFAULT_OUTPUT_PATH as PLANNER_CONTEXT_EXAMPLE_PATH,
 )
@@ -94,6 +99,24 @@ def test_validation_issue_example_requires_explicit_user_approval() -> None:
     assert issue.repair_action == "ask_user"
     assert issue.requires_user_confirmation is True
     assert ValidationIssue.model_validate_json(issue.model_dump_json()) == issue
+
+
+def test_plan_validation_example_is_reproducible_and_rejects_missing_cost_scope() -> None:
+    committed_report = PlanValidationReport.model_validate(load_json(PLAN_VALIDATION_EXAMPLE_PATH))
+    replayed_report = build_plan_validation_example()
+
+    assert committed_report == replayed_report
+    assert committed_report.status == "conflicted"
+    assert committed_report.can_finalize is False
+    assert committed_report.budget.status == "incomplete"
+    assert {item.value for item in committed_report.budget.missing_categories} == {
+        "transport",
+        "food",
+        "activity",
+    }
+    assert {item.rule_code for item in committed_report.issues} == {
+        "budget.incomplete_category_coverage"
+    }
 
 
 def test_committed_schema_bundle_matches_the_pydantic_models() -> None:

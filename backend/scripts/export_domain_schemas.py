@@ -10,6 +10,7 @@ from app.agents import (
 )
 from app.domain import (
     BudgetConstraint,
+    BudgetValidationSummary,
     CandidatePOI,
     CandidateStay,
     ConstraintSet,
@@ -18,6 +19,7 @@ from app.domain import (
     MinimalPlanningResult,
     Party,
     PlannerContext,
+    PlanValidationReport,
     PlanVersion,
     ProviderFailure,
     RouteLeg,
@@ -39,6 +41,8 @@ SCHEMA_MODELS: tuple[type[DomainModel], ...] = (
     ConstraintAgentResult,
     PlannerProposalBatch,
     SinglePlannerAgentResult,
+    BudgetValidationSummary,
+    PlanValidationReport,
     Party,
     BudgetConstraint,
     ConstraintSet,
