@@ -1,0 +1,154 @@
+{
+  "$defs": {
+    "CheckpointHitlCase": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": 1,
+          "default": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "source_case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Source Case Id",
+          "type": "string"
+        },
+        "thread_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Thread Id",
+          "type": "string"
+        },
+        "action": {
+          "$ref": "#/$defs/HumanReviewAction"
+        },
+        "reviewer_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Reviewer Id",
+          "type": "string"
+        },
+        "comment": {
+          "minLength": 1,
+          "title": "Comment",
+          "type": "string"
+        },
+        "decided_at": {
+          "format": "date-time",
+          "title": "Decided At",
+          "type": "string"
+        },
+        "expected_review_kind": {
+          "$ref": "#/$defs/HumanReviewKind"
+        },
+        "expected_terminal_status": {
+          "$ref": "#/$defs/PlanningThreadStatus"
+        }
+      },
+      "required": [
+        "case_id",
+        "source_case_id",
+        "thread_id",
+        "action",
+        "reviewer_id",
+        "comment",
+        "decided_at",
+        "expected_review_kind",
+        "expected_terminal_status"
+      ],
+      "title": "CheckpointHitlCase",
+      "type": "object"
+    },
+    "HumanReviewAction": {
+      "enum": [
+        "approve_draft",
+        "acknowledge_conflict",
+        "request_revision",
+        "cancel"
+      ],
+      "title": "HumanReviewAction",
+      "type": "string"
+    },
+    "HumanReviewKind": {
+      "enum": [
+        "plan_approval",
+        "conflict_resolution"
+      ],
+      "title": "HumanReviewKind",
+      "type": "string"
+    },
+    "PlanningThreadStatus": {
+      "enum": [
+        "planning",
+        "plan_ready",
+        "awaiting_human_review",
+        "review_decided",
+        "approved_draft",
+        "conflict_acknowledged",
+        "revision_requested",
+        "cancelled"
+      ],
+      "title": "PlanningThreadStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "suite": {
+      "const": "stateful-checkpoint-hitl-v1",
+      "default": "stateful-checkpoint-hitl-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "version": {
+      "const": 1,
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "execution_mode": {
+      "const": "fixture",
+      "default": "fixture",
+      "title": "Execution Mode",
+      "type": "string"
+    },
+    "source_suite": {
+      "const": "beijing-three-day-vertical-slice-gate2-v1",
+      "default": "beijing-three-day-vertical-slice-gate2-v1",
+      "title": "Source Suite",
+      "type": "string"
+    },
+    "source_dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Source Dataset Sha256",
+      "type": "string"
+    },
+    "cases": {
+      "items": {
+        "$ref": "#/$defs/CheckpointHitlCase"
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "title": "Cases",
+      "type": "array"
+    }
+  },
+  "required": [
+    "source_dataset_sha256",
+    "cases"
+  ],
+  "title": "CheckpointHitlSuite",
+  "type": "object"
+}

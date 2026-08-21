@@ -6596,6 +6596,171 @@
       ],
       "title": "ProviderFailure",
       "type": "object"
+    },
+    "HumanReviewRequest": {
+      "$defs": {
+        "HumanReviewAction": {
+          "enum": [
+            "approve_draft",
+            "acknowledge_conflict",
+            "request_revision",
+            "cancel"
+          ],
+          "title": "HumanReviewAction",
+          "type": "string"
+        },
+        "HumanReviewKind": {
+          "enum": [
+            "plan_approval",
+            "conflict_resolution"
+          ],
+          "title": "HumanReviewKind",
+          "type": "string"
+        },
+        "PlanValidationStatus": {
+          "enum": [
+            "passed",
+            "warning",
+            "conflicted"
+          ],
+          "title": "PlanValidationStatus",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "review_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Review Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/HumanReviewKind"
+        },
+        "request_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "plan_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Plan Id",
+          "type": "string"
+        },
+        "prompt": {
+          "minLength": 1,
+          "title": "Prompt",
+          "type": "string"
+        },
+        "allowed_actions": {
+          "items": {
+            "$ref": "#/$defs/HumanReviewAction"
+          },
+          "minItems": 1,
+          "title": "Allowed Actions",
+          "type": "array"
+        },
+        "validation_status": {
+          "$ref": "#/$defs/PlanValidationStatus"
+        },
+        "can_finalize": {
+          "title": "Can Finalize",
+          "type": "boolean"
+        },
+        "issue_rule_codes": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Issue Rule Codes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "review_id",
+        "kind",
+        "request_id",
+        "plan_id",
+        "prompt",
+        "allowed_actions",
+        "validation_status",
+        "can_finalize"
+      ],
+      "title": "HumanReviewRequest",
+      "type": "object"
+    },
+    "HumanReviewResume": {
+      "$defs": {
+        "HumanReviewAction": {
+          "enum": [
+            "approve_draft",
+            "acknowledge_conflict",
+            "request_revision",
+            "cancel"
+          ],
+          "title": "HumanReviewAction",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "review_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Review Id",
+          "type": "string"
+        },
+        "action": {
+          "$ref": "#/$defs/HumanReviewAction"
+        },
+        "reviewer_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Reviewer Id",
+          "type": "string"
+        },
+        "comment": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comment"
+        }
+      },
+      "required": [
+        "review_id",
+        "action",
+        "reviewer_id"
+      ],
+      "title": "HumanReviewResume",
+      "type": "object"
     }
   }
 }

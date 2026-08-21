@@ -1,3 +1,15 @@
+from app.evaluation.checkpoint import (
+    evaluate_checkpoint_hitl_case,
+    evaluate_checkpoint_hitl_suite,
+    load_checkpoint_hitl_suite,
+)
+from app.evaluation.checkpoint_contracts import (
+    CheckpointHitlCase,
+    CheckpointHitlCaseResult,
+    CheckpointHitlReport,
+    CheckpointHitlSuite,
+    checkpoint_hitl_dataset_sha256,
+)
 from app.evaluation.constraint_agent import (
     constraint_agent_dataset_sha256,
     evaluate_constraint_agent_case,
@@ -41,6 +53,10 @@ from app.evaluation.vertical_slice_contracts import (
 )
 
 __all__ = [
+    "CheckpointHitlCase",
+    "CheckpointHitlCaseResult",
+    "CheckpointHitlReport",
+    "CheckpointHitlSuite",
     "ConstraintAgentBaselineReport",
     "ConstraintAgentCaseResult",
     "ConstraintAgentExpectationCase",
@@ -57,7 +73,10 @@ __all__ = [
     "VerticalSliceCaseResult",
     "VerticalSliceGateReport",
     "VerticalSliceSuite",
+    "checkpoint_hitl_dataset_sha256",
     "constraint_agent_dataset_sha256",
+    "evaluate_checkpoint_hitl_case",
+    "evaluate_checkpoint_hitl_suite",
     "evaluate_constraint_agent_case",
     "evaluate_constraint_agent_suite",
     "evaluate_planning_seed_suite",
@@ -65,6 +84,7 @@ __all__ = [
     "evaluate_single_planner_suite",
     "evaluate_vertical_slice_case",
     "evaluate_vertical_slice_suite",
+    "load_checkpoint_hitl_suite",
     "load_constraint_agent_expectations",
     "load_planning_seed_suite",
     "load_vertical_slice_suite",

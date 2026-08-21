@@ -9,4 +9,5 @@ ADR 记录已经接受的架构选择、候选方案、代价和重新评估条�
 | [ADR-003](./ADR-003-amap-provider-strategy.md) | Accepted | 高德官方 MCP 优先，自有 typed provider 隔离协议 |
 | [ADR-004](./ADR-004-hotel-data-truth-boundary.md) | Accepted | 酒店 POI、估算价格与实时库存严格分层 |
 | [ADR-005](./ADR-005-versioned-domain-contracts.md) | Accepted | 使用版本化 Pydantic 契约统一领域边界 |
+| [ADR-006](./ADR-006-stateful-checkpoint-and-hitl.md) | Accepted | 主编排图使用持久化检查点与显式 HITL |
 | [ADR-008](./ADR-008-langsmith-v1-observability.md) | Accepted | V1 使用 LangSmith Cloud，不与 Langfuse 双写 |

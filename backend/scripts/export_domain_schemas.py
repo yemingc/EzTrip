@@ -29,6 +29,10 @@ from app.domain import (
     WeatherRisk,
 )
 from app.domain.base import DomainModel
+from app.planning import (
+    HumanReviewRequest,
+    HumanReviewResume,
+)
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT_PATH = REPOSITORY_ROOT / "docs" / "contracts" / "domain-contracts.v1.json"
@@ -56,6 +60,8 @@ SCHEMA_MODELS: tuple[type[DomainModel], ...] = (
     ValidationIssue,
     PlanVersion,
     ProviderFailure,
+    HumanReviewRequest,
+    HumanReviewResume,
 )
 
 
