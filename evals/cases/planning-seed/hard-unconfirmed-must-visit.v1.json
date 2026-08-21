@@ -2,10 +2,10 @@
   "version": 1,
   "case_id": "seed-hard-unconfirmed-must-visit-v1",
   "tier": "hard",
-  "title": "Agent 推断但未确认的必去地点不得触发搜索",
+  "title": "朋友推荐但用户未决定的必去地点不得触发搜索",
   "request": {
     "request_id": "seed_request_unconfirmed_must_visit",
-    "raw_text": "两位成年人去北京两天，模型推测用户可能想去故宫，但用户还没有确认。",
+    "raw_text": "两位成年人去北京两天，朋友建议去故宫，但我还没决定要不要把故宫列为必去。",
     "destination_city": "北京市",
     "start_date": "2026-10-22",
     "end_date": "2026-10-23",
@@ -26,5 +26,5 @@
     "constraint_buckets": {"confirmed_hard": [], "confirmed_soft": [], "pending": ["pending_must_visit_forbidden_city"]}
   },
   "future_expectations": [{"code": "constraint_confirmation_hitl", "description": "用户确认后才允许把推断升级为必去硬约束。"}],
-  "boundary_notes": ["未确认硬约束会阻止最终定稿，但不会被静默用于 provider 查询。"]
+  "boundary_notes": ["用户尚未决定是否把推荐地点升级为必去；未确认硬约束会阻止最终定稿，但不会被静默用于 provider 查询。"]
 }

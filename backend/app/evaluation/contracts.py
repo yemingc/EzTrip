@@ -4,11 +4,17 @@ from typing import Literal
 
 from pydantic import Field, model_validator
 
+from app.agents.contracts import ModelTokenUsage
 from app.domain.base import DomainModel, Identifier, NonEmptyText, Sha256Digest
 from app.domain.candidates import CandidatePOI
 from app.domain.context import PlannerCapability, PlannerReadiness
 from app.domain.provider import ProviderFailure
-from app.domain.request import ConstraintStrength, TripRequest
+from app.domain.request import (
+    ConstraintKind,
+    ConstraintSource,
+    ConstraintStrength,
+    TripRequest,
+)
 from app.domain.sources import DataMode
 from app.domain.workflow import PlanningWorkflowStatus
 
@@ -271,3 +277,218 @@ class PlanningSeedBaselineReport(DomainModel):
         if self.source_traceability_rate != expected_source_rate:
             raise ValueError("source_traceability_rate must match aggregate counts")
         return self
+
+
+class ConstraintEvaluationLabel(DomainModel):
+    kind: ConstraintKind
+    value: NonEmptyText
+    strength: ConstraintStrength
+    source: ConstraintSource
+    confirmed: bool
+
+    @model_validator(mode="after")
+    def validate_confirmation_source(self) -> "ConstraintEvaluationLabel":
+        if self.kind == ConstraintKind.WALKING_INTENSITY and self.value not in {
+            "low",
+            "medium",
+            "high",
+        }:
+            raise ValueError("walking intensity evaluation labels must be canonical")
+        if self.source == ConstraintSource.USER_EXPLICIT and not self.confirmed:
+            raise ValueError("user_explicit evaluation labels must be confirmed")
+        if self.source == ConstraintSource.AGENT_INFERRED and self.confirmed:
+            raise ValueError("agent_inferred evaluation labels must remain unconfirmed")
+        if self.source not in {
+            ConstraintSource.USER_EXPLICIT,
+            ConstraintSource.AGENT_INFERRED,
+        }:
+            raise ValueError("Constraint Agent V1 labels only support extraction sources")
+        return self
+
+
+class ConstraintAgentExpectationCase(DomainModel):
+    case_id: Identifier
+    expected_constraints: tuple[ConstraintEvaluationLabel, ...] = Field(max_length=12)
+
+    @model_validator(mode="after")
+    def validate_unique_semantics(self) -> "ConstraintAgentExpectationCase":
+        keys = [(item.kind, item.value.casefold()) for item in self.expected_constraints]
+        if len(keys) != len(set(keys)):
+            raise ValueError("expected Agent constraints must be semantically unique")
+        return self
+
+
+class ConstraintAgentExpectationSuite(DomainModel):
+    suite: Literal["constraint-agent-expectations-v1"] = "constraint-agent-expectations-v1"
+    version: Literal[1] = 1
+    source_planning_seed_sha256: Sha256Digest
+    cases: tuple[ConstraintAgentExpectationCase, ...] = Field(min_length=10, max_length=10)
+
+    @model_validator(mode="after")
+    def validate_case_inventory(self) -> "ConstraintAgentExpectationSuite":
+        if len({item.case_id for item in self.cases}) != len(self.cases):
+            raise ValueError("constraint Agent expectation case ids must be unique")
+        return self
+
+
+class ConstraintAgentCaseResult(DomainModel):
+    case_id: Identifier
+    tier: SeedTier
+    passed: bool
+    expected_constraints: tuple[ConstraintEvaluationLabel, ...]
+    actual_constraints: tuple[ConstraintEvaluationLabel, ...]
+    expected_constraint_count: int = Field(ge=0)
+    actual_constraint_count: int = Field(ge=0)
+    semantic_match_count: int = Field(ge=0)
+    confirmation_match_count: int = Field(ge=0)
+    clarification_match: bool
+    latency_ms: int = Field(ge=0)
+    usage: ModelTokenUsage | None = None
+    error_code: Identifier | None = None
+    checks: tuple[EvaluationCheck, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_constraint_agent_case_result(self) -> "ConstraintAgentCaseResult":
+        if self.expected_constraint_count != len(self.expected_constraints):
+            raise ValueError("expected_constraint_count must match labels")
+        if self.actual_constraint_count != len(self.actual_constraints):
+            raise ValueError("actual_constraint_count must match labels")
+        if self.semantic_match_count > min(
+            self.expected_constraint_count,
+            self.actual_constraint_count,
+        ):
+            raise ValueError("semantic matches cannot exceed expected or actual constraints")
+        if self.confirmation_match_count > self.semantic_match_count:
+            raise ValueError("confirmation matches cannot exceed semantic matches")
+        expected_semantic = {
+            (item.kind, item.value.casefold(), item.strength) for item in self.expected_constraints
+        }
+        actual_semantic = {
+            (item.kind, item.value.casefold(), item.strength) for item in self.actual_constraints
+        }
+        if self.semantic_match_count != len(expected_semantic & actual_semantic):
+            raise ValueError("semantic_match_count must be recomputed from labels")
+        expected_confirmation = {
+            (item.kind, item.value.casefold(), item.strength, item.source, item.confirmed)
+            for item in self.expected_constraints
+        }
+        actual_confirmation = {
+            (item.kind, item.value.casefold(), item.strength, item.source, item.confirmed)
+            for item in self.actual_constraints
+        }
+        if self.confirmation_match_count != len(expected_confirmation & actual_confirmation):
+            raise ValueError("confirmation_match_count must be recomputed from labels")
+        expected_pending = {
+            (item.kind, item.value.casefold(), item.strength)
+            for item in self.expected_constraints
+            if not item.confirmed
+        }
+        actual_pending = {
+            (item.kind, item.value.casefold(), item.strength)
+            for item in self.actual_constraints
+            if not item.confirmed
+        }
+        if self.clarification_match != (expected_pending == actual_pending):
+            raise ValueError("clarification_match must be recomputed from labels")
+        if self.passed != all(check.passed for check in self.checks):
+            raise ValueError("case passed must equal the conjunction of checks")
+        if (self.error_code is None) != self.checks[0].passed:
+            raise ValueError("the first check must represent protocol success")
+        return self
+
+
+class ConstraintAgentBaselineReport(DomainModel):
+    schema_version: Literal["1.0"] = "1.0"
+    suite: Literal["constraint-agent-planning-seed-v1"] = "constraint-agent-planning-seed-v1"
+    agent_version: Literal["constraint-agent-v1"] = "constraint-agent-v1"
+    prompt_version: Literal["constraint-extraction-v1"] = "constraint-extraction-v1"
+    execution_mode: Literal["fixture", "live"]
+    model: NonEmptyText
+    dataset_sha256: Sha256Digest
+    case_count: Literal[10] = 10
+    passed_case_count: int = Field(ge=0, le=10)
+    exact_case_rate: Decimal = Field(ge=0, le=1, decimal_places=4)
+    expected_constraint_count: int = Field(ge=0)
+    actual_constraint_count: int = Field(ge=0)
+    semantic_match_count: int = Field(ge=0)
+    semantic_precision: Decimal = Field(ge=0, le=1, decimal_places=4)
+    semantic_recall: Decimal = Field(ge=0, le=1, decimal_places=4)
+    confirmation_match_count: int = Field(ge=0)
+    confirmation_accuracy: Decimal = Field(ge=0, le=1, decimal_places=4)
+    clarification_match_case_count: int = Field(ge=0, le=10)
+    clarification_case_rate: Decimal = Field(ge=0, le=1, decimal_places=4)
+    usage_case_count: int = Field(ge=0, le=10)
+    total_prompt_tokens: int = Field(ge=0)
+    total_completion_tokens: int = Field(ge=0)
+    total_tokens: int = Field(ge=0)
+    p50_latency_ms: int = Field(ge=0)
+    p95_latency_ms: int = Field(ge=0)
+    results: tuple[ConstraintAgentCaseResult, ...] = Field(min_length=10, max_length=10)
+    limitations: tuple[NonEmptyText, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_constraint_agent_aggregates(self) -> "ConstraintAgentBaselineReport":
+        if len({item.case_id for item in self.results}) != self.case_count:
+            raise ValueError("constraint Agent report case ids must be unique")
+        aggregates = {
+            "passed_case_count": sum(item.passed for item in self.results),
+            "expected_constraint_count": sum(
+                item.expected_constraint_count for item in self.results
+            ),
+            "actual_constraint_count": sum(item.actual_constraint_count for item in self.results),
+            "semantic_match_count": sum(item.semantic_match_count for item in self.results),
+            "confirmation_match_count": sum(item.confirmation_match_count for item in self.results),
+            "clarification_match_case_count": sum(
+                item.clarification_match for item in self.results
+            ),
+            "usage_case_count": sum(item.usage is not None for item in self.results),
+            "total_prompt_tokens": sum(
+                item.usage.prompt_tokens for item in self.results if item.usage is not None
+            ),
+            "total_completion_tokens": sum(
+                item.usage.completion_tokens for item in self.results if item.usage is not None
+            ),
+            "total_tokens": sum(
+                item.usage.total_tokens for item in self.results if item.usage is not None
+            ),
+        }
+        for aggregate_field_name, aggregate_expected in aggregates.items():
+            if getattr(self, aggregate_field_name) != aggregate_expected:
+                raise ValueError(f"{aggregate_field_name} must match case results")
+
+        rates = {
+            "exact_case_rate": expected_rate(self.passed_case_count, self.case_count),
+            "semantic_precision": expected_rate(
+                self.semantic_match_count,
+                self.actual_constraint_count,
+            ),
+            "semantic_recall": expected_rate(
+                self.semantic_match_count,
+                self.expected_constraint_count,
+            ),
+            "confirmation_accuracy": expected_rate(
+                self.confirmation_match_count,
+                self.semantic_match_count,
+            ),
+            "clarification_case_rate": expected_rate(
+                self.clarification_match_case_count,
+                self.case_count,
+            ),
+        }
+        for rate_field_name, rate_expected in rates.items():
+            if getattr(self, rate_field_name) != rate_expected:
+                raise ValueError(f"{rate_field_name} must match aggregate counts")
+
+        latencies = sorted(item.latency_ms for item in self.results)
+        if self.p50_latency_ms != _nearest_rank(latencies, 50):
+            raise ValueError("p50_latency_ms must match case results")
+        if self.p95_latency_ms != _nearest_rank(latencies, 95):
+            raise ValueError("p95_latency_ms must match case results")
+        return self
+
+
+def _nearest_rank(values: list[int], percentile: int) -> int:
+    if not values:
+        return 0
+    rank = (percentile * len(values) + 99) // 100
+    return values[max(rank - 1, 0)]

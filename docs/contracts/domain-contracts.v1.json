@@ -2080,6 +2080,369 @@
       "title": "MinimalPlanningResult",
       "type": "object"
     },
+    "ConstraintProposalBatch": {
+      "$defs": {
+        "ConstraintEvidenceMode": {
+          "description": "Whether the quoted evidence is a direct requirement or an uncertain suggestion.",
+          "enum": [
+            "explicit",
+            "inferred"
+          ],
+          "title": "ConstraintEvidenceMode",
+          "type": "string"
+        },
+        "ConstraintKind": {
+          "enum": [
+            "must_visit",
+            "avoid",
+            "interest",
+            "walking_intensity",
+            "transport_mode",
+            "accommodation",
+            "meal",
+            "accessibility",
+            "schedule"
+          ],
+          "title": "ConstraintKind",
+          "type": "string"
+        },
+        "ConstraintProposalItem": {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "$ref": "#/$defs/ConstraintKind"
+            },
+            "value": {
+              "maxLength": 100,
+              "minLength": 1,
+              "title": "Value",
+              "type": "string"
+            },
+            "strength": {
+              "$ref": "#/$defs/ConstraintStrength"
+            },
+            "priority": {
+              "maximum": 5,
+              "minimum": 1,
+              "title": "Priority",
+              "type": "integer"
+            },
+            "evidence": {
+              "maxLength": 160,
+              "minLength": 1,
+              "title": "Evidence",
+              "type": "string"
+            },
+            "evidence_mode": {
+              "$ref": "#/$defs/ConstraintEvidenceMode"
+            }
+          },
+          "required": [
+            "kind",
+            "value",
+            "strength",
+            "priority",
+            "evidence",
+            "evidence_mode"
+          ],
+          "title": "ConstraintProposalItem",
+          "type": "object"
+        },
+        "ConstraintStrength": {
+          "enum": [
+            "hard",
+            "soft"
+          ],
+          "title": "ConstraintStrength",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ConstraintProposalItem"
+          },
+          "maxItems": 12,
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "title": "ConstraintProposalBatch",
+      "type": "object"
+    },
+    "ConstraintAgentResult": {
+      "$defs": {
+        "Constraint": {
+          "additionalProperties": false,
+          "properties": {
+            "constraint_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Constraint Id",
+              "type": "string"
+            },
+            "kind": {
+              "$ref": "#/$defs/ConstraintKind"
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              ],
+              "title": "Value"
+            },
+            "strength": {
+              "$ref": "#/$defs/ConstraintStrength"
+            },
+            "priority": {
+              "maximum": 5,
+              "minimum": 1,
+              "title": "Priority",
+              "type": "integer"
+            },
+            "source": {
+              "$ref": "#/$defs/ConstraintSource"
+            },
+            "applies_to_dates": {
+              "default": [],
+              "items": {
+                "format": "date",
+                "type": "string"
+              },
+              "title": "Applies To Dates",
+              "type": "array"
+            },
+            "confirmed": {
+              "title": "Confirmed",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "constraint_id",
+            "kind",
+            "value",
+            "strength",
+            "priority",
+            "source",
+            "confirmed"
+          ],
+          "title": "Constraint",
+          "type": "object"
+        },
+        "ConstraintDecision": {
+          "additionalProperties": false,
+          "properties": {
+            "constraint": {
+              "$ref": "#/$defs/Constraint"
+            },
+            "evidence": {
+              "maxLength": 160,
+              "minLength": 1,
+              "title": "Evidence",
+              "type": "string"
+            },
+            "evidence_mode": {
+              "$ref": "#/$defs/ConstraintEvidenceMode"
+            }
+          },
+          "required": [
+            "constraint",
+            "evidence",
+            "evidence_mode"
+          ],
+          "title": "ConstraintDecision",
+          "type": "object"
+        },
+        "ConstraintEvidenceMode": {
+          "description": "Whether the quoted evidence is a direct requirement or an uncertain suggestion.",
+          "enum": [
+            "explicit",
+            "inferred"
+          ],
+          "title": "ConstraintEvidenceMode",
+          "type": "string"
+        },
+        "ConstraintKind": {
+          "enum": [
+            "must_visit",
+            "avoid",
+            "interest",
+            "walking_intensity",
+            "transport_mode",
+            "accommodation",
+            "meal",
+            "accessibility",
+            "schedule"
+          ],
+          "title": "ConstraintKind",
+          "type": "string"
+        },
+        "ConstraintSet": {
+          "additionalProperties": false,
+          "properties": {
+            "items": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/Constraint"
+              },
+              "title": "Items",
+              "type": "array"
+            }
+          },
+          "title": "ConstraintSet",
+          "type": "object"
+        },
+        "ConstraintSource": {
+          "enum": [
+            "user_explicit",
+            "user_confirmed",
+            "agent_inferred",
+            "system"
+          ],
+          "title": "ConstraintSource",
+          "type": "string"
+        },
+        "ConstraintStrength": {
+          "enum": [
+            "hard",
+            "soft"
+          ],
+          "title": "ConstraintStrength",
+          "type": "string"
+        },
+        "ModelTokenUsage": {
+          "additionalProperties": false,
+          "properties": {
+            "prompt_tokens": {
+              "minimum": 0,
+              "title": "Prompt Tokens",
+              "type": "integer"
+            },
+            "completion_tokens": {
+              "minimum": 0,
+              "title": "Completion Tokens",
+              "type": "integer"
+            },
+            "total_tokens": {
+              "minimum": 0,
+              "title": "Total Tokens",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "prompt_tokens",
+            "completion_tokens",
+            "total_tokens"
+          ],
+          "title": "ModelTokenUsage",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "agent_version": {
+          "const": "constraint-agent-v1",
+          "default": "constraint-agent-v1",
+          "title": "Agent Version",
+          "type": "string"
+        },
+        "prompt_version": {
+          "const": "constraint-extraction-v1",
+          "default": "constraint-extraction-v1",
+          "title": "Prompt Version",
+          "type": "string"
+        },
+        "request_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "raw_text_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Raw Text Sha256",
+          "type": "string"
+        },
+        "model": {
+          "minLength": 1,
+          "title": "Model",
+          "type": "string"
+        },
+        "latency_ms": {
+          "minimum": 0,
+          "title": "Latency Ms",
+          "type": "integer"
+        },
+        "usage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelTokenUsage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "decisions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ConstraintDecision"
+          },
+          "title": "Decisions",
+          "type": "array"
+        },
+        "constraints": {
+          "$ref": "#/$defs/ConstraintSet"
+        },
+        "hitl_constraint_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Hitl Constraint Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "request_id",
+        "raw_text_sha256",
+        "model",
+        "latency_ms",
+        "constraints"
+      ],
+      "title": "ConstraintAgentResult",
+      "type": "object"
+    },
     "Party": {
       "additionalProperties": false,
       "properties": {

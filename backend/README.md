@@ -1,6 +1,6 @@
 # EzTrip API
 
-Gate 0 FastAPI service. It exposes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel domain contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, and the first three-node planning Graph. These components are not yet exposed as a product planning API and do not generate a final itinerary.
+Gate 0 FastAPI service. It exposes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel domain contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, the first three-node planning Graph, and an isolated schema-constrained Constraint Agent. These components are not yet exposed as a product planning API and do not generate a final itinerary.
 
 ```powershell
 uv sync --all-groups
@@ -20,6 +20,7 @@ Regenerate the committed domain JSON Schema bundle after changing a contract:
 
 ```powershell
 uv run python -m scripts.export_domain_schemas
+uv run python -m scripts.export_constraint_agent_schemas
 uv run python -m scripts.export_planner_context_example
 uv run python -m scripts.run_minimal_planning_graph --write-example
 ```
@@ -52,6 +53,15 @@ uv run pytest tests/test_planning_seed_eval.py --no-cov
 ```
 
 The committed report currently records 10/10 cases, 120/120 deterministic checks, and 6/6 source-traceable candidates. These are workflow-contract metrics over structured requests and labelled fixtures, not itinerary accuracy or Agent quality.
+
+Run the Constraint Agent tests offline or explicitly refresh its live baseline:
+
+```powershell
+uv run pytest tests/test_constraint_agent.py tests/test_constraint_agent_evaluation.py --no-cov
+uv run python -m scripts.run_constraint_agent_eval --live
+```
+
+The fake-model tests enforce exact evidence, schema output, deterministic IDs, source/confirmation mapping, uncertainty guards, and aggregate report contracts. The live command uses DeepSeek and LangSmith and currently records 9/10 exact cases with one retained hard/soft accessibility ambiguity. It must not run in CI.
 
 Run the live observability probe only after configuring the local root `.env`:
 

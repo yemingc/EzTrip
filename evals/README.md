@@ -10,11 +10,12 @@ Gate 0 目前只有 3 条 specification-level smoke case：
 | `smoke-budget-conflict-beijing-3d-v1` | 确定性成本下界超过预算时返回冲突，不静默放宽约束 |
 | `smoke-weather-risk-beijing-3d-v1` | 天气工具主动发现第二天风险，系统定位受影响项目并提出局部重排 |
 
-这些 case 不是完整 `TripRequest`、provider fixture 或 golden output。`expectations[].code` 只是稳定的场景验收标签，不是生产 API 枚举。真实领域 schema 和高德字段稳定后，再冻结 6 条 standard + 4 条 hard 种子请求。
+这些 Gate 0 case 不是完整 `TripRequest`、provider fixture 或 golden output。EZ-008 已在 `cases/planning-seed/` 冻结 6 条 standard + 4 条 hard 可执行请求；EZ-101 在 `cases/constraint-agent/` 为同一批中文输入冻结独立约束标签，并在 `reports/` 保存真实 DeepSeek point-in-time 报告。
 
 验证命令：
 
 ```powershell
 Set-Location backend
 uv run pytest tests/test_smoke_cases.py --no-cov
+uv run pytest tests/test_planning_seed_eval.py tests/test_constraint_agent_evaluation.py --no-cov
 ```

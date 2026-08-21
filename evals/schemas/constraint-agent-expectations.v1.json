@@ -1,0 +1,130 @@
+{
+  "$defs": {
+    "ConstraintAgentExpectationCase": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "expected_constraints": {
+          "items": {
+            "$ref": "#/$defs/ConstraintEvaluationLabel"
+          },
+          "maxItems": 12,
+          "title": "Expected Constraints",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "expected_constraints"
+      ],
+      "title": "ConstraintAgentExpectationCase",
+      "type": "object"
+    },
+    "ConstraintEvaluationLabel": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/ConstraintKind"
+        },
+        "value": {
+          "minLength": 1,
+          "title": "Value",
+          "type": "string"
+        },
+        "strength": {
+          "$ref": "#/$defs/ConstraintStrength"
+        },
+        "source": {
+          "$ref": "#/$defs/ConstraintSource"
+        },
+        "confirmed": {
+          "title": "Confirmed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "value",
+        "strength",
+        "source",
+        "confirmed"
+      ],
+      "title": "ConstraintEvaluationLabel",
+      "type": "object"
+    },
+    "ConstraintKind": {
+      "enum": [
+        "must_visit",
+        "avoid",
+        "interest",
+        "walking_intensity",
+        "transport_mode",
+        "accommodation",
+        "meal",
+        "accessibility",
+        "schedule"
+      ],
+      "title": "ConstraintKind",
+      "type": "string"
+    },
+    "ConstraintSource": {
+      "enum": [
+        "user_explicit",
+        "user_confirmed",
+        "agent_inferred",
+        "system"
+      ],
+      "title": "ConstraintSource",
+      "type": "string"
+    },
+    "ConstraintStrength": {
+      "enum": [
+        "hard",
+        "soft"
+      ],
+      "title": "ConstraintStrength",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "suite": {
+      "const": "constraint-agent-expectations-v1",
+      "default": "constraint-agent-expectations-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "version": {
+      "const": 1,
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "source_planning_seed_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Source Planning Seed Sha256",
+      "type": "string"
+    },
+    "cases": {
+      "items": {
+        "$ref": "#/$defs/ConstraintAgentExpectationCase"
+      },
+      "maxItems": 10,
+      "minItems": 10,
+      "title": "Cases",
+      "type": "array"
+    }
+  },
+  "required": [
+    "source_planning_seed_sha256",
+    "cases"
+  ],
+  "title": "ConstraintAgentExpectationSuite",
+  "type": "object"
+}
