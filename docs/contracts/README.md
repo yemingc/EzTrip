@@ -9,6 +9,7 @@
 - `MinimalPlanningResult` 记录首条 LangGraph 的节点事件、候选查询来源、provider 候选与 typed failure；
 - `ConstraintProposalBatch` 限制模型只能提交约束语义和原文 evidence，`ConstraintAgentResult` 记录确定性生成的 ID、source、confirmed 与 HITL 集合；
 - `PlannerProposalBatch` 限制模型只能提交已有 candidate ID、day、start time 与理由，`SinglePlannerAgentResult` 记录由代码装配且只覆盖这些候选的部分 DayPlan；
+- `BudgetValidationSummary` 和 `PlanValidationReport` 记录由普通代码重算的预算范围、费用类别覆盖、基础计划规则与 typed issues；
 - 金额使用 `Decimal` 语义，`CostItem` 可确定性重算最小/最大总额；
 - POI、住宿、天气和路线数据携带 provider、数据模式与获取时间；
 - `WeatherRisk` 只能由 live/fixture 天气工具数据产生，不能伪装成用户追加输入；
@@ -23,6 +24,7 @@
 - `examples/minimal-planning-result.v1.json`：用离线高德 fixture 重放三节点 Graph 的完整结果；
 - `examples/trip-plan.v1.json`：带 provider 来源和费用台账的结构化计划；
 - `examples/validation-issue.v1.json`：不可满足预算冲突。
+- `examples/plan-validation-report.v1.json`：现有 TripPlan 缺少交通、餐饮和活动费用项时的可重放冲突报告。
 
 重新导出：
 
@@ -31,8 +33,9 @@ Set-Location backend
 uv run python -m scripts.export_domain_schemas
 uv run python -m scripts.export_constraint_agent_schemas
 uv run python -m scripts.export_single_planner_schema
+uv run python -m scripts.export_plan_validation_example
 uv run python -m scripts.export_planner_context_example
 uv run python -m scripts.run_minimal_planning_graph --write-example
 ```
 
-测试会校验示例可解析、序列化可往返，检查提交的 schema bundle 与代码生成结果一致，并重新编译 `TripRequest`、回放 fixture Graph，验证两个机械示例没有漂移。
+测试会校验示例可解析、序列化可往返，检查提交的 schema bundle 与代码生成结果一致，并重新编译 `TripRequest`、回放 fixture Graph、重跑确定性 Validator，验证机械示例没有漂移。

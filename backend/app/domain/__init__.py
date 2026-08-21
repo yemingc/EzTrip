@@ -46,7 +46,11 @@ from app.domain.travel_data import (
     WeatherRiskType,
 )
 from app.domain.validation import (
+    BudgetAssessmentStatus,
+    BudgetValidationSummary,
     IssueSeverity,
+    PlanValidationReport,
+    PlanValidationStatus,
     RepairAction,
     ResponsibleNode,
     ValidationEvidence,
@@ -65,9 +69,11 @@ from app.domain.workflow import (
 __all__ = [
     "ActivityEnvironment",
     "ActivityKind",
+    "BudgetAssessmentStatus",
     "BudgetCategory",
     "BudgetConstraint",
     "BudgetPlanningContext",
+    "BudgetValidationSummary",
     "CandidatePOI",
     "CandidateQuerySource",
     "CandidateSearchQuery",
@@ -90,6 +96,8 @@ __all__ = [
     "Party",
     "PartyPlanningContext",
     "PlanStatus",
+    "PlanValidationReport",
+    "PlanValidationStatus",
     "PlanVersion",
     "PlannerCapability",
     "PlannerContext",
