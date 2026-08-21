@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "case_id": "seed-standard-chengdu-family-panda-v1",
+  "tier": "standard",
+  "title": "成都亲子三日必去熊猫基地",
+  "request": {
+    "request_id": "seed_request_chengdu_family_panda",
+    "raw_text": "两位成年人带一名儿童去成都三天，必须去成都大熊猫繁育研究基地，偏好亲子活动。",
+    "destination_city": "成都市",
+    "start_date": "2026-10-11",
+    "end_date": "2026-10-13",
+    "party": {"adults": 2, "children": 1, "rooms": 1},
+    "budget": {"total_limit": "2600.00", "included_categories": ["transport", "food", "admission", "activity"]},
+    "travel_styles": ["亲子", "动物"],
+    "constraints": {"items": [
+      {"constraint_id": "must_visit_panda_base", "kind": "must_visit", "value": "成都大熊猫繁育研究基地", "strength": "hard", "priority": 5, "source": "user_explicit", "confirmed": true},
+      {"constraint_id": "interest_family_activity", "kind": "interest", "value": "亲子活动", "strength": "soft", "priority": 4, "source": "user_explicit", "confirmed": true}
+    ]}
+  },
+  "provider": {
+    "behavior": "success",
+    "expected_calls": [{"keywords": "成都大熊猫繁育研究基地", "city_adcode": "510100", "limit": 1}],
+    "candidates": [{
+      "candidate_id": "eval-poi-chengdu-panda-base",
+      "name": "成都大熊猫繁育研究基地",
+      "city": "成都市",
+      "address": "熊猫大道1375号",
+      "location": {"latitude": 30.7382, "longitude": 104.1456},
+      "categories": ["风景名胜", "动物园"],
+      "environment": "mixed",
+      "source": {"provider": "eval_fixture", "provider_id": "fixture-chengdu-panda-base", "data_mode": "fixture", "retrieved_at": "2026-08-21T08:00:00+08:00"}
+    }]
+  },
+  "expected": {
+    "status": "candidates_ready",
+    "readiness": "ready",
+    "ready_capabilities": ["candidate_search", "stay_search", "weather_lookup", "route_planning", "budget_validation", "plan_finalization"],
+    "blocked_capabilities": [],
+    "candidate_count": 1,
+    "candidate_names": ["成都大熊猫繁育研究基地"],
+    "constraint_buckets": {"confirmed_hard": ["must_visit_panda_base"], "confirmed_soft": ["interest_family_activity"], "pending": []}
+  },
+  "future_expectations": [{"code": "child_friendly_schedule", "description": "未来排程应验证亲子节奏和活动时长。"}],
+  "boundary_notes": ["熊猫基地候选是 eval fixture；当前没有验证儿童票价、开放时间或实时拥挤度。"]
+}

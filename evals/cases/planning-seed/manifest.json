@@ -1,0 +1,18 @@
+{
+  "suite": "planning-seed-v1",
+  "version": 1,
+  "status": "executable_baseline",
+  "case_schema": "../../schemas/planning-seed-case.v1.json",
+  "cases": [
+    {"case_id": "seed-standard-beijing-history-v1", "tier": "standard", "path": "standard-beijing-history.v1.json"},
+    {"case_id": "seed-standard-beijing-no-budget-v1", "tier": "standard", "path": "standard-beijing-no-budget.v1.json"},
+    {"case_id": "seed-standard-beijing-no-must-visit-v1", "tier": "standard", "path": "standard-beijing-no-must-visit.v1.json"},
+    {"case_id": "seed-standard-shanghai-bund-v1", "tier": "standard", "path": "standard-shanghai-bund.v1.json"},
+    {"case_id": "seed-standard-chengdu-family-panda-v1", "tier": "standard", "path": "standard-chengdu-family-panda.v1.json"},
+    {"case_id": "seed-standard-beijing-senior-low-budget-v1", "tier": "standard", "path": "standard-beijing-senior-low-budget.v1.json"},
+    {"case_id": "seed-hard-unsupported-nanjing-v1", "tier": "hard", "path": "hard-unsupported-nanjing.v1.json"},
+    {"case_id": "seed-hard-missing-rooms-lodging-v1", "tier": "hard", "path": "hard-missing-rooms-lodging.v1.json"},
+    {"case_id": "seed-hard-unconfirmed-must-visit-v1", "tier": "hard", "path": "hard-unconfirmed-must-visit.v1.json"},
+    {"case_id": "seed-hard-provider-timeout-v1", "tier": "hard", "path": "hard-provider-timeout.v1.json"}
+  ]
+}

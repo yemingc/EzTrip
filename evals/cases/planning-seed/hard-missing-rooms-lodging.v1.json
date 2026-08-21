@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "case_id": "seed-hard-missing-rooms-lodging-v1",
+  "tier": "hard",
+  "title": "住宿计入预算但房间数缺失时部分能力继续",
+  "request": {
+    "request_id": "seed_request_missing_rooms_lodging",
+    "raw_text": "两位成年人去北京三天，必须去故宫，包含酒店的总预算是 3500 元，但还没确定订几间房。",
+    "destination_city": "北京",
+    "start_date": "2026-10-19",
+    "end_date": "2026-10-21",
+    "party": {"adults": 2},
+    "budget": {"total_limit": "3500.00", "included_categories": ["lodging", "transport", "food", "admission", "activity"]},
+    "constraints": {"items": [
+      {"constraint_id": "must_visit_forbidden_city", "kind": "must_visit", "value": "故宫", "strength": "hard", "priority": 5, "source": "user_explicit", "confirmed": true}
+    ]}
+  },
+  "provider": {
+    "behavior": "success",
+    "expected_calls": [{"keywords": "故宫博物院", "city_adcode": "110000", "limit": 1}],
+    "candidates": [{
+      "candidate_id": "amap-poi-b000a8uin8",
+      "name": "故宫博物院",
+      "city": "北京市",
+      "address": "景山前街4号",
+      "location": {"latitude": 39.917839, "longitude": 116.397029},
+      "categories": ["风景名胜", "世界遗产", "博物馆"],
+      "environment": "mixed",
+      "source": {"provider": "amap", "provider_id": "B000A8UIN8", "data_mode": "fixture", "retrieved_at": "2026-08-20T08:37:56.896792Z", "raw_response_sha256": "1115defc199cf99f11335a4cb2aad34f17451dddc76beb54a18a6f4b4fa318d8"}
+    }]
+  },
+  "expected": {
+    "status": "candidates_ready",
+    "readiness": "needs_clarification",
+    "ready_capabilities": ["candidate_search", "weather_lookup", "route_planning"],
+    "blocked_capabilities": ["stay_search", "budget_validation", "plan_finalization"],
+    "candidate_count": 1,
+    "candidate_names": ["故宫博物院"],
+    "constraint_buckets": {"confirmed_hard": ["must_visit_forbidden_city"], "confirmed_soft": [], "pending": []}
+  },
+  "future_expectations": [{"code": "room_count_hitl", "description": "最终定稿前必须由用户确认房间数。"}],
+  "boundary_notes": ["整体需要澄清不等于停止所有节点；POI 查询仍可安全执行。"]
+}

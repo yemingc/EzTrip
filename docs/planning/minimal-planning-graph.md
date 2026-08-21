@@ -44,4 +44,4 @@ uv run pytest tests/test_minimal_planning_graph.py tests/test_domain_contract_ex
 
 默认命令输出脱敏摘要，不包含 raw provider payload。`--write-example` 机械更新 `docs/contracts/examples/minimal-planning-result.v1.json`，契约测试会重新运行 fixture Graph 并比较完整结果。
 
-下一增量先冻结 10 条 standard/hard 旅行请求和 Graph 级验收指标，再增加受 schema 约束的候选策略/比较 Agent。只有在固定 cases 中证明它比确定性必去查询带来可解释收益后，才扩展为多个专业 Agent。
+EZ-008 已冻结 10 条 standard/hard 旅行请求和 Graph 级确定性基线，见 [`docs/evaluation/planning-seed-baseline.md`](../evaluation/planning-seed-baseline.md)。下一增量才增加受 schema 约束的候选策略/比较 Agent；只有在固定 cases 中证明它比确定性必去查询带来可解释收益后，才扩展为多个专业 Agent。

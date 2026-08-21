@@ -42,6 +42,17 @@ uv run pytest tests/test_minimal_planning_graph.py --no-cov
 
 The Graph compiles context, applies a capability-specific clarification gate, and searches fixture-backed POIs only for confirmed `must_visit` constraints. It records typed failures and source-traceable candidates. It does not perform open-ended model recommendation, ranking, weather/route joins, budgeting, or itinerary generation.
 
+Run the 6-standard / 4-hard deterministic planning baseline:
+
+```powershell
+uv run python -m scripts.export_planning_seed_schema
+uv run python -m scripts.run_planning_seed_eval
+uv run python -m scripts.run_planning_seed_eval --write-report
+uv run pytest tests/test_planning_seed_eval.py --no-cov
+```
+
+The committed report currently records 10/10 cases, 120/120 deterministic checks, and 6/6 source-traceable candidates. These are workflow-contract metrics over structured requests and labelled fixtures, not itinerary accuracy or Agent quality.
+
 Run the live observability probe only after configuring the local root `.env`:
 
 ```powershell
