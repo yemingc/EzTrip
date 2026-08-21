@@ -54,6 +54,22 @@ from app.evaluation.single_planner import (
     evaluate_single_planner_case,
     evaluate_single_planner_suite,
 )
+from app.evaluation.stay import (
+    StayEvaluationError,
+    StayScenarioProvider,
+    evaluate_stay_agent_case,
+    evaluate_stay_agent_suite,
+    load_stay_agent_suite,
+    stay_agent_dataset_sha256,
+)
+from app.evaluation.stay_contracts import (
+    StayAgentBaselineReport,
+    StayAgentCaseResult,
+    StayAgentEvalCase,
+    StayAgentEvalSuite,
+    StayAgentExpectation,
+    StayFixtureCandidateSpec,
+)
 from app.evaluation.vertical_slice import (
     evaluate_vertical_slice_case,
     evaluate_vertical_slice_suite,
@@ -93,6 +109,14 @@ __all__ = [
     "SinglePlannerBaselineReport",
     "SinglePlannerCaseResult",
     "SinglePlannerOutcome",
+    "StayAgentBaselineReport",
+    "StayAgentCaseResult",
+    "StayAgentEvalCase",
+    "StayAgentEvalSuite",
+    "StayAgentExpectation",
+    "StayEvaluationError",
+    "StayFixtureCandidateSpec",
+    "StayScenarioProvider",
     "VerticalSliceCase",
     "VerticalSliceCaseResult",
     "VerticalSliceGateReport",
@@ -108,6 +132,8 @@ __all__ = [
     "evaluate_planning_seed_suite",
     "evaluate_single_planner_case",
     "evaluate_single_planner_suite",
+    "evaluate_stay_agent_case",
+    "evaluate_stay_agent_suite",
     "evaluate_vertical_slice_case",
     "evaluate_vertical_slice_suite",
     "explore_agent_dataset_sha256",
@@ -115,7 +141,9 @@ __all__ = [
     "load_constraint_agent_expectations",
     "load_explore_agent_suite",
     "load_planning_seed_suite",
+    "load_stay_agent_suite",
     "load_vertical_slice_suite",
     "run_vertical_slice_case",
+    "stay_agent_dataset_sha256",
     "vertical_slice_dataset_sha256",
 ]

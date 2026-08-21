@@ -7,19 +7,25 @@ from app.providers.amap_adapter import (
 )
 from app.providers.errors import ProviderRequestError
 from app.providers.ports import (
+    POISearchProvider,
     POISearchRequest,
     RetryPolicy,
     RouteRequest,
+    StaySearchProvider,
+    StaySearchRequest,
     TravelDataProvider,
     WeatherRiskRequest,
 )
 
 __all__ = [
     "AmapTravelDataProvider",
+    "POISearchProvider",
     "POISearchRequest",
     "ProviderRequestError",
     "RetryPolicy",
     "RouteRequest",
+    "StaySearchProvider",
+    "StaySearchRequest",
     "TravelDataProvider",
     "WeatherRiskRequest",
     "load_fixture_amap_provider",

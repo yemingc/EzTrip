@@ -4,7 +4,7 @@ from typing import Literal
 from pydantic import Field, model_validator
 
 from app.domain.base import DomainModel, Identifier, NonEmptyText, Sha256Digest
-from app.domain.candidates import CandidatePOI
+from app.domain.candidates import CandidatePOI, CandidateStay
 from app.domain.planning import DayPlan, ItineraryItem
 from app.domain.request import Constraint, ConstraintKind, ConstraintSet, ConstraintStrength
 
@@ -275,4 +275,130 @@ class ExploreAgentResult(DomainModel):
         ranks = [item.proposal.rank for item in self.recommendations]
         if ranks != list(range(1, len(ranks) + 1)):
             raise ValueError("Explore recommendation ranks must be contiguous and ordered")
+        return self
+
+
+class StayEvidenceKind(StrEnum):
+    QUERY_MATCH = "query_match"
+    AREA_NAME = "area_name"
+    DISTRICT = "district"
+    TAG = "tag"
+
+
+class StayQueryProposal(DomainModel):
+    target_area: str = Field(min_length=1, max_length=40)
+    keywords: str = Field(min_length=1, max_length=40)
+    reason: str = Field(min_length=1, max_length=160)
+    context_refs: tuple[NonEmptyText, ...] = Field(default=(), max_length=4)
+
+
+class StayQueryProposalBatch(DomainModel):
+    items: tuple[StayQueryProposal, ...] = Field(min_length=1, max_length=3)
+
+
+class StayQueryModelResponse(DomainModel):
+    proposal: StayQueryProposalBatch
+    model: NonEmptyText
+    latency_ms: int = Field(ge=0)
+    usage: ModelTokenUsage | None = None
+
+
+class StaySearchQuery(DomainModel):
+    query_id: Identifier
+    target_area: str = Field(min_length=1, max_length=40)
+    keywords: str = Field(min_length=1, max_length=40)
+    reason: str = Field(min_length=1, max_length=160)
+    context_refs: tuple[NonEmptyText, ...] = Field(default=(), max_length=4)
+
+
+class StayCandidateObservation(DomainModel):
+    candidate: CandidateStay
+    query_ids: tuple[Identifier, ...] = Field(min_length=1, max_length=3)
+
+    @model_validator(mode="after")
+    def validate_unique_query_ids(self) -> "StayCandidateObservation":
+        if len(self.query_ids) != len(set(self.query_ids)):
+            raise ValueError("stay candidate observation query ids must be unique")
+        return self
+
+
+class StayEvidenceReference(DomainModel):
+    kind: StayEvidenceKind
+    value: NonEmptyText
+
+
+class StayCandidateSelectionProposal(DomainModel):
+    candidate_id: Identifier
+    rank: int = Field(ge=1, le=6)
+    reason: str = Field(min_length=1, max_length=160)
+    evidence: tuple[StayEvidenceReference, ...] = Field(min_length=1, max_length=4)
+
+
+class StaySelectionProposalBatch(DomainModel):
+    items: tuple[StayCandidateSelectionProposal, ...] = Field(min_length=1, max_length=6)
+
+
+class StaySelectionModelResponse(DomainModel):
+    proposal: StaySelectionProposalBatch
+    model: NonEmptyText
+    latency_ms: int = Field(ge=0)
+    usage: ModelTokenUsage | None = None
+
+
+class StayRecommendation(DomainModel):
+    proposal: StayCandidateSelectionProposal
+    candidate: CandidateStay
+    query_ids: tuple[Identifier, ...] = Field(min_length=1, max_length=3)
+
+    @model_validator(mode="after")
+    def validate_candidate_identity(self) -> "StayRecommendation":
+        if self.candidate.candidate_id != self.proposal.candidate_id:
+            raise ValueError("Stay recommendation must preserve the proposed candidate_id")
+        return self
+
+
+class StayAgentResult(DomainModel):
+    schema_version: Literal["1.0"] = "1.0"
+    agent_version: Literal["stay-agent-v1"] = "stay-agent-v1"
+    query_prompt_version: Literal["stay-query-strategy-v1"] = "stay-query-strategy-v1"
+    selection_prompt_version: Literal["stay-candidate-selection-v1"] = "stay-candidate-selection-v1"
+    request_id: Identifier
+    context_id: Identifier
+    candidate_set_sha256: Sha256Digest
+    queries: tuple[StaySearchQuery, ...] = Field(min_length=1, max_length=3)
+    observations: tuple[StayCandidateObservation, ...] = Field(min_length=1, max_length=9)
+    recommendations: tuple[StayRecommendation, ...] = Field(min_length=1, max_length=6)
+    query_model: NonEmptyText
+    selection_model: NonEmptyText
+    query_latency_ms: int = Field(ge=0)
+    selection_latency_ms: int = Field(ge=0)
+    query_usage: ModelTokenUsage | None = None
+    selection_usage: ModelTokenUsage | None = None
+
+    @model_validator(mode="after")
+    def validate_grounded_recommendations(self) -> "StayAgentResult":
+        query_ids = [item.query_id for item in self.queries]
+        if len(query_ids) != len(set(query_ids)):
+            raise ValueError("Stay queries must have unique ids")
+        observed_ids = [item.candidate.candidate_id for item in self.observations]
+        if len(observed_ids) != len(set(observed_ids)):
+            raise ValueError("Stay observations must have unique candidate ids")
+        known_query_ids = set(query_ids)
+        if any(not set(item.query_ids).issubset(known_query_ids) for item in self.observations):
+            raise ValueError("Stay observations must reference known query ids")
+        observations_by_id = {item.candidate.candidate_id: item for item in self.observations}
+        recommendation_ids = [item.candidate.candidate_id for item in self.recommendations]
+        if len(recommendation_ids) != len(set(recommendation_ids)):
+            raise ValueError("Stay recommendations must have unique candidate ids")
+        if not set(recommendation_ids).issubset(observed_ids):
+            raise ValueError("Stay recommendations must come from observations")
+        if any(
+            item.candidate != observations_by_id[item.candidate.candidate_id].candidate
+            or item.query_ids != observations_by_id[item.candidate.candidate_id].query_ids
+            for item in self.recommendations
+        ):
+            raise ValueError("Stay recommendations must preserve observed facts and lineage")
+        ranks = [item.proposal.rank for item in self.recommendations]
+        if ranks != list(range(1, len(ranks) + 1)):
+            raise ValueError("Stay recommendation ranks must be contiguous and ordered")
         return self
