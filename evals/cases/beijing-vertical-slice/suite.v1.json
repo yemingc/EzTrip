@@ -1,0 +1,192 @@
+{
+  "suite": "beijing-three-day-vertical-slice-gate2-v1",
+  "version": 1,
+  "execution_mode": "fixture",
+  "cases": [
+    {
+      "version": 1,
+      "case_id": "gate2-beijing-normal-v1",
+      "title": "北京三日历史文化行程正常预算闭环",
+      "request": {
+        "request_id": "gate2_request_beijing_normal",
+        "raw_text": "两位成年人从上海去北京玩三天，必须去故宫、天坛公园和首都博物馆，偏好历史文化和轻步行，不含酒店的当地预算 3000 元。",
+        "origin_city": "上海市",
+        "destination_city": "北京市",
+        "start_date": "2026-10-02",
+        "end_date": "2026-10-04",
+        "party": {"adults": 2, "rooms": 1},
+        "budget": {
+          "total_limit": "3000.00",
+          "included_categories": ["transport", "food", "admission", "activity"]
+        },
+        "travel_styles": ["历史文化", "轻步行"],
+        "constraints": {
+          "items": [
+            {"constraint_id": "must_visit_forbidden_city", "kind": "must_visit", "value": "故宫", "strength": "hard", "priority": 5, "source": "user_explicit", "confirmed": true},
+            {"constraint_id": "must_visit_temple_of_heaven", "kind": "must_visit", "value": "天坛公园", "strength": "hard", "priority": 5, "source": "user_explicit", "confirmed": true},
+            {"constraint_id": "must_visit_capital_museum", "kind": "must_visit", "value": "首都博物馆", "strength": "hard", "priority": 5, "source": "user_explicit", "confirmed": true},
+            {"constraint_id": "walking_intensity_low", "kind": "walking_intensity", "value": "low", "strength": "soft", "priority": 4, "source": "user_explicit", "confirmed": true}
+          ]
+        }
+      },
+      "provider_responses": [
+        {
+          "request": {"keywords": "故宫博物院", "city_adcode": "110000", "limit": 1},
+          "candidates": [{
+            "candidate_id": "gate2-poi-forbidden-city",
+            "name": "故宫博物院",
+            "city": "北京市",
+            "district": "东城区",
+            "location": {"latitude": 39.917839, "longitude": 116.397029},
+            "categories": ["博物馆", "历史文化"],
+            "environment": "mixed",
+            "suggested_duration_minutes": 180,
+            "tags": ["gate2-fixture"],
+            "source": {"provider": "gate2_poi_fixture", "provider_id": "fixture-forbidden-city-v1", "data_mode": "fixture", "retrieved_at": "2026-08-21T02:00:00Z"}
+          }]
+        },
+        {
+          "request": {"keywords": "天坛公园", "city_adcode": "110000", "limit": 1},
+          "candidates": [{
+            "candidate_id": "gate2-poi-temple-of-heaven",
+            "name": "天坛公园",
+            "city": "北京市",
+            "district": "东城区",
+            "location": {"latitude": 39.882180, "longitude": 116.406605},
+            "categories": ["公园", "历史文化"],
+            "environment": "outdoor",
+            "suggested_duration_minutes": 150,
+            "tags": ["gate2-fixture"],
+            "source": {"provider": "gate2_poi_fixture", "provider_id": "fixture-temple-of-heaven-v1", "data_mode": "fixture", "retrieved_at": "2026-08-21T02:00:00Z"}
+          }]
+        },
+        {
+          "request": {"keywords": "首都博物馆", "city_adcode": "110000", "limit": 1},
+          "candidates": [{
+            "candidate_id": "gate2-poi-capital-museum",
+            "name": "首都博物馆",
+            "city": "北京市",
+            "district": "西城区",
+            "location": {"latitude": 39.905336, "longitude": 116.341368},
+            "categories": ["博物馆", "历史文化"],
+            "environment": "indoor",
+            "suggested_duration_minutes": 120,
+            "tags": ["gate2-fixture"],
+            "source": {"provider": "gate2_poi_fixture", "provider_id": "fixture-capital-museum-v1", "data_mode": "fixture", "retrieved_at": "2026-08-21T02:00:00Z"}
+          }]
+        }
+      ],
+      "planner_proposal": {
+        "items": [
+          {"candidate_id": "gate2-poi-forbidden-city", "day_number": 1, "start_time": "09:00", "reason": "按版本化 Gate 2 fixture 放置在第一天。"},
+          {"candidate_id": "gate2-poi-temple-of-heaven", "day_number": 2, "start_time": "09:00", "reason": "按版本化 Gate 2 fixture 放置在第二天。"},
+          {"candidate_id": "gate2-poi-capital-museum", "day_number": 3, "start_time": "09:00", "reason": "按版本化 Gate 2 fixture 放置在第三天。"}
+        ]
+      },
+      "planner_model": "fixture-planner-gate2-v1",
+      "cost_items": [
+        {"cost_item_id": "gate2-cost-transport", "category": "transport", "description": "Gate 2 市内交通测试费用", "quantity": "1", "unit_price": {"minimum": "120.00", "maximum": "120.00"}, "source": {"provider": "gate2_cost_fixture", "provider_id": "transport-floor-v1", "data_mode": "fixture", "retrieved_at": "2026-08-21T02:00:00Z"}, "is_estimate": true},
+        {"cost_item_id": "gate2-cost-food", "category": "food", "description": "Gate 2 餐饮测试费用", "quantity": "6", "unit_price": {"minimum": "40.00", "maximum": "40.00"}, "source": {"provider": "gate2_cost_fixture", "provider_id": "food-floor-v1", "data_mode": "fixture", "retrieved_at": "2026-08-21T02:00:00Z"}, "is_estimate": true},
+        {"cost_item_id": "gate2-cost-admission", "category": "admission", "description": "Gate 2 门票测试费用", "quantity": "2", "unit_price": {"minimum": "60.00", "maximum": "60.00"}, "source": {"provider": "gate2_cost_fixture", "provider_id": "admission-floor-v1", "data_mode": "fixture", "retrieved_at": "2026-08-21T02:00:00Z"}, "is_estimate": true},
+        {"cost_item_id": "gate2-cost-activity", "category": "activity", "description": "Gate 2 活动测试费用", "quantity": "1", "unit_price": {"minimum": "20.00", "maximum": "20.00"}, "source": {"provider": "gate2_cost_fixture", "provider_id": "activity-floor-v1", "data_mode": "fixture", "retrieved_at": "2026-08-21T02:00:00Z"}, "is_estimate": true}
+      ],
+      "expected": {"outcome": "ready", "validation_status": "passed", "budget_status": "within_limit", "can_finalize": true, "issue_rule_codes": []},
+      "boundary_notes": [
+        "费用只是版本化测试输入，不是实时价格或市场结论。",
+        "固定 Planner 提案用于验证可重放主链，不用于衡量模型规划质量。"
+      ]
+    },
+    {
+      "version": 1,
+      "case_id": "gate2-beijing-budget-conflict-v1",
+      "title": "北京三日全包硬预算冲突闭环",
+      "request": {
+        "request_id": "gate2_request_beijing_budget_conflict",
+        "raw_text": "两位成年人去北京玩三天，必须去故宫、天坛公园和首都博物馆，一间房，全包预算只有 300 元。",
+        "destination_city": "北京市",
+        "start_date": "2026-10-02",
+        "end_date": "2026-10-04",
+        "party": {"adults": 2, "rooms": 1},
+        "budget": {
+          "total_limit": "300.00",
+          "included_categories": ["lodging", "transport", "food", "admission", "activity"]
+        },
+        "travel_styles": ["历史文化"],
+        "constraints": {
+          "items": [
+            {"constraint_id": "must_visit_forbidden_city", "kind": "must_visit", "value": "故宫", "strength": "hard", "priority": 5, "source": "user_explicit", "confirmed": true},
+            {"constraint_id": "must_visit_temple_of_heaven", "kind": "must_visit", "value": "天坛公园", "strength": "hard", "priority": 5, "source": "user_explicit", "confirmed": true},
+            {"constraint_id": "must_visit_capital_museum", "kind": "must_visit", "value": "首都博物馆", "strength": "hard", "priority": 5, "source": "user_explicit", "confirmed": true}
+          ]
+        }
+      },
+      "provider_responses": [
+        {
+          "request": {"keywords": "故宫博物院", "city_adcode": "110000", "limit": 1},
+          "candidates": [{
+            "candidate_id": "gate2-poi-forbidden-city",
+            "name": "故宫博物院",
+            "city": "北京市",
+            "district": "东城区",
+            "location": {"latitude": 39.917839, "longitude": 116.397029},
+            "categories": ["博物馆", "历史文化"],
+            "environment": "mixed",
+            "suggested_duration_minutes": 180,
+            "tags": ["gate2-fixture"],
+            "source": {"provider": "gate2_poi_fixture", "provider_id": "fixture-forbidden-city-v1", "data_mode": "fixture", "retrieved_at": "2026-08-21T02:00:00Z"}
+          }]
+        },
+        {
+          "request": {"keywords": "天坛公园", "city_adcode": "110000", "limit": 1},
+          "candidates": [{
+            "candidate_id": "gate2-poi-temple-of-heaven",
+            "name": "天坛公园",
+            "city": "北京市",
+            "district": "东城区",
+            "location": {"latitude": 39.882180, "longitude": 116.406605},
+            "categories": ["公园", "历史文化"],
+            "environment": "outdoor",
+            "suggested_duration_minutes": 150,
+            "tags": ["gate2-fixture"],
+            "source": {"provider": "gate2_poi_fixture", "provider_id": "fixture-temple-of-heaven-v1", "data_mode": "fixture", "retrieved_at": "2026-08-21T02:00:00Z"}
+          }]
+        },
+        {
+          "request": {"keywords": "首都博物馆", "city_adcode": "110000", "limit": 1},
+          "candidates": [{
+            "candidate_id": "gate2-poi-capital-museum",
+            "name": "首都博物馆",
+            "city": "北京市",
+            "district": "西城区",
+            "location": {"latitude": 39.905336, "longitude": 116.341368},
+            "categories": ["博物馆", "历史文化"],
+            "environment": "indoor",
+            "suggested_duration_minutes": 120,
+            "tags": ["gate2-fixture"],
+            "source": {"provider": "gate2_poi_fixture", "provider_id": "fixture-capital-museum-v1", "data_mode": "fixture", "retrieved_at": "2026-08-21T02:00:00Z"}
+          }]
+        }
+      ],
+      "planner_proposal": {
+        "items": [
+          {"candidate_id": "gate2-poi-forbidden-city", "day_number": 1, "start_time": "09:00", "reason": "按版本化 Gate 2 fixture 放置在第一天。"},
+          {"candidate_id": "gate2-poi-temple-of-heaven", "day_number": 2, "start_time": "09:00", "reason": "按版本化 Gate 2 fixture 放置在第二天。"},
+          {"candidate_id": "gate2-poi-capital-museum", "day_number": 3, "start_time": "09:00", "reason": "按版本化 Gate 2 fixture 放置在第三天。"}
+        ]
+      },
+      "planner_model": "fixture-planner-gate2-v1",
+      "cost_items": [
+        {"cost_item_id": "gate2-cost-lodging", "category": "lodging", "description": "Gate 2 两晚住宿测试下界", "quantity": "2", "unit_price": {"minimum": "200.00", "maximum": "200.00"}, "source": {"provider": "gate2_cost_fixture", "provider_id": "lodging-floor-v1", "data_mode": "fixture", "retrieved_at": "2026-08-21T02:00:00Z"}, "is_estimate": true},
+        {"cost_item_id": "gate2-cost-transport", "category": "transport", "description": "Gate 2 市内交通测试费用", "quantity": "1", "unit_price": {"minimum": "120.00", "maximum": "120.00"}, "source": {"provider": "gate2_cost_fixture", "provider_id": "transport-floor-v1", "data_mode": "fixture", "retrieved_at": "2026-08-21T02:00:00Z"}, "is_estimate": true},
+        {"cost_item_id": "gate2-cost-food", "category": "food", "description": "Gate 2 餐饮测试费用", "quantity": "6", "unit_price": {"minimum": "40.00", "maximum": "40.00"}, "source": {"provider": "gate2_cost_fixture", "provider_id": "food-floor-v1", "data_mode": "fixture", "retrieved_at": "2026-08-21T02:00:00Z"}, "is_estimate": true},
+        {"cost_item_id": "gate2-cost-admission", "category": "admission", "description": "Gate 2 门票测试费用", "quantity": "2", "unit_price": {"minimum": "60.00", "maximum": "60.00"}, "source": {"provider": "gate2_cost_fixture", "provider_id": "admission-floor-v1", "data_mode": "fixture", "retrieved_at": "2026-08-21T02:00:00Z"}, "is_estimate": true},
+        {"cost_item_id": "gate2-cost-activity", "category": "activity", "description": "Gate 2 活动测试费用", "quantity": "1", "unit_price": {"minimum": "20.00", "maximum": "20.00"}, "source": {"provider": "gate2_cost_fixture", "provider_id": "activity-floor-v1", "data_mode": "fixture", "retrieved_at": "2026-08-21T02:00:00Z"}, "is_estimate": true}
+      ],
+      "expected": {"outcome": "conflicted", "validation_status": "conflicted", "budget_status": "exceeded", "can_finalize": false, "issue_rule_codes": ["budget.deterministic_floor_exceeds_limit"]},
+      "boundary_notes": [
+        "900 元确定性下界只是测试输入，不是北京旅行的市场价格结论。",
+        "冲突案例保留全部必去候选与预算类别，不静默删除用户硬条件。"
+      ]
+    }
+  ]
+}

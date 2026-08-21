@@ -1,0 +1,670 @@
+{
+  "schema_version": "1.0",
+  "workflow_version": "beijing-three-day-vertical-slice-v1",
+  "request_id": "gate2_request_beijing_normal",
+  "data_mode": "fixture",
+  "outcome": "ready",
+  "upstream": {
+    "schema_version": "1.0",
+    "workflow_version": "minimal-planning-graph-v1",
+    "request_id": "gate2_request_beijing_normal",
+    "data_mode": "fixture",
+    "planner_context": {
+      "schema_version": "1.0",
+      "compiler_version": "planner-context-v1",
+      "context_id": "planner-context-16c815ecc6123e28",
+      "request_id": "gate2_request_beijing_normal",
+      "input_request_sha256": "16c815ecc6123e280e2acf454713ade907889164d89c933e0ef2c76047bc2388",
+      "locale": "zh-CN",
+      "origin_city": "上海市",
+      "destination": {
+        "input_name": "北京市",
+        "normalized_name": "北京市",
+        "administrative_code": "110000",
+        "primary_provider_supported": true
+      },
+      "start_date": "2026-10-02",
+      "end_date": "2026-10-04",
+      "day_count": 3,
+      "lodging_nights": 2,
+      "party": {
+        "adults": 2,
+        "children": 0,
+        "seniors": 0,
+        "total_travelers": 2,
+        "rooms": 1,
+        "lodging_nights": 2,
+        "room_nights": 2
+      },
+      "budget": {
+        "total_limit": "3000.00",
+        "currency": "CNY",
+        "hard_limit": true,
+        "included_categories": [
+          "transport",
+          "food",
+          "admission",
+          "activity"
+        ],
+        "excluded_categories": [
+          "lodging",
+          "other"
+        ],
+        "includes_lodging": false,
+        "reference_party_per_day": "1000.00",
+        "reference_per_traveler_trip": "1500.00",
+        "reference_per_traveler_day": "500.00"
+      },
+      "travel_styles": [
+        "历史文化",
+        "轻步行"
+      ],
+      "confirmed_hard_constraints": [
+        {
+          "constraint_id": "must_visit_forbidden_city",
+          "kind": "must_visit",
+          "value": "故宫",
+          "strength": "hard",
+          "priority": 5,
+          "source": "user_explicit",
+          "applies_to_dates": [],
+          "confirmed": true
+        },
+        {
+          "constraint_id": "must_visit_temple_of_heaven",
+          "kind": "must_visit",
+          "value": "天坛公园",
+          "strength": "hard",
+          "priority": 5,
+          "source": "user_explicit",
+          "applies_to_dates": [],
+          "confirmed": true
+        },
+        {
+          "constraint_id": "must_visit_capital_museum",
+          "kind": "must_visit",
+          "value": "首都博物馆",
+          "strength": "hard",
+          "priority": 5,
+          "source": "user_explicit",
+          "applies_to_dates": [],
+          "confirmed": true
+        }
+      ],
+      "confirmed_soft_constraints": [
+        {
+          "constraint_id": "walking_intensity_low",
+          "kind": "walking_intensity",
+          "value": "low",
+          "strength": "soft",
+          "priority": 4,
+          "source": "user_explicit",
+          "applies_to_dates": [],
+          "confirmed": true
+        }
+      ],
+      "pending_constraints": [],
+      "global_constraint_ids": [
+        "must_visit_forbidden_city",
+        "must_visit_temple_of_heaven",
+        "must_visit_capital_museum",
+        "walking_intensity_low"
+      ],
+      "days": [
+        {
+          "day_number": 1,
+          "date": "2026-10-02",
+          "constraint_ids": []
+        },
+        {
+          "day_number": 2,
+          "date": "2026-10-03",
+          "constraint_ids": []
+        },
+        {
+          "day_number": 3,
+          "date": "2026-10-04",
+          "constraint_ids": []
+        }
+      ],
+      "clarifications": [],
+      "readiness": "ready",
+      "ready_capabilities": [
+        "candidate_search",
+        "stay_search",
+        "weather_lookup",
+        "route_planning",
+        "budget_validation",
+        "plan_finalization"
+      ],
+      "blocked_capabilities": []
+    },
+    "status": "candidates_ready",
+    "candidate_queries": [
+      {
+        "query_id": "candidate-query-7add3b2fccb5",
+        "keywords": "故宫博物院",
+        "city_adcode": "110000",
+        "limit": 1,
+        "source": "confirmed_must_visit",
+        "source_constraint_id": "must_visit_forbidden_city",
+        "requested_value": "故宫"
+      },
+      {
+        "query_id": "candidate-query-a13ebb81e988",
+        "keywords": "天坛公园",
+        "city_adcode": "110000",
+        "limit": 1,
+        "source": "confirmed_must_visit",
+        "source_constraint_id": "must_visit_temple_of_heaven",
+        "requested_value": "天坛公园"
+      },
+      {
+        "query_id": "candidate-query-ad68acf54862",
+        "keywords": "首都博物馆",
+        "city_adcode": "110000",
+        "limit": 1,
+        "source": "confirmed_must_visit",
+        "source_constraint_id": "must_visit_capital_museum",
+        "requested_value": "首都博物馆"
+      }
+    ],
+    "candidates": [
+      {
+        "candidate_id": "gate2-poi-forbidden-city",
+        "name": "故宫博物院",
+        "city": "北京市",
+        "district": "东城区",
+        "address": null,
+        "location": {
+          "latitude": 39.917839,
+          "longitude": 116.397029
+        },
+        "categories": [
+          "博物馆",
+          "历史文化"
+        ],
+        "environment": "mixed",
+        "suggested_duration_minutes": 180,
+        "tags": [
+          "gate2-fixture"
+        ],
+        "source": {
+          "provider": "gate2_poi_fixture",
+          "provider_id": "fixture-forbidden-city-v1",
+          "data_mode": "fixture",
+          "retrieved_at": "2026-08-21T02:00:00Z",
+          "raw_response_sha256": null
+        }
+      },
+      {
+        "candidate_id": "gate2-poi-temple-of-heaven",
+        "name": "天坛公园",
+        "city": "北京市",
+        "district": "东城区",
+        "address": null,
+        "location": {
+          "latitude": 39.88218,
+          "longitude": 116.406605
+        },
+        "categories": [
+          "公园",
+          "历史文化"
+        ],
+        "environment": "outdoor",
+        "suggested_duration_minutes": 150,
+        "tags": [
+          "gate2-fixture"
+        ],
+        "source": {
+          "provider": "gate2_poi_fixture",
+          "provider_id": "fixture-temple-of-heaven-v1",
+          "data_mode": "fixture",
+          "retrieved_at": "2026-08-21T02:00:00Z",
+          "raw_response_sha256": null
+        }
+      },
+      {
+        "candidate_id": "gate2-poi-capital-museum",
+        "name": "首都博物馆",
+        "city": "北京市",
+        "district": "西城区",
+        "address": null,
+        "location": {
+          "latitude": 39.905336,
+          "longitude": 116.341368
+        },
+        "categories": [
+          "博物馆",
+          "历史文化"
+        ],
+        "environment": "indoor",
+        "suggested_duration_minutes": 120,
+        "tags": [
+          "gate2-fixture"
+        ],
+        "source": {
+          "provider": "gate2_poi_fixture",
+          "provider_id": "fixture-capital-museum-v1",
+          "data_mode": "fixture",
+          "retrieved_at": "2026-08-21T02:00:00Z",
+          "raw_response_sha256": null
+        }
+      }
+    ],
+    "provider_failures": [],
+    "events": [
+      {
+        "node": "compile_context",
+        "outcome": "compiled",
+        "detail": "TripRequest 已编译为确定性 PlannerContext。"
+      },
+      {
+        "node": "clarification_gate",
+        "outcome": "allowed",
+        "detail": "候选搜索能力已就绪, 允许继续执行。"
+      },
+      {
+        "node": "candidate_search",
+        "outcome": "succeeded",
+        "detail": "已获得带 provider 来源的必去景点候选。"
+      }
+    ]
+  },
+  "planner": {
+    "schema_version": "1.0",
+    "agent_version": "single-planner-v1",
+    "prompt_version": "candidate-placement-v1",
+    "request_id": "gate2_request_beijing_normal",
+    "context_id": "planner-context-16c815ecc6123e28",
+    "input_candidates_sha256": "e31657812fdccb9562b0e2a28207d6217e2dc83ae7144c5e80ffc918a47974d7",
+    "model": "fixture-planner-gate2-v1",
+    "latency_ms": 0,
+    "usage": null,
+    "decisions": [
+      {
+        "proposal": {
+          "candidate_id": "gate2-poi-forbidden-city",
+          "day_number": 1,
+          "start_time": "09:00",
+          "reason": "按版本化 Gate 2 fixture 放置在第一天。"
+        },
+        "item": {
+          "item_id": "planner-item-453ffa96a3b4",
+          "kind": "attraction",
+          "title": "故宫博物院",
+          "start_at": "2026-10-02T09:00:00+08:00",
+          "end_at": "2026-10-02T12:00:00+08:00",
+          "candidate_id": "gate2-poi-forbidden-city",
+          "source": {
+            "provider": "gate2_poi_fixture",
+            "provider_id": "fixture-forbidden-city-v1",
+            "data_mode": "fixture",
+            "retrieved_at": "2026-08-21T02:00:00Z",
+            "raw_response_sha256": null
+          },
+          "route_from_previous": null,
+          "cost_item_ids": [],
+          "notes": [
+            "单 Planner V1 仅生成候选放置草案, 模型排程理由保留在 decision 中供审计。",
+            "活动时长为候选建议值或 V1 固定 120 分钟草案, 尚未校验实时营业时间。"
+          ]
+        }
+      },
+      {
+        "proposal": {
+          "candidate_id": "gate2-poi-temple-of-heaven",
+          "day_number": 2,
+          "start_time": "09:00",
+          "reason": "按版本化 Gate 2 fixture 放置在第二天。"
+        },
+        "item": {
+          "item_id": "planner-item-e867164faa29",
+          "kind": "attraction",
+          "title": "天坛公园",
+          "start_at": "2026-10-03T09:00:00+08:00",
+          "end_at": "2026-10-03T11:30:00+08:00",
+          "candidate_id": "gate2-poi-temple-of-heaven",
+          "source": {
+            "provider": "gate2_poi_fixture",
+            "provider_id": "fixture-temple-of-heaven-v1",
+            "data_mode": "fixture",
+            "retrieved_at": "2026-08-21T02:00:00Z",
+            "raw_response_sha256": null
+          },
+          "route_from_previous": null,
+          "cost_item_ids": [],
+          "notes": [
+            "单 Planner V1 仅生成候选放置草案, 模型排程理由保留在 decision 中供审计。",
+            "活动时长为候选建议值或 V1 固定 120 分钟草案, 尚未校验实时营业时间。"
+          ]
+        }
+      },
+      {
+        "proposal": {
+          "candidate_id": "gate2-poi-capital-museum",
+          "day_number": 3,
+          "start_time": "09:00",
+          "reason": "按版本化 Gate 2 fixture 放置在第三天。"
+        },
+        "item": {
+          "item_id": "planner-item-ffd64057fa42",
+          "kind": "attraction",
+          "title": "首都博物馆",
+          "start_at": "2026-10-04T09:00:00+08:00",
+          "end_at": "2026-10-04T11:00:00+08:00",
+          "candidate_id": "gate2-poi-capital-museum",
+          "source": {
+            "provider": "gate2_poi_fixture",
+            "provider_id": "fixture-capital-museum-v1",
+            "data_mode": "fixture",
+            "retrieved_at": "2026-08-21T02:00:00Z",
+            "raw_response_sha256": null
+          },
+          "route_from_previous": null,
+          "cost_item_ids": [],
+          "notes": [
+            "单 Planner V1 仅生成候选放置草案, 模型排程理由保留在 decision 中供审计。",
+            "活动时长为候选建议值或 V1 固定 120 分钟草案, 尚未校验实时营业时间。"
+          ]
+        }
+      }
+    ],
+    "day_plans": [
+      {
+        "date": "2026-10-02",
+        "items": [
+          {
+            "item_id": "planner-item-453ffa96a3b4",
+            "kind": "attraction",
+            "title": "故宫博物院",
+            "start_at": "2026-10-02T09:00:00+08:00",
+            "end_at": "2026-10-02T12:00:00+08:00",
+            "candidate_id": "gate2-poi-forbidden-city",
+            "source": {
+              "provider": "gate2_poi_fixture",
+              "provider_id": "fixture-forbidden-city-v1",
+              "data_mode": "fixture",
+              "retrieved_at": "2026-08-21T02:00:00Z",
+              "raw_response_sha256": null
+            },
+            "route_from_previous": null,
+            "cost_item_ids": [],
+            "notes": [
+              "单 Planner V1 仅生成候选放置草案, 模型排程理由保留在 decision 中供审计。",
+              "活动时长为候选建议值或 V1 固定 120 分钟草案, 尚未校验实时营业时间。"
+            ]
+          }
+        ],
+        "weather_risk_ids": []
+      },
+      {
+        "date": "2026-10-03",
+        "items": [
+          {
+            "item_id": "planner-item-e867164faa29",
+            "kind": "attraction",
+            "title": "天坛公园",
+            "start_at": "2026-10-03T09:00:00+08:00",
+            "end_at": "2026-10-03T11:30:00+08:00",
+            "candidate_id": "gate2-poi-temple-of-heaven",
+            "source": {
+              "provider": "gate2_poi_fixture",
+              "provider_id": "fixture-temple-of-heaven-v1",
+              "data_mode": "fixture",
+              "retrieved_at": "2026-08-21T02:00:00Z",
+              "raw_response_sha256": null
+            },
+            "route_from_previous": null,
+            "cost_item_ids": [],
+            "notes": [
+              "单 Planner V1 仅生成候选放置草案, 模型排程理由保留在 decision 中供审计。",
+              "活动时长为候选建议值或 V1 固定 120 分钟草案, 尚未校验实时营业时间。"
+            ]
+          }
+        ],
+        "weather_risk_ids": []
+      },
+      {
+        "date": "2026-10-04",
+        "items": [
+          {
+            "item_id": "planner-item-ffd64057fa42",
+            "kind": "attraction",
+            "title": "首都博物馆",
+            "start_at": "2026-10-04T09:00:00+08:00",
+            "end_at": "2026-10-04T11:00:00+08:00",
+            "candidate_id": "gate2-poi-capital-museum",
+            "source": {
+              "provider": "gate2_poi_fixture",
+              "provider_id": "fixture-capital-museum-v1",
+              "data_mode": "fixture",
+              "retrieved_at": "2026-08-21T02:00:00Z",
+              "raw_response_sha256": null
+            },
+            "route_from_previous": null,
+            "cost_item_ids": [],
+            "notes": [
+              "单 Planner V1 仅生成候选放置草案, 模型排程理由保留在 decision 中供审计。",
+              "活动时长为候选建议值或 V1 固定 120 分钟草案, 尚未校验实时营业时间。"
+            ]
+          }
+        ],
+        "weather_risk_ids": []
+      }
+    ]
+  },
+  "plan": {
+    "schema_version": "1.0",
+    "plan_id": "trip-plan-559bad92836fabdf",
+    "request_id": "gate2_request_beijing_normal",
+    "status": "draft",
+    "destination_city": "北京市",
+    "start_date": "2026-10-02",
+    "end_date": "2026-10-04",
+    "days": [
+      {
+        "date": "2026-10-02",
+        "items": [
+          {
+            "item_id": "planner-item-453ffa96a3b4",
+            "kind": "attraction",
+            "title": "故宫博物院",
+            "start_at": "2026-10-02T09:00:00+08:00",
+            "end_at": "2026-10-02T12:00:00+08:00",
+            "candidate_id": "gate2-poi-forbidden-city",
+            "source": {
+              "provider": "gate2_poi_fixture",
+              "provider_id": "fixture-forbidden-city-v1",
+              "data_mode": "fixture",
+              "retrieved_at": "2026-08-21T02:00:00Z",
+              "raw_response_sha256": null
+            },
+            "route_from_previous": null,
+            "cost_item_ids": [],
+            "notes": [
+              "单 Planner V1 仅生成候选放置草案, 模型排程理由保留在 decision 中供审计。",
+              "活动时长为候选建议值或 V1 固定 120 分钟草案, 尚未校验实时营业时间。"
+            ]
+          }
+        ],
+        "weather_risk_ids": []
+      },
+      {
+        "date": "2026-10-03",
+        "items": [
+          {
+            "item_id": "planner-item-e867164faa29",
+            "kind": "attraction",
+            "title": "天坛公园",
+            "start_at": "2026-10-03T09:00:00+08:00",
+            "end_at": "2026-10-03T11:30:00+08:00",
+            "candidate_id": "gate2-poi-temple-of-heaven",
+            "source": {
+              "provider": "gate2_poi_fixture",
+              "provider_id": "fixture-temple-of-heaven-v1",
+              "data_mode": "fixture",
+              "retrieved_at": "2026-08-21T02:00:00Z",
+              "raw_response_sha256": null
+            },
+            "route_from_previous": null,
+            "cost_item_ids": [],
+            "notes": [
+              "单 Planner V1 仅生成候选放置草案, 模型排程理由保留在 decision 中供审计。",
+              "活动时长为候选建议值或 V1 固定 120 分钟草案, 尚未校验实时营业时间。"
+            ]
+          }
+        ],
+        "weather_risk_ids": []
+      },
+      {
+        "date": "2026-10-04",
+        "items": [
+          {
+            "item_id": "planner-item-ffd64057fa42",
+            "kind": "attraction",
+            "title": "首都博物馆",
+            "start_at": "2026-10-04T09:00:00+08:00",
+            "end_at": "2026-10-04T11:00:00+08:00",
+            "candidate_id": "gate2-poi-capital-museum",
+            "source": {
+              "provider": "gate2_poi_fixture",
+              "provider_id": "fixture-capital-museum-v1",
+              "data_mode": "fixture",
+              "retrieved_at": "2026-08-21T02:00:00Z",
+              "raw_response_sha256": null
+            },
+            "route_from_previous": null,
+            "cost_item_ids": [],
+            "notes": [
+              "单 Planner V1 仅生成候选放置草案, 模型排程理由保留在 decision 中供审计。",
+              "活动时长为候选建议值或 V1 固定 120 分钟草案, 尚未校验实时营业时间。"
+            ]
+          }
+        ],
+        "weather_risk_ids": []
+      }
+    ],
+    "cost_items": [
+      {
+        "cost_item_id": "gate2-cost-transport",
+        "category": "transport",
+        "description": "Gate 2 市内交通测试费用",
+        "quantity": "1",
+        "unit_price": {
+          "minimum": "120.00",
+          "maximum": "120.00",
+          "currency": "CNY"
+        },
+        "source": {
+          "provider": "gate2_cost_fixture",
+          "provider_id": "transport-floor-v1",
+          "data_mode": "fixture",
+          "retrieved_at": "2026-08-21T02:00:00Z",
+          "raw_response_sha256": null
+        },
+        "is_estimate": true
+      },
+      {
+        "cost_item_id": "gate2-cost-food",
+        "category": "food",
+        "description": "Gate 2 餐饮测试费用",
+        "quantity": "6",
+        "unit_price": {
+          "minimum": "40.00",
+          "maximum": "40.00",
+          "currency": "CNY"
+        },
+        "source": {
+          "provider": "gate2_cost_fixture",
+          "provider_id": "food-floor-v1",
+          "data_mode": "fixture",
+          "retrieved_at": "2026-08-21T02:00:00Z",
+          "raw_response_sha256": null
+        },
+        "is_estimate": true
+      },
+      {
+        "cost_item_id": "gate2-cost-admission",
+        "category": "admission",
+        "description": "Gate 2 门票测试费用",
+        "quantity": "2",
+        "unit_price": {
+          "minimum": "60.00",
+          "maximum": "60.00",
+          "currency": "CNY"
+        },
+        "source": {
+          "provider": "gate2_cost_fixture",
+          "provider_id": "admission-floor-v1",
+          "data_mode": "fixture",
+          "retrieved_at": "2026-08-21T02:00:00Z",
+          "raw_response_sha256": null
+        },
+        "is_estimate": true
+      },
+      {
+        "cost_item_id": "gate2-cost-activity",
+        "category": "activity",
+        "description": "Gate 2 活动测试费用",
+        "quantity": "1",
+        "unit_price": {
+          "minimum": "20.00",
+          "maximum": "20.00",
+          "currency": "CNY"
+        },
+        "source": {
+          "provider": "gate2_cost_fixture",
+          "provider_id": "activity-floor-v1",
+          "data_mode": "fixture",
+          "retrieved_at": "2026-08-21T02:00:00Z",
+          "raw_response_sha256": null
+        },
+        "is_estimate": true
+      }
+    ],
+    "weather_risks": []
+  },
+  "validation": {
+    "schema_version": "1.0",
+    "validator_version": "deterministic-plan-validator-v1",
+    "request_id": "gate2_request_beijing_normal",
+    "plan_id": "trip-plan-559bad92836fabdf",
+    "status": "passed",
+    "can_finalize": true,
+    "budget": {
+      "status": "within_limit",
+      "currency": "CNY",
+      "total_limit": "3000.00",
+      "included_categories": [
+        "transport",
+        "food",
+        "admission",
+        "activity"
+      ],
+      "missing_categories": [],
+      "considered_cost_item_ids": [
+        "gate2-cost-transport",
+        "gate2-cost-food",
+        "gate2-cost-admission",
+        "gate2-cost-activity"
+      ],
+      "excluded_cost_item_ids": [],
+      "total_minimum": "500.00",
+      "total_maximum": "500.00",
+      "minimum_gap": "0.00",
+      "maximum_gap": "0.00"
+    },
+    "issues": [],
+    "passed_rule_codes": [
+      "plan.request_matches",
+      "plan.destination_matches",
+      "plan.date_window_matches",
+      "plan.candidate_ids_unique",
+      "source.grounded_items_traceable",
+      "budget.assessment_passed",
+      "plan.not_preconflicted",
+      "plan.final_status_allowed"
+    ]
+  }
+}
