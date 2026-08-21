@@ -1,0 +1,251 @@
+{
+  "$defs": {
+    "BudgetAllocationStatus": {
+      "enum": [
+        "allocated",
+        "blocked",
+        "not_requested"
+      ],
+      "title": "BudgetAllocationStatus",
+      "type": "string"
+    },
+    "BudgetCategory": {
+      "enum": [
+        "lodging",
+        "transport",
+        "food",
+        "admission",
+        "activity",
+        "other"
+      ],
+      "title": "BudgetCategory",
+      "type": "string"
+    },
+    "BudgetConstraint": {
+      "additionalProperties": false,
+      "properties": {
+        "total_limit": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+              "type": "string"
+            }
+          ],
+          "title": "Total Limit"
+        },
+        "currency": {
+          "const": "CNY",
+          "default": "CNY",
+          "title": "Currency",
+          "type": "string"
+        },
+        "scope": {
+          "const": "party_total",
+          "default": "party_total",
+          "title": "Scope",
+          "type": "string"
+        },
+        "period": {
+          "const": "whole_trip",
+          "default": "whole_trip",
+          "title": "Period",
+          "type": "string"
+        },
+        "included_categories": {
+          "items": {
+            "$ref": "#/$defs/BudgetCategory"
+          },
+          "minItems": 1,
+          "title": "Included Categories",
+          "type": "array"
+        },
+        "hard_limit": {
+          "default": true,
+          "title": "Hard Limit",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "total_limit",
+        "included_categories"
+      ],
+      "title": "BudgetConstraint",
+      "type": "object"
+    },
+    "PlanningMaterialEvalCase": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "specialist_case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Specialist Case Id",
+          "type": "string"
+        },
+        "request_budget": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BudgetConstraint"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "preserve_source_budget": {
+          "default": false,
+          "title": "Preserve Source Budget",
+          "type": "boolean"
+        },
+        "route_failure": {
+          "$ref": "#/$defs/RouteFailureInjection",
+          "default": "none"
+        },
+        "expected": {
+          "$ref": "#/$defs/PlanningMaterialExpectation"
+        },
+        "boundary_notes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Boundary Notes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "title",
+        "specialist_case_id",
+        "expected",
+        "boundary_notes"
+      ],
+      "title": "PlanningMaterialEvalCase",
+      "type": "object"
+    },
+    "PlanningMaterialExpectation": {
+      "additionalProperties": false,
+      "properties": {
+        "material_status": {
+          "$ref": "#/$defs/PlanningMaterialStatus"
+        },
+        "route_status": {
+          "$ref": "#/$defs/RouteMatrixStatus"
+        },
+        "budget_status": {
+          "$ref": "#/$defs/BudgetAllocationStatus"
+        },
+        "expected_edge_count": {
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Expected Edge Count",
+          "type": "integer"
+        },
+        "expected_failed_edge_count": {
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Expected Failed Edge Count",
+          "type": "integer"
+        },
+        "expected_route_provider_calls": {
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Expected Route Provider Calls",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "material_status",
+        "route_status",
+        "budget_status",
+        "expected_edge_count",
+        "expected_failed_edge_count",
+        "expected_route_provider_calls"
+      ],
+      "title": "PlanningMaterialExpectation",
+      "type": "object"
+    },
+    "PlanningMaterialStatus": {
+      "enum": [
+        "ready",
+        "partial",
+        "blocked"
+      ],
+      "title": "PlanningMaterialStatus",
+      "type": "string"
+    },
+    "RouteFailureInjection": {
+      "enum": [
+        "none",
+        "one_timeout"
+      ],
+      "title": "RouteFailureInjection",
+      "type": "string"
+    },
+    "RouteMatrixStatus": {
+      "enum": [
+        "complete",
+        "partial",
+        "failed",
+        "blocked",
+        "unavailable",
+        "not_required"
+      ],
+      "title": "RouteMatrixStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "suite": {
+      "const": "planning-materials-v1",
+      "default": "planning-materials-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "version": {
+      "const": 1,
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "data_mode": {
+      "const": "fixture",
+      "default": "fixture",
+      "title": "Data Mode",
+      "type": "string"
+    },
+    "cases": {
+      "items": {
+        "$ref": "#/$defs/PlanningMaterialEvalCase"
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "title": "Cases",
+      "type": "array"
+    }
+  },
+  "required": [
+    "cases"
+  ],
+  "title": "PlanningMaterialEvalSuite",
+  "type": "object"
+}

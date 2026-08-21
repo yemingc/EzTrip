@@ -1,0 +1,315 @@
+{
+  "$defs": {
+    "EvaluationCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Code",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "passed"
+      ],
+      "title": "EvaluationCheck",
+      "type": "object"
+    },
+    "PlanningMaterialCaseResult": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "expected_material_status": {
+          "$ref": "#/$defs/PlanningMaterialStatus"
+        },
+        "actual_material_status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlanningMaterialStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "expected_edge_count": {
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Expected Edge Count",
+          "type": "integer"
+        },
+        "actual_edge_count": {
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Actual Edge Count",
+          "type": "integer"
+        },
+        "failed_edge_count": {
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Failed Edge Count",
+          "type": "integer"
+        },
+        "typed_route_failure_count": {
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Typed Route Failure Count",
+          "type": "integer"
+        },
+        "route_provider_call_count": {
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Route Provider Call Count",
+          "type": "integer"
+        },
+        "route_provider_peak": {
+          "maximum": 8,
+          "minimum": 0,
+          "title": "Route Provider Peak",
+          "type": "integer"
+        },
+        "source_traceability_passed": {
+          "title": "Source Traceability Passed",
+          "type": "boolean"
+        },
+        "budget_sum_exact": {
+          "title": "Budget Sum Exact",
+          "type": "boolean"
+        },
+        "budget_target_total": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+              "type": "string"
+            }
+          ],
+          "title": "Budget Target Total"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/EvaluationCheck"
+          },
+          "minItems": 1,
+          "title": "Checks",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "expected_material_status",
+        "passed",
+        "expected_edge_count",
+        "actual_edge_count",
+        "failed_edge_count",
+        "typed_route_failure_count",
+        "route_provider_call_count",
+        "route_provider_peak",
+        "source_traceability_passed",
+        "budget_sum_exact",
+        "budget_target_total",
+        "checks"
+      ],
+      "title": "PlanningMaterialCaseResult",
+      "type": "object"
+    },
+    "PlanningMaterialStatus": {
+      "enum": [
+        "ready",
+        "partial",
+        "blocked"
+      ],
+      "title": "PlanningMaterialStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "suite": {
+      "const": "planning-materials-v1",
+      "default": "planning-materials-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "bundle_version": {
+      "const": "planning-materials-v1",
+      "default": "planning-materials-v1",
+      "title": "Bundle Version",
+      "type": "string"
+    },
+    "route_matrix_version": {
+      "const": "route-matrix-v1",
+      "default": "route-matrix-v1",
+      "title": "Route Matrix Version",
+      "type": "string"
+    },
+    "budget_allocator_version": {
+      "const": "budget-allocator-v1",
+      "default": "budget-allocator-v1",
+      "title": "Budget Allocator Version",
+      "type": "string"
+    },
+    "execution_mode": {
+      "const": "fixture",
+      "default": "fixture",
+      "title": "Execution Mode",
+      "type": "string"
+    },
+    "dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Dataset Sha256",
+      "type": "string"
+    },
+    "case_count": {
+      "const": 5,
+      "default": 5,
+      "title": "Case Count",
+      "type": "integer"
+    },
+    "passed_case_count": {
+      "maximum": 5,
+      "minimum": 0,
+      "title": "Passed Case Count",
+      "type": "integer"
+    },
+    "case_pass_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Case Pass Rate"
+    },
+    "expected_edge_count": {
+      "maximum": 100,
+      "minimum": 0,
+      "title": "Expected Edge Count",
+      "type": "integer"
+    },
+    "actual_edge_count": {
+      "maximum": 100,
+      "minimum": 0,
+      "title": "Actual Edge Count",
+      "type": "integer"
+    },
+    "route_provider_call_count": {
+      "maximum": 100,
+      "minimum": 0,
+      "title": "Route Provider Call Count",
+      "type": "integer"
+    },
+    "typed_route_failure_count": {
+      "maximum": 20,
+      "minimum": 0,
+      "title": "Typed Route Failure Count",
+      "type": "integer"
+    },
+    "exact_budget_case_count": {
+      "maximum": 5,
+      "minimum": 0,
+      "title": "Exact Budget Case Count",
+      "type": "integer"
+    },
+    "blocked_zero_route_call_case_count": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Blocked Zero Route Call Case Count",
+      "type": "integer"
+    },
+    "bounded_concurrency_case_count": {
+      "maximum": 5,
+      "minimum": 0,
+      "title": "Bounded Concurrency Case Count",
+      "type": "integer"
+    },
+    "source_traceability_case_count": {
+      "maximum": 5,
+      "minimum": 0,
+      "title": "Source Traceability Case Count",
+      "type": "integer"
+    },
+    "results": {
+      "items": {
+        "$ref": "#/$defs/PlanningMaterialCaseResult"
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "title": "Results",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Limitations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "dataset_sha256",
+    "passed_case_count",
+    "case_pass_rate",
+    "expected_edge_count",
+    "actual_edge_count",
+    "route_provider_call_count",
+    "typed_route_failure_count",
+    "exact_budget_case_count",
+    "blocked_zero_route_call_case_count",
+    "bounded_concurrency_case_count",
+    "source_traceability_case_count",
+    "results",
+    "limitations"
+  ],
+  "title": "PlanningMaterialBaselineReport",
+  "type": "object"
+}

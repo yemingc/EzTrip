@@ -1,6 +1,6 @@
 # EzTrip API
 
-Gate 0 FastAPI service plus the first offline Gate 2 vertical slice, recoverable HITL wrapper, and specialist fan-out. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, schema-constrained Constraint/Explore/Stay Agents, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, a SQLite-checkpointed main Graph using native LangGraph interrupt/resume, and an independent parallel Explore/Stay/proactive-Weather information-gathering Graph. These components are not yet exposed as a product planning API and the specialist bundle is not yet a final itinerary.
+Gate 0 FastAPI service plus the first offline Gate 2 vertical slice, recoverable HITL wrapper, specialist fan-out, and deterministic planning-material layer. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, schema-constrained Constraint/Explore/Stay Agents, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, a SQLite-checkpointed main Graph using native LangGraph interrupt/resume, an independent parallel Explore/Stay/proactive-Weather information-gathering Graph, and a bounded route matrix plus auditable budget allocator. These components are not yet exposed as a product planning API and the material bundle is not yet a final itinerary.
 
 ```powershell
 uv sync --all-groups
@@ -26,6 +26,7 @@ uv run python -m scripts.export_explore_agent_schemas
 uv run python -m scripts.export_stay_agent_schemas
 uv run python -m scripts.export_checkpoint_hitl_schemas
 uv run python -m scripts.export_specialist_fanout_schemas
+uv run python -m scripts.export_planning_material_schemas
 uv run python -m scripts.export_plan_validation_example
 uv run python -m scripts.export_planner_context_example
 uv run python -m scripts.run_minimal_planning_graph --write-example
@@ -135,6 +136,16 @@ uv run pytest tests/test_specialist_fanout.py tests/test_specialist_fanout_eval.
 ```
 
 The Graph fans out to Explore, Stay, and zero-model Weather branches, then merges one reducer-accumulated result per specialist. Capability blocks skip only the affected branch; typed Provider failures preserve the other branches and retain completed model usage for cost accounting. The live-model report uses DeepSeek and LangSmith over fixture Providers. It proves orchestration mechanics, not real-time AMap quality or a final multi-Agent itinerary improvement.
+
+Run the deterministic route and budget material regression:
+
+```powershell
+uv run python -m scripts.export_planning_material_schemas
+uv run python -m scripts.run_planning_material_eval
+uv run pytest tests/test_planning_materials.py tests/test_planning_material_eval.py --no-cov
+```
+
+The material builder selects at most four ranked POIs and one primary stay, queries a directed transit matrix with concurrency capped at four, preserves typed per-edge failures, and allocates exact-cent budget targets with versioned weights. The committed fixture report records 5/5 cases and 42/42 expected route edges. The allocator creates planning targets rather than price facts, and the bundle still requires a later Plan Agent before it can become a complete multi-Agent `TripPlan`.
 
 Run the live observability probe only after configuring the local root `.env`:
 

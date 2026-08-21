@@ -70,6 +70,10 @@ class WeatherRiskProvider(Protocol):
     ) -> tuple[WeatherRisk, ...]: ...
 
 
+class RouteProvider(Protocol):
+    async def get_route(self, request: RouteRequest) -> RouteLeg: ...
+
+
 class SpecialistProvider(
     POISearchProvider,
     StaySearchProvider,
@@ -78,5 +82,4 @@ class SpecialistProvider(
 ): ...
 
 
-class TravelDataProvider(POISearchProvider, WeatherRiskProvider, Protocol):
-    async def get_route(self, request: RouteRequest) -> RouteLeg: ...
+class TravelDataProvider(POISearchProvider, WeatherRiskProvider, RouteProvider, Protocol): ...

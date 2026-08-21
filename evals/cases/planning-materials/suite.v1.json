@@ -1,0 +1,106 @@
+{
+  "suite": "planning-materials-v1",
+  "version": 1,
+  "data_mode": "fixture",
+  "cases": [
+    {
+      "case_id": "planning-materials-ready-v1",
+      "title": "三景点与住宿锚点生成完整路线矩阵和预算目标",
+      "specialist_case_id": "specialist-fanout-complete-v1",
+      "request_budget": {
+        "total_limit": "3000.00",
+        "included_categories": [
+          "lodging",
+          "transport",
+          "food",
+          "admission",
+          "activity",
+          "other"
+        ]
+      },
+      "expected": {
+        "material_status": "ready",
+        "route_status": "complete",
+        "budget_status": "allocated",
+        "expected_edge_count": 12,
+        "expected_failed_edge_count": 0,
+        "expected_route_provider_calls": 12
+      },
+      "boundary_notes": [
+        "12 条边是三景点两两有向边及住宿锚点与各景点的双向边。",
+        "预算目标仅用于后续约束求解，不代表任何实时价格。"
+      ]
+    },
+    {
+      "case_id": "planning-materials-route-timeout-v1",
+      "title": "单条路线超时后保留其余路线和预算材料",
+      "specialist_case_id": "specialist-fanout-complete-v1",
+      "request_budget": {
+        "total_limit": "3000.00",
+        "included_categories": ["transport", "food", "admission", "activity"]
+      },
+      "route_failure": "one_timeout",
+      "expected": {
+        "material_status": "partial",
+        "route_status": "partial",
+        "budget_status": "allocated",
+        "expected_edge_count": 12,
+        "expected_failed_edge_count": 1,
+        "expected_route_provider_calls": 12
+      },
+      "boundary_notes": [
+        "超时应是可重试的类型化 Provider 失败，不能删除其他 11 条成功边。"
+      ]
+    },
+    {
+      "case_id": "planning-materials-no-budget-v1",
+      "title": "没有预算仍生成路线但不声称预算满足",
+      "specialist_case_id": "specialist-fanout-complete-v1",
+      "expected": {
+        "material_status": "partial",
+        "route_status": "complete",
+        "budget_status": "not_requested",
+        "expected_edge_count": 12,
+        "expected_failed_edge_count": 0,
+        "expected_route_provider_calls": 12
+      },
+      "boundary_notes": [
+        "缺少预算是显式材料缺口，不阻止候选路线准备。"
+      ]
+    },
+    {
+      "case_id": "planning-materials-missing-rooms-v1",
+      "title": "住宿计入预算但缺少房间数时阻断住宿预算算术",
+      "specialist_case_id": "specialist-fanout-missing-rooms-v1",
+      "preserve_source_budget": true,
+      "expected": {
+        "material_status": "partial",
+        "route_status": "complete",
+        "budget_status": "blocked",
+        "expected_edge_count": 6,
+        "expected_failed_edge_count": 0,
+        "expected_route_provider_calls": 6
+      },
+      "boundary_notes": [
+        "没有 room_nights 时不得猜测住宿单价或偷偷按一间房计算。",
+        "Explore 候选之间的路线仍可独立生成。"
+      ]
+    },
+    {
+      "case_id": "planning-materials-unsupported-city-v1",
+      "title": "未配置城市在路线 Provider 调用前阻断",
+      "specialist_case_id": "specialist-fanout-unsupported-city-v1",
+      "expected": {
+        "material_status": "blocked",
+        "route_status": "blocked",
+        "budget_status": "not_requested",
+        "expected_edge_count": 0,
+        "expected_failed_edge_count": 0,
+        "expected_route_provider_calls": 0
+      },
+      "boundary_notes": [
+        "阻断表示 EzTrip V1 能力边界，不代表地图服务本身不支持该城市。"
+      ]
+    }
+  ]
+}
