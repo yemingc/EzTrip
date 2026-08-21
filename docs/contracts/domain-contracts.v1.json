@@ -2080,6 +2080,275 @@
       "title": "MinimalPlanningResult",
       "type": "object"
     },
+    "OpeningHoursEvidence": {
+      "$defs": {
+        "DataMode": {
+          "enum": [
+            "live",
+            "fixture",
+            "user_input",
+            "estimate"
+          ],
+          "title": "DataMode",
+          "type": "string"
+        },
+        "SourceReference": {
+          "additionalProperties": false,
+          "description": "Traceable origin for provider data or an explicit estimate.",
+          "properties": {
+            "provider": {
+              "minLength": 1,
+              "title": "Provider",
+              "type": "string"
+            },
+            "provider_id": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Provider Id"
+            },
+            "data_mode": {
+              "$ref": "#/$defs/DataMode"
+            },
+            "retrieved_at": {
+              "format": "date-time",
+              "title": "Retrieved At",
+              "type": "string"
+            },
+            "raw_response_sha256": {
+              "anyOf": [
+                {
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Raw Response Sha256"
+            }
+          },
+          "required": [
+            "provider",
+            "data_mode",
+            "retrieved_at"
+          ],
+          "title": "SourceReference",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "evidence_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Evidence Id",
+          "type": "string"
+        },
+        "candidate_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Candidate Id",
+          "type": "string"
+        },
+        "service_date": {
+          "format": "date",
+          "title": "Service Date",
+          "type": "string"
+        },
+        "opens_at": {
+          "format": "date-time",
+          "title": "Opens At",
+          "type": "string"
+        },
+        "closes_at": {
+          "format": "date-time",
+          "title": "Closes At",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceReference"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "candidate_id",
+        "service_date",
+        "opens_at",
+        "closes_at",
+        "source"
+      ],
+      "title": "OpeningHoursEvidence",
+      "type": "object"
+    },
+    "OpeningHoursEvidenceBundle": {
+      "$defs": {
+        "DataMode": {
+          "enum": [
+            "live",
+            "fixture",
+            "user_input",
+            "estimate"
+          ],
+          "title": "DataMode",
+          "type": "string"
+        },
+        "OpeningHoursEvidence": {
+          "additionalProperties": false,
+          "properties": {
+            "evidence_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Evidence Id",
+              "type": "string"
+            },
+            "candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Candidate Id",
+              "type": "string"
+            },
+            "service_date": {
+              "format": "date",
+              "title": "Service Date",
+              "type": "string"
+            },
+            "opens_at": {
+              "format": "date-time",
+              "title": "Opens At",
+              "type": "string"
+            },
+            "closes_at": {
+              "format": "date-time",
+              "title": "Closes At",
+              "type": "string"
+            },
+            "source": {
+              "$ref": "#/$defs/SourceReference"
+            }
+          },
+          "required": [
+            "evidence_id",
+            "candidate_id",
+            "service_date",
+            "opens_at",
+            "closes_at",
+            "source"
+          ],
+          "title": "OpeningHoursEvidence",
+          "type": "object"
+        },
+        "SourceReference": {
+          "additionalProperties": false,
+          "description": "Traceable origin for provider data or an explicit estimate.",
+          "properties": {
+            "provider": {
+              "minLength": 1,
+              "title": "Provider",
+              "type": "string"
+            },
+            "provider_id": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Provider Id"
+            },
+            "data_mode": {
+              "$ref": "#/$defs/DataMode"
+            },
+            "retrieved_at": {
+              "format": "date-time",
+              "title": "Retrieved At",
+              "type": "string"
+            },
+            "raw_response_sha256": {
+              "anyOf": [
+                {
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Raw Response Sha256"
+            }
+          },
+          "required": [
+            "provider",
+            "data_mode",
+            "retrieved_at"
+          ],
+          "title": "SourceReference",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "evidence_version": {
+          "const": "opening-hours-evidence-v1",
+          "default": "opening-hours-evidence-v1",
+          "title": "Evidence Version",
+          "type": "string"
+        },
+        "request_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "data_mode": {
+          "enum": [
+            "live",
+            "fixture"
+          ],
+          "title": "Data Mode",
+          "type": "string"
+        },
+        "items": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/OpeningHoursEvidence"
+          },
+          "maxItems": 40,
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "request_id",
+        "data_mode"
+      ],
+      "title": "OpeningHoursEvidenceBundle",
+      "type": "object"
+    },
     "ConstraintProposalBatch": {
       "$defs": {
         "ConstraintEvidenceMode": {
@@ -4151,8 +4420,11 @@
           "type": "string"
         },
         "validator_version": {
-          "const": "deterministic-plan-validator-v1",
           "default": "deterministic-plan-validator-v1",
+          "enum": [
+            "deterministic-plan-validator-v1",
+            "hard-trip-plan-validator-v1"
+          ],
           "title": "Validator Version",
           "type": "string"
         },

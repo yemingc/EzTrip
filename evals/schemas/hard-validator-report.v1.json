@@ -1,0 +1,342 @@
+{
+  "$defs": {
+    "EvaluationCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Code",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "passed"
+      ],
+      "title": "EvaluationCheck",
+      "type": "object"
+    },
+    "ExpectedValidationIssue": {
+      "additionalProperties": false,
+      "properties": {
+        "rule_code": {
+          "minLength": 1,
+          "title": "Rule Code",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/IssueSeverity"
+        },
+        "responsible_node": {
+          "$ref": "#/$defs/ResponsibleNode"
+        },
+        "repair_action": {
+          "$ref": "#/$defs/RepairAction"
+        }
+      },
+      "required": [
+        "rule_code",
+        "severity",
+        "responsible_node",
+        "repair_action"
+      ],
+      "title": "ExpectedValidationIssue",
+      "type": "object"
+    },
+    "HardValidatorCaseResult": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "expected_status": {
+          "$ref": "#/$defs/PlanValidationStatus"
+        },
+        "actual_status": {
+          "$ref": "#/$defs/PlanValidationStatus"
+        },
+        "expected_can_finalize": {
+          "title": "Expected Can Finalize",
+          "type": "boolean"
+        },
+        "actual_can_finalize": {
+          "title": "Actual Can Finalize",
+          "type": "boolean"
+        },
+        "expected_issues": {
+          "items": {
+            "$ref": "#/$defs/ExpectedValidationIssue"
+          },
+          "title": "Expected Issues",
+          "type": "array"
+        },
+        "actual_issues": {
+          "items": {
+            "$ref": "#/$defs/ExpectedValidationIssue"
+          },
+          "title": "Actual Issues",
+          "type": "array"
+        },
+        "routing_match_count": {
+          "minimum": 0,
+          "title": "Routing Match Count",
+          "type": "integer"
+        },
+        "deterministic_replay": {
+          "title": "Deterministic Replay",
+          "type": "boolean"
+        },
+        "validator_model_call_count": {
+          "const": 0,
+          "default": 0,
+          "title": "Validator Model Call Count",
+          "type": "integer"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/EvaluationCheck"
+          },
+          "minItems": 1,
+          "title": "Checks",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "passed",
+        "expected_status",
+        "actual_status",
+        "expected_can_finalize",
+        "actual_can_finalize",
+        "expected_issues",
+        "actual_issues",
+        "routing_match_count",
+        "deterministic_replay",
+        "checks"
+      ],
+      "title": "HardValidatorCaseResult",
+      "type": "object"
+    },
+    "IssueSeverity": {
+      "enum": [
+        "warning",
+        "error"
+      ],
+      "title": "IssueSeverity",
+      "type": "string"
+    },
+    "PlanValidationStatus": {
+      "enum": [
+        "passed",
+        "warning",
+        "conflicted"
+      ],
+      "title": "PlanValidationStatus",
+      "type": "string"
+    },
+    "RepairAction": {
+      "enum": [
+        "none",
+        "rerun_constraint",
+        "rerun_explore",
+        "rerun_stay",
+        "rerun_route",
+        "replan_day",
+        "recalculate_budget",
+        "ask_user"
+      ],
+      "title": "RepairAction",
+      "type": "string"
+    },
+    "ResponsibleNode": {
+      "enum": [
+        "constraint",
+        "explore",
+        "stay",
+        "weather",
+        "route",
+        "plan",
+        "budget",
+        "validator"
+      ],
+      "title": "ResponsibleNode",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "suite": {
+      "const": "hard-validator-v1",
+      "default": "hard-validator-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "validator_version": {
+      "const": "hard-trip-plan-validator-v1",
+      "default": "hard-trip-plan-validator-v1",
+      "title": "Validator Version",
+      "type": "string"
+    },
+    "execution_mode": {
+      "const": "fixture",
+      "default": "fixture",
+      "title": "Execution Mode",
+      "type": "string"
+    },
+    "dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Dataset Sha256",
+      "type": "string"
+    },
+    "case_count": {
+      "const": 12,
+      "default": 12,
+      "title": "Case Count",
+      "type": "integer"
+    },
+    "passed_case_count": {
+      "maximum": 12,
+      "minimum": 0,
+      "title": "Passed Case Count",
+      "type": "integer"
+    },
+    "case_pass_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Case Pass Rate"
+    },
+    "exact_issue_set_case_count": {
+      "maximum": 12,
+      "minimum": 0,
+      "title": "Exact Issue Set Case Count",
+      "type": "integer"
+    },
+    "exact_issue_set_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Exact Issue Set Rate"
+    },
+    "expected_issue_count": {
+      "minimum": 0,
+      "title": "Expected Issue Count",
+      "type": "integer"
+    },
+    "routing_match_count": {
+      "minimum": 0,
+      "title": "Routing Match Count",
+      "type": "integer"
+    },
+    "routing_accuracy": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Routing Accuracy"
+    },
+    "deterministic_replay_case_count": {
+      "maximum": 12,
+      "minimum": 0,
+      "title": "Deterministic Replay Case Count",
+      "type": "integer"
+    },
+    "validator_model_call_count": {
+      "const": 0,
+      "default": 0,
+      "title": "Validator Model Call Count",
+      "type": "integer"
+    },
+    "results": {
+      "items": {
+        "$ref": "#/$defs/HardValidatorCaseResult"
+      },
+      "maxItems": 12,
+      "minItems": 12,
+      "title": "Results",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Limitations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "dataset_sha256",
+    "passed_case_count",
+    "case_pass_rate",
+    "exact_issue_set_case_count",
+    "exact_issue_set_rate",
+    "expected_issue_count",
+    "routing_match_count",
+    "routing_accuracy",
+    "deterministic_replay_case_count",
+    "results",
+    "limitations"
+  ],
+  "title": "HardValidatorBaselineReport",
+  "type": "object"
+}

@@ -1,4 +1,5 @@
 from app.planning.context_compiler import compile_planner_context
+from app.planning.hard_validator import HARD_VALIDATOR_VERSION, validate_hard_trip_plan
 from app.planning.material_builder import (
     DEFAULT_BUDGET_WEIGHTS,
     DEFAULT_ROUTE_CONCURRENCY,
@@ -96,6 +97,7 @@ from app.planning.vertical_slice import (
 __all__ = [
     "DEFAULT_BUDGET_WEIGHTS",
     "DEFAULT_ROUTE_CONCURRENCY",
+    "HARD_VALIDATOR_VERSION",
     "MINIMAL_PLANNING_GRAPH_NAME",
     "SPECIALIST_FANOUT_GRAPH_NAME",
     "STATEFUL_PLANNING_GRAPH_NAME",
@@ -171,6 +173,7 @@ __all__ = [
     "run_minimal_planning_graph",
     "run_specialist_fanout",
     "run_trip_planning_vertical_slice",
+    "validate_hard_trip_plan",
     "validate_human_review_resume",
     "validate_trip_plan",
 ]

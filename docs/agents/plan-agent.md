@@ -42,11 +42,12 @@ DeepSeek 通过强制 `submit_grounded_schedule` tool call 只能提交：
 
 这意味着系统可以说“预算材料已用于排程权衡”，不能说“当前计划已经验证不超预算”。
 
-## 当前未包含的能力
+## 下游校验与当前未包含的能力
 
-EZ-302 只形成 grounded draft，不自动定稿，也没有提前实现后续阶段：
+EZ-302 自身只形成 grounded draft，不自动定稿。EZ-303 已在 Agent 子图之外增加独立 `validate_hard_trip_plan`，消费同一 request、planning materials、TripPlan 和营业时间证据，检查 must/avoid、路线时间窗、城市、来源血缘、营业窗口及硬预算。
 
-- 营业时间、路线时间窗、must/avoid 和其他 Hard Validators；
+当前仍未包含：
+
 - 根据 `ValidationIssue` 选择最小责任 Agent 的 Repair Router；
 - 天气变化后的局部重规划；
 - 酒店实时价格、库存、预订、票务或支付；
