@@ -4,6 +4,7 @@ from typing import Literal
 from pydantic import Field, model_validator
 
 from app.domain.base import DomainModel, Identifier, NonEmptyText, Sha256Digest
+from app.domain.candidates import CandidatePOI
 from app.domain.planning import DayPlan, ItineraryItem
 from app.domain.request import Constraint, ConstraintKind, ConstraintSet, ConstraintStrength
 
@@ -140,4 +141,138 @@ class SinglePlannerAgentResult(DomainModel):
         dates = [day.date for day in self.day_plans]
         if dates != sorted(dates) or len(dates) != len(set(dates)):
             raise ValueError("partial day plans must have unique sorted dates")
+        return self
+
+
+class ExploreQueryKind(StrEnum):
+    ATTRACTION = "attraction"
+    DINING = "dining"
+
+
+class ExploreEvidenceKind(StrEnum):
+    QUERY_MATCH = "query_match"
+    CATEGORY = "category"
+    DISTRICT = "district"
+    ENVIRONMENT = "environment"
+    TAG = "tag"
+
+
+class ExploreQueryProposal(DomainModel):
+    kind: ExploreQueryKind
+    keywords: str = Field(min_length=1, max_length=40)
+    reason: str = Field(min_length=1, max_length=160)
+    context_refs: tuple[NonEmptyText, ...] = Field(default=(), max_length=4)
+
+
+class ExploreQueryProposalBatch(DomainModel):
+    items: tuple[ExploreQueryProposal, ...] = Field(min_length=1, max_length=4)
+
+
+class ExploreQueryModelResponse(DomainModel):
+    proposal: ExploreQueryProposalBatch
+    model: NonEmptyText
+    latency_ms: int = Field(ge=0)
+    usage: ModelTokenUsage | None = None
+
+
+class ExploreSearchQuery(DomainModel):
+    query_id: Identifier
+    kind: ExploreQueryKind
+    keywords: str = Field(min_length=1, max_length=40)
+    reason: str = Field(min_length=1, max_length=160)
+    context_refs: tuple[NonEmptyText, ...] = Field(default=(), max_length=4)
+
+
+class ExploreCandidateObservation(DomainModel):
+    candidate: CandidatePOI
+    query_ids: tuple[Identifier, ...] = Field(min_length=1, max_length=4)
+
+    @model_validator(mode="after")
+    def validate_unique_query_ids(self) -> "ExploreCandidateObservation":
+        if len(self.query_ids) != len(set(self.query_ids)):
+            raise ValueError("candidate observation query ids must be unique")
+        return self
+
+
+class ExploreEvidenceReference(DomainModel):
+    kind: ExploreEvidenceKind
+    value: NonEmptyText
+
+
+class ExploreCandidateSelectionProposal(DomainModel):
+    candidate_id: Identifier
+    rank: int = Field(ge=1, le=6)
+    reason: str = Field(min_length=1, max_length=160)
+    evidence: tuple[ExploreEvidenceReference, ...] = Field(min_length=1, max_length=4)
+
+
+class ExploreSelectionProposalBatch(DomainModel):
+    items: tuple[ExploreCandidateSelectionProposal, ...] = Field(min_length=1, max_length=6)
+
+
+class ExploreSelectionModelResponse(DomainModel):
+    proposal: ExploreSelectionProposalBatch
+    model: NonEmptyText
+    latency_ms: int = Field(ge=0)
+    usage: ModelTokenUsage | None = None
+
+
+class ExploreRecommendation(DomainModel):
+    proposal: ExploreCandidateSelectionProposal
+    candidate: CandidatePOI
+    query_ids: tuple[Identifier, ...] = Field(min_length=1, max_length=4)
+
+    @model_validator(mode="after")
+    def validate_candidate_identity(self) -> "ExploreRecommendation":
+        if self.candidate.candidate_id != self.proposal.candidate_id:
+            raise ValueError("Explore recommendation must preserve the proposed candidate_id")
+        return self
+
+
+class ExploreAgentResult(DomainModel):
+    schema_version: Literal["1.0"] = "1.0"
+    agent_version: Literal["explore-agent-v1"] = "explore-agent-v1"
+    query_prompt_version: Literal["explore-query-strategy-v1"] = "explore-query-strategy-v1"
+    selection_prompt_version: Literal["explore-candidate-selection-v1"] = (
+        "explore-candidate-selection-v1"
+    )
+    request_id: Identifier
+    context_id: Identifier
+    candidate_set_sha256: Sha256Digest
+    queries: tuple[ExploreSearchQuery, ...] = Field(min_length=1, max_length=4)
+    observations: tuple[ExploreCandidateObservation, ...] = Field(min_length=1, max_length=12)
+    recommendations: tuple[ExploreRecommendation, ...] = Field(min_length=1, max_length=6)
+    query_model: NonEmptyText
+    selection_model: NonEmptyText
+    query_latency_ms: int = Field(ge=0)
+    selection_latency_ms: int = Field(ge=0)
+    query_usage: ModelTokenUsage | None = None
+    selection_usage: ModelTokenUsage | None = None
+
+    @model_validator(mode="after")
+    def validate_grounded_recommendations(self) -> "ExploreAgentResult":
+        query_ids = [item.query_id for item in self.queries]
+        if len(query_ids) != len(set(query_ids)):
+            raise ValueError("Explore queries must have unique ids")
+        observed_ids = [item.candidate.candidate_id for item in self.observations]
+        if len(observed_ids) != len(set(observed_ids)):
+            raise ValueError("Explore observations must have unique candidate ids")
+        known_query_ids = set(query_ids)
+        if any(not set(item.query_ids).issubset(known_query_ids) for item in self.observations):
+            raise ValueError("Explore observations must reference known query ids")
+        observations_by_id = {item.candidate.candidate_id: item for item in self.observations}
+        recommendation_ids = [item.candidate.candidate_id for item in self.recommendations]
+        if len(recommendation_ids) != len(set(recommendation_ids)):
+            raise ValueError("Explore recommendations must have unique candidate ids")
+        if not set(recommendation_ids).issubset(observed_ids):
+            raise ValueError("Explore recommendations must come from observations")
+        if any(
+            item.candidate != observations_by_id[item.candidate.candidate_id].candidate
+            or item.query_ids != observations_by_id[item.candidate.candidate_id].query_ids
+            for item in self.recommendations
+        ):
+            raise ValueError("Explore recommendations must preserve observed facts and lineage")
+        ranks = [item.proposal.rank for item in self.recommendations]
+        if ranks != list(range(1, len(ranks) + 1)):
+            raise ValueError("Explore recommendation ranks must be contiguous and ordered")
         return self

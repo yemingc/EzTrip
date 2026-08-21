@@ -1,0 +1,494 @@
+{
+  "$defs": {
+    "EvaluationCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Code",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "passed"
+      ],
+      "title": "EvaluationCheck",
+      "type": "object"
+    },
+    "ExploreAgentCaseResult": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "model_call_count": {
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Model Call Count",
+          "type": "integer"
+        },
+        "provider_call_count": {
+          "maximum": 4,
+          "minimum": 0,
+          "title": "Provider Call Count",
+          "type": "integer"
+        },
+        "query_count": {
+          "maximum": 4,
+          "minimum": 0,
+          "title": "Query Count",
+          "type": "integer"
+        },
+        "required_query_kind_count": {
+          "maximum": 2,
+          "minimum": 1,
+          "title": "Required Query Kind Count",
+          "type": "integer"
+        },
+        "matched_query_kind_count": {
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Matched Query Kind Count",
+          "type": "integer"
+        },
+        "recommendation_count": {
+          "maximum": 6,
+          "minimum": 0,
+          "title": "Recommendation Count",
+          "type": "integer"
+        },
+        "grounded_recommendation_count": {
+          "maximum": 6,
+          "minimum": 0,
+          "title": "Grounded Recommendation Count",
+          "type": "integer"
+        },
+        "traceable_recommendation_count": {
+          "maximum": 6,
+          "minimum": 0,
+          "title": "Traceable Recommendation Count",
+          "type": "integer"
+        },
+        "allowed_recommendation_count": {
+          "maximum": 6,
+          "minimum": 0,
+          "title": "Allowed Recommendation Count",
+          "type": "integer"
+        },
+        "required_recommendation_group_count": {
+          "maximum": 2,
+          "minimum": 1,
+          "title": "Required Recommendation Group Count",
+          "type": "integer"
+        },
+        "matched_recommendation_group_count": {
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Matched Recommendation Group Count",
+          "type": "integer"
+        },
+        "query_latency_ms": {
+          "minimum": 0,
+          "title": "Query Latency Ms",
+          "type": "integer"
+        },
+        "selection_latency_ms": {
+          "minimum": 0,
+          "title": "Selection Latency Ms",
+          "type": "integer"
+        },
+        "query_usage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelTokenUsage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "selection_usage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelTokenUsage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/EvaluationCheck"
+          },
+          "minItems": 1,
+          "title": "Checks",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "passed",
+        "model_call_count",
+        "provider_call_count",
+        "query_count",
+        "required_query_kind_count",
+        "matched_query_kind_count",
+        "recommendation_count",
+        "grounded_recommendation_count",
+        "traceable_recommendation_count",
+        "allowed_recommendation_count",
+        "required_recommendation_group_count",
+        "matched_recommendation_group_count",
+        "query_latency_ms",
+        "selection_latency_ms",
+        "checks"
+      ],
+      "title": "ExploreAgentCaseResult",
+      "type": "object"
+    },
+    "ModelTokenUsage": {
+      "additionalProperties": false,
+      "properties": {
+        "prompt_tokens": {
+          "minimum": 0,
+          "title": "Prompt Tokens",
+          "type": "integer"
+        },
+        "completion_tokens": {
+          "minimum": 0,
+          "title": "Completion Tokens",
+          "type": "integer"
+        },
+        "total_tokens": {
+          "minimum": 0,
+          "title": "Total Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens"
+      ],
+      "title": "ModelTokenUsage",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "suite": {
+      "const": "explore-agent-v1",
+      "default": "explore-agent-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "agent_version": {
+      "const": "explore-agent-v1",
+      "default": "explore-agent-v1",
+      "title": "Agent Version",
+      "type": "string"
+    },
+    "query_prompt_version": {
+      "const": "explore-query-strategy-v1",
+      "default": "explore-query-strategy-v1",
+      "title": "Query Prompt Version",
+      "type": "string"
+    },
+    "selection_prompt_version": {
+      "const": "explore-candidate-selection-v1",
+      "default": "explore-candidate-selection-v1",
+      "title": "Selection Prompt Version",
+      "type": "string"
+    },
+    "execution_mode": {
+      "enum": [
+        "fixture",
+        "live"
+      ],
+      "title": "Execution Mode",
+      "type": "string"
+    },
+    "model": {
+      "minLength": 1,
+      "title": "Model",
+      "type": "string"
+    },
+    "dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Dataset Sha256",
+      "type": "string"
+    },
+    "case_count": {
+      "const": 6,
+      "default": 6,
+      "title": "Case Count",
+      "type": "integer"
+    },
+    "passed_case_count": {
+      "maximum": 6,
+      "minimum": 0,
+      "title": "Passed Case Count",
+      "type": "integer"
+    },
+    "case_pass_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Case Pass Rate"
+    },
+    "model_call_count": {
+      "maximum": 12,
+      "minimum": 0,
+      "title": "Model Call Count",
+      "type": "integer"
+    },
+    "provider_call_count": {
+      "maximum": 24,
+      "minimum": 0,
+      "title": "Provider Call Count",
+      "type": "integer"
+    },
+    "required_query_kind_count": {
+      "maximum": 12,
+      "minimum": 6,
+      "title": "Required Query Kind Count",
+      "type": "integer"
+    },
+    "matched_query_kind_count": {
+      "maximum": 12,
+      "minimum": 0,
+      "title": "Matched Query Kind Count",
+      "type": "integer"
+    },
+    "query_kind_coverage_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Query Kind Coverage Rate"
+    },
+    "recommendation_count": {
+      "minimum": 0,
+      "title": "Recommendation Count",
+      "type": "integer"
+    },
+    "grounded_recommendation_count": {
+      "minimum": 0,
+      "title": "Grounded Recommendation Count",
+      "type": "integer"
+    },
+    "grounding_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Grounding Rate"
+    },
+    "traceable_recommendation_count": {
+      "minimum": 0,
+      "title": "Traceable Recommendation Count",
+      "type": "integer"
+    },
+    "source_traceability_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Source Traceability Rate"
+    },
+    "allowed_recommendation_count": {
+      "minimum": 0,
+      "title": "Allowed Recommendation Count",
+      "type": "integer"
+    },
+    "labelled_relevance_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Labelled Relevance Rate"
+    },
+    "required_recommendation_group_count": {
+      "maximum": 12,
+      "minimum": 6,
+      "title": "Required Recommendation Group Count",
+      "type": "integer"
+    },
+    "matched_recommendation_group_count": {
+      "maximum": 12,
+      "minimum": 0,
+      "title": "Matched Recommendation Group Count",
+      "type": "integer"
+    },
+    "recommendation_group_coverage_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Recommendation Group Coverage Rate"
+    },
+    "usage_call_count": {
+      "maximum": 12,
+      "minimum": 0,
+      "title": "Usage Call Count",
+      "type": "integer"
+    },
+    "total_prompt_tokens": {
+      "minimum": 0,
+      "title": "Total Prompt Tokens",
+      "type": "integer"
+    },
+    "total_completion_tokens": {
+      "minimum": 0,
+      "title": "Total Completion Tokens",
+      "type": "integer"
+    },
+    "total_tokens": {
+      "minimum": 0,
+      "title": "Total Tokens",
+      "type": "integer"
+    },
+    "p50_case_latency_ms": {
+      "minimum": 0,
+      "title": "P50 Case Latency Ms",
+      "type": "integer"
+    },
+    "p95_case_latency_ms": {
+      "minimum": 0,
+      "title": "P95 Case Latency Ms",
+      "type": "integer"
+    },
+    "results": {
+      "items": {
+        "$ref": "#/$defs/ExploreAgentCaseResult"
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "title": "Results",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Limitations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "execution_mode",
+    "model",
+    "dataset_sha256",
+    "passed_case_count",
+    "case_pass_rate",
+    "model_call_count",
+    "provider_call_count",
+    "required_query_kind_count",
+    "matched_query_kind_count",
+    "query_kind_coverage_rate",
+    "recommendation_count",
+    "grounded_recommendation_count",
+    "grounding_rate",
+    "traceable_recommendation_count",
+    "source_traceability_rate",
+    "allowed_recommendation_count",
+    "labelled_relevance_rate",
+    "required_recommendation_group_count",
+    "matched_recommendation_group_count",
+    "recommendation_group_coverage_rate",
+    "usage_call_count",
+    "total_prompt_tokens",
+    "total_completion_tokens",
+    "total_tokens",
+    "p50_case_latency_ms",
+    "p95_case_latency_ms",
+    "results",
+    "limitations"
+  ],
+  "title": "ExploreAgentBaselineReport",
+  "type": "object"
+}

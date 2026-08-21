@@ -22,6 +22,7 @@ from app.agents.contracts import (
     PlannerProposalBatch,
     SinglePlannerAgentResult,
 )
+from app.agents.hashing import candidate_set_sha256
 from app.core.config import Settings
 from app.domain.candidates import CandidatePOI
 from app.domain.context import PlannerContext
@@ -201,16 +202,6 @@ class DeepSeekPlannerProposalModel:
             latency_ms=latency_ms,
             usage=usage,
         )
-
-
-def candidate_set_sha256(candidates: tuple[CandidatePOI, ...]) -> str:
-    canonical = json.dumps(
-        [item.model_dump(mode="json") for item in candidates],
-        ensure_ascii=False,
-        sort_keys=True,
-        separators=(",", ":"),
-    )
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def _item_id(context: PlannerContext, candidate_id: str, starts_at: datetime) -> str:

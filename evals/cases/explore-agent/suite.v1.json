@@ -1,0 +1,182 @@
+{
+  "suite": "explore-agent-v1",
+  "version": 1,
+  "data_mode": "fixture",
+  "cases": [
+    {
+      "case_id": "explore-beijing-history-v1",
+      "title": "北京历史文化与故宫必去",
+      "request": {
+        "request_id": "explore_request_beijing_history",
+        "raw_text": "两位成年人去北京三天，必须去故宫，偏好历史文化和轻步行。",
+        "destination_city": "北京市",
+        "start_date": "2026-10-02",
+        "end_date": "2026-10-04",
+        "party": {"adults": 2, "rooms": 1},
+        "travel_styles": ["历史文化", "轻步行"],
+        "constraints": {"items": [
+          {"constraint_id": "explore_must_forbidden_city", "kind": "must_visit", "value": "故宫", "strength": "hard", "priority": 5, "source": "user_explicit", "confirmed": true},
+          {"constraint_id": "explore_walking_low", "kind": "walking_intensity", "value": "low", "strength": "soft", "priority": 4, "source": "user_explicit", "confirmed": true}
+        ]}
+      },
+      "provider_candidates": [
+        {"candidate_id": "fixture-beijing-forbidden-city", "provider_id": "BJ-FORBIDDEN", "name": "故宫博物院", "city": "北京市", "district": "东城区", "address": "景山前街4号", "location": {"latitude": 39.9178, "longitude": 116.3970}, "categories": ["博物馆", "世界遗产"], "environment": "mixed", "tags": ["历史文化", "步行量较大"], "data_mode": "fixture"},
+        {"candidate_id": "fixture-beijing-national-museum", "provider_id": "BJ-NATIONAL-MUSEUM", "name": "中国国家博物馆", "city": "北京市", "district": "东城区", "address": "东长安街16号", "location": {"latitude": 39.9051, "longitude": 116.4011}, "categories": ["博物馆"], "environment": "indoor", "tags": ["历史文化", "室内"], "data_mode": "fixture"},
+        {"candidate_id": "fixture-beijing-universal", "provider_id": "BJ-UNIVERSAL", "name": "北京环球度假区", "city": "北京市", "district": "通州区", "location": {"latitude": 39.8547, "longitude": 116.6792}, "categories": ["主题乐园"], "environment": "outdoor", "tags": ["娱乐", "步行量较大"], "data_mode": "fixture"}
+      ],
+      "expected": {
+        "required_query_kinds": ["attraction"],
+        "required_context_refs": ["constraint:explore_must_forbidden_city", "travel_style:历史文化"],
+        "allowed_recommendation_ids": ["fixture-beijing-forbidden-city", "fixture-beijing-national-museum"],
+        "forbidden_recommendation_ids": ["fixture-beijing-universal"],
+        "required_recommendation_groups": [["fixture-beijing-forbidden-city"]]
+      },
+      "boundary_notes": ["人工标签只验证历史文化与必去项相关性，不验证实时预约和客流。"]
+    },
+    {
+      "case_id": "explore-beijing-open-history-v1",
+      "title": "没有必去项的北京开放式历史推荐",
+      "request": {
+        "request_id": "explore_request_beijing_open_history",
+        "raw_text": "一个成年人去北京两天，喜欢历史文化，没有指定必去景点。",
+        "destination_city": "北京市",
+        "start_date": "2026-10-07",
+        "end_date": "2026-10-08",
+        "party": {"adults": 1, "rooms": 1},
+        "travel_styles": ["历史文化"],
+        "constraints": {"items": [
+          {"constraint_id": "explore_interest_history", "kind": "interest", "value": "历史文化", "strength": "soft", "priority": 4, "source": "user_explicit", "confirmed": true}
+        ]}
+      },
+      "provider_candidates": [
+        {"candidate_id": "fixture-beijing-national-museum-open", "provider_id": "BJ-NATIONAL-MUSEUM", "name": "中国国家博物馆", "city": "北京市", "district": "东城区", "location": {"latitude": 39.9051, "longitude": 116.4011}, "categories": ["博物馆"], "environment": "indoor", "tags": ["历史文化"], "data_mode": "fixture"},
+        {"candidate_id": "fixture-beijing-capital-museum", "provider_id": "BJ-CAPITAL-MUSEUM", "name": "首都博物馆", "city": "北京市", "district": "西城区", "location": {"latitude": 39.9075, "longitude": 116.3491}, "categories": ["博物馆"], "environment": "indoor", "tags": ["历史文化"], "data_mode": "fixture"},
+        {"candidate_id": "fixture-beijing-universal-open", "provider_id": "BJ-UNIVERSAL", "name": "北京环球度假区", "city": "北京市", "district": "通州区", "location": {"latitude": 39.8547, "longitude": 116.6792}, "categories": ["主题乐园"], "environment": "outdoor", "tags": ["娱乐"], "data_mode": "fixture"}
+      ],
+      "expected": {
+        "required_query_kinds": ["attraction"],
+        "required_context_refs": ["constraint:explore_interest_history", "travel_style:历史文化"],
+        "allowed_recommendation_ids": ["fixture-beijing-national-museum-open", "fixture-beijing-capital-museum"],
+        "forbidden_recommendation_ids": ["fixture-beijing-universal-open"],
+        "required_recommendation_groups": [["fixture-beijing-national-museum-open", "fixture-beijing-capital-museum"]]
+      },
+      "boundary_notes": ["该案例专门验证没有 must_visit 时 Explore Agent 仍能提出有来源候选。"]
+    },
+    {
+      "case_id": "explore-beijing-hutong-food-v1",
+      "title": "北京胡同漫步与本地餐饮双意图",
+      "request": {
+        "request_id": "explore_request_beijing_hutong_food",
+        "raw_text": "两位成年人去北京两天，想逛胡同并吃北京特色小吃。",
+        "destination_city": "北京市",
+        "start_date": "2026-10-10",
+        "end_date": "2026-10-11",
+        "party": {"adults": 2, "rooms": 1},
+        "travel_styles": ["胡同漫步", "本地美食"],
+        "constraints": {"items": [
+          {"constraint_id": "explore_meal_beijing_food", "kind": "meal", "value": "北京特色小吃", "strength": "soft", "priority": 4, "source": "user_explicit", "confirmed": true}
+        ]}
+      },
+      "provider_candidates": [
+        {"candidate_id": "fixture-beijing-shichahai", "provider_id": "BJ-SHICHAHAI", "name": "什刹海历史文化街区", "city": "北京市", "district": "西城区", "location": {"latitude": 39.9416, "longitude": 116.3852}, "categories": ["历史街区", "城市漫步"], "environment": "outdoor", "tags": ["胡同", "历史文化"], "data_mode": "fixture"},
+        {"candidate_id": "fixture-beijing-snack-restaurant", "provider_id": "BJ-SNACK", "name": "护国寺小吃店", "city": "北京市", "district": "西城区", "location": {"latitude": 39.9336, "longitude": 116.3734}, "categories": ["中餐厅", "北京小吃"], "environment": "indoor", "tags": ["本地美食"], "data_mode": "fixture"},
+        {"candidate_id": "fixture-beijing-universal-food", "provider_id": "BJ-UNIVERSAL", "name": "北京环球度假区", "city": "北京市", "district": "通州区", "location": {"latitude": 39.8547, "longitude": 116.6792}, "categories": ["主题乐园"], "environment": "outdoor", "tags": ["娱乐"], "data_mode": "fixture"}
+      ],
+      "expected": {
+        "required_query_kinds": ["attraction", "dining"],
+        "required_context_refs": ["constraint:explore_meal_beijing_food", "travel_style:胡同漫步", "travel_style:本地美食"],
+        "allowed_recommendation_ids": ["fixture-beijing-shichahai", "fixture-beijing-snack-restaurant"],
+        "forbidden_recommendation_ids": ["fixture-beijing-universal-food"],
+        "required_recommendation_groups": [["fixture-beijing-shichahai"], ["fixture-beijing-snack-restaurant"]]
+      },
+      "boundary_notes": ["餐饮候选只代表地点相关性，不代表实时营业、排队或食品质量。"]
+    },
+    {
+      "case_id": "explore-shanghai-view-food-v1",
+      "title": "上海城市风光与本地餐饮双意图",
+      "request": {
+        "request_id": "explore_request_shanghai_view_food",
+        "raw_text": "两位成年人去上海两天，想看城市风光并吃本地小笼包。",
+        "destination_city": "上海市",
+        "start_date": "2026-10-15",
+        "end_date": "2026-10-16",
+        "party": {"adults": 2, "rooms": 1},
+        "travel_styles": ["城市风光", "本地美食"],
+        "constraints": {"items": [
+          {"constraint_id": "explore_meal_shanghai_food", "kind": "meal", "value": "上海小笼包", "strength": "soft", "priority": 4, "source": "user_explicit", "confirmed": true}
+        ]}
+      },
+      "provider_candidates": [
+        {"candidate_id": "fixture-shanghai-bund", "provider_id": "SH-BUND", "name": "外滩", "city": "上海市", "district": "黄浦区", "location": {"latitude": 31.2400, "longitude": 121.4900}, "categories": ["城市地标", "滨水景观"], "environment": "outdoor", "tags": ["城市风光"], "data_mode": "fixture"},
+        {"candidate_id": "fixture-shanghai-xiaolongbao", "provider_id": "SH-XIAOLONGBAO", "name": "南翔馒头店", "city": "上海市", "district": "黄浦区", "location": {"latitude": 31.2272, "longitude": 121.4920}, "categories": ["中餐厅", "上海小吃"], "environment": "indoor", "tags": ["小笼包", "本地美食"], "data_mode": "fixture"},
+        {"candidate_id": "fixture-shanghai-disney", "provider_id": "SH-DISNEY", "name": "上海迪士尼度假区", "city": "上海市", "district": "浦东新区", "location": {"latitude": 31.1434, "longitude": 121.6570}, "categories": ["主题乐园"], "environment": "outdoor", "tags": ["娱乐"], "data_mode": "fixture"}
+      ],
+      "expected": {
+        "required_query_kinds": ["attraction", "dining"],
+        "required_context_refs": ["constraint:explore_meal_shanghai_food", "travel_style:城市风光", "travel_style:本地美食"],
+        "allowed_recommendation_ids": ["fixture-shanghai-bund", "fixture-shanghai-xiaolongbao"],
+        "forbidden_recommendation_ids": ["fixture-shanghai-disney"],
+        "required_recommendation_groups": [["fixture-shanghai-bund"], ["fixture-shanghai-xiaolongbao"]]
+      },
+      "boundary_notes": ["只评估双意图覆盖和候选相关性，不评估从外滩到餐厅的路线。"]
+    },
+    {
+      "case_id": "explore-chengdu-family-panda-v1",
+      "title": "成都亲子与熊猫必去",
+      "request": {
+        "request_id": "explore_request_chengdu_family_panda",
+        "raw_text": "两位成年人带一名儿童去成都三天，必须去熊猫基地，偏好亲子和动物。",
+        "destination_city": "成都市",
+        "start_date": "2026-10-20",
+        "end_date": "2026-10-22",
+        "party": {"adults": 2, "children": 1, "rooms": 1},
+        "travel_styles": ["亲子", "动物"],
+        "constraints": {"items": [
+          {"constraint_id": "explore_must_panda_base", "kind": "must_visit", "value": "成都大熊猫繁育研究基地", "strength": "hard", "priority": 5, "source": "user_explicit", "confirmed": true}
+        ]}
+      },
+      "provider_candidates": [
+        {"candidate_id": "fixture-chengdu-panda-base", "provider_id": "CD-PANDA", "name": "成都大熊猫繁育研究基地", "city": "成都市", "district": "成华区", "location": {"latitude": 30.7380, "longitude": 104.1460}, "categories": ["动物园", "科普基地"], "environment": "mixed", "tags": ["熊猫", "亲子"], "data_mode": "fixture"},
+        {"candidate_id": "fixture-chengdu-natural-museum", "provider_id": "CD-NATURAL-MUSEUM", "name": "成都自然博物馆", "city": "成都市", "district": "成华区", "location": {"latitude": 30.6795, "longitude": 104.1251}, "categories": ["博物馆", "科普"], "environment": "indoor", "tags": ["亲子", "自然"], "data_mode": "fixture"},
+        {"candidate_id": "fixture-chengdu-nightclub", "provider_id": "CD-NIGHTCLUB", "name": "成都某夜间俱乐部", "city": "成都市", "district": "锦江区", "location": {"latitude": 30.6500, "longitude": 104.0800}, "categories": ["夜店"], "environment": "indoor", "tags": ["夜生活"], "data_mode": "fixture"}
+      ],
+      "expected": {
+        "required_query_kinds": ["attraction"],
+        "required_context_refs": ["constraint:explore_must_panda_base", "travel_style:亲子", "travel_style:动物"],
+        "allowed_recommendation_ids": ["fixture-chengdu-panda-base", "fixture-chengdu-natural-museum"],
+        "forbidden_recommendation_ids": ["fixture-chengdu-nightclub"],
+        "required_recommendation_groups": [["fixture-chengdu-panda-base"]]
+      },
+      "boundary_notes": ["亲子标签是评测 fixture 标签，不代表实时适龄规则或无障碍条件。"]
+    },
+    {
+      "case_id": "explore-chengdu-culture-food-v1",
+      "title": "成都三国文化与川菜双意图",
+      "request": {
+        "request_id": "explore_request_chengdu_culture_food",
+        "raw_text": "两位成年人去成都两天，喜欢三国文化，也想吃川菜。",
+        "destination_city": "成都市",
+        "start_date": "2026-10-25",
+        "end_date": "2026-10-26",
+        "party": {"adults": 2, "rooms": 1},
+        "travel_styles": ["三国文化", "本地美食"],
+        "constraints": {"items": [
+          {"constraint_id": "explore_meal_sichuan_food", "kind": "meal", "value": "川菜", "strength": "soft", "priority": 4, "source": "user_explicit", "confirmed": true}
+        ]}
+      },
+      "provider_candidates": [
+        {"candidate_id": "fixture-chengdu-wuhou-shrine", "provider_id": "CD-WUHOU", "name": "成都武侯祠博物馆", "city": "成都市", "district": "武侯区", "location": {"latitude": 30.6455, "longitude": 104.0430}, "categories": ["博物馆", "历史遗迹"], "environment": "mixed", "tags": ["三国文化"], "data_mode": "fixture"},
+        {"candidate_id": "fixture-chengdu-sichuan-restaurant", "provider_id": "CD-SICHUAN-FOOD", "name": "成都映象川菜馆", "city": "成都市", "district": "武侯区", "location": {"latitude": 30.6400, "longitude": 104.0500}, "categories": ["中餐厅", "川菜"], "environment": "indoor", "tags": ["本地美食"], "data_mode": "fixture"},
+        {"candidate_id": "fixture-chengdu-amusement-park", "provider_id": "CD-AMUSEMENT", "name": "成都欢乐谷", "city": "成都市", "district": "金牛区", "location": {"latitude": 30.7240, "longitude": 104.0410}, "categories": ["主题乐园"], "environment": "outdoor", "tags": ["娱乐"], "data_mode": "fixture"}
+      ],
+      "expected": {
+        "required_query_kinds": ["attraction", "dining"],
+        "required_context_refs": ["constraint:explore_meal_sichuan_food", "travel_style:三国文化", "travel_style:本地美食"],
+        "allowed_recommendation_ids": ["fixture-chengdu-wuhou-shrine", "fixture-chengdu-sichuan-restaurant"],
+        "forbidden_recommendation_ids": ["fixture-chengdu-amusement-park"],
+        "required_recommendation_groups": [["fixture-chengdu-wuhou-shrine"], ["fixture-chengdu-sichuan-restaurant"]]
+      },
+      "boundary_notes": ["川菜候选是相关性标签，不声明实时营业、价格或座位。"]
+    }
+  ]
+}
