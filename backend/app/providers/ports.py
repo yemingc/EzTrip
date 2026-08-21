@@ -63,10 +63,20 @@ class StaySearchProvider(Protocol):
     async def search_stays(self, request: StaySearchRequest) -> tuple[CandidateStay, ...]: ...
 
 
-class TravelDataProvider(POISearchProvider, Protocol):
+class WeatherRiskProvider(Protocol):
     async def get_weather_risks(
         self,
         request: WeatherRiskRequest,
     ) -> tuple[WeatherRisk, ...]: ...
 
+
+class SpecialistProvider(
+    POISearchProvider,
+    StaySearchProvider,
+    WeatherRiskProvider,
+    Protocol,
+): ...
+
+
+class TravelDataProvider(POISearchProvider, WeatherRiskProvider, Protocol):
     async def get_route(self, request: RouteRequest) -> RouteLeg: ...

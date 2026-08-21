@@ -1,0 +1,389 @@
+{
+  "schema_version": "1.0",
+  "suite": "specialist-fanout-v1",
+  "workflow_version": "specialist-fanout-v1",
+  "execution_mode": "fixture",
+  "explore_model": "fixture-explore-fanout-model",
+  "stay_model": "fixture-stay-fanout-model",
+  "dataset_sha256": "c2386285bd0e0648b1d1c7f68c612b47a2be3276f3d1b8f3edf3a0fddbf6e8b5",
+  "case_count": 5,
+  "passed_case_count": 5,
+  "case_pass_rate": "1.0000",
+  "branch_expectation_count": 15,
+  "branch_status_match_count": 15,
+  "branch_status_accuracy": "1.0000",
+  "exact_ordered_merge_case_count": 5,
+  "typed_provider_failure_count": 2,
+  "preserved_success_count": 4,
+  "proactive_weather_call_count": 4,
+  "blocked_zero_call_case_count": 1,
+  "parallel_provider_entry_case_count": 1,
+  "source_traceability_case_count": 4,
+  "model_call_count": 13,
+  "provider_call_count": 11,
+  "usage_call_count": 0,
+  "total_prompt_tokens": 0,
+  "total_completion_tokens": 0,
+  "total_tokens": 0,
+  "p50_fanout_latency_ms": 19,
+  "p95_fanout_latency_ms": 62,
+  "results": [
+    {
+      "case_id": "specialist-fanout-complete-v1",
+      "expected_status": "complete",
+      "actual_status": "complete",
+      "passed": true,
+      "expected_branch_count": 3,
+      "actual_branch_count": 3,
+      "branch_status_match_count": 3,
+      "exact_ordered_merge": true,
+      "typed_provider_failure_count": 0,
+      "preserved_success_count": 0,
+      "proactive_weather_call_count": 1,
+      "model_call_count": 4,
+      "provider_call_count": 3,
+      "usage_call_count": 0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "parallel_provider_peak": 3,
+      "source_traceability_passed": true,
+      "fanout_latency_ms": 62,
+      "branch_latency_sum_ms": 151,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "fanout_status_matches",
+          "passed": true
+        },
+        {
+          "code": "branch_statuses_match",
+          "passed": true
+        },
+        {
+          "code": "exact_ordered_merge",
+          "passed": true
+        },
+        {
+          "code": "typed_provider_failure",
+          "passed": true
+        },
+        {
+          "code": "successful_branches_preserved",
+          "passed": true
+        },
+        {
+          "code": "proactive_weather_lookup",
+          "passed": true
+        },
+        {
+          "code": "blocked_case_uses_zero_calls",
+          "passed": true
+        },
+        {
+          "code": "parallel_provider_entry",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "call_aggregates_match",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "specialist-fanout-explore-timeout-v1",
+      "expected_status": "partial",
+      "actual_status": "partial",
+      "passed": true,
+      "expected_branch_count": 3,
+      "actual_branch_count": 3,
+      "branch_status_match_count": 3,
+      "exact_ordered_merge": true,
+      "typed_provider_failure_count": 1,
+      "preserved_success_count": 2,
+      "proactive_weather_call_count": 1,
+      "model_call_count": 3,
+      "provider_call_count": 3,
+      "usage_call_count": 0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "parallel_provider_peak": 0,
+      "source_traceability_passed": true,
+      "fanout_latency_ms": 22,
+      "branch_latency_sum_ms": 29,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "fanout_status_matches",
+          "passed": true
+        },
+        {
+          "code": "branch_statuses_match",
+          "passed": true
+        },
+        {
+          "code": "exact_ordered_merge",
+          "passed": true
+        },
+        {
+          "code": "typed_provider_failure",
+          "passed": true
+        },
+        {
+          "code": "successful_branches_preserved",
+          "passed": true
+        },
+        {
+          "code": "proactive_weather_lookup",
+          "passed": true
+        },
+        {
+          "code": "blocked_case_uses_zero_calls",
+          "passed": true
+        },
+        {
+          "code": "parallel_provider_entry",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "call_aggregates_match",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "specialist-fanout-missing-rooms-v1",
+      "expected_status": "partial",
+      "actual_status": "partial",
+      "passed": true,
+      "expected_branch_count": 3,
+      "actual_branch_count": 3,
+      "branch_status_match_count": 3,
+      "exact_ordered_merge": true,
+      "typed_provider_failure_count": 0,
+      "preserved_success_count": 0,
+      "proactive_weather_call_count": 1,
+      "model_call_count": 2,
+      "provider_call_count": 2,
+      "usage_call_count": 0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "parallel_provider_peak": 0,
+      "source_traceability_passed": true,
+      "fanout_latency_ms": 15,
+      "branch_latency_sum_ms": 13,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "fanout_status_matches",
+          "passed": true
+        },
+        {
+          "code": "branch_statuses_match",
+          "passed": true
+        },
+        {
+          "code": "exact_ordered_merge",
+          "passed": true
+        },
+        {
+          "code": "typed_provider_failure",
+          "passed": true
+        },
+        {
+          "code": "successful_branches_preserved",
+          "passed": true
+        },
+        {
+          "code": "proactive_weather_lookup",
+          "passed": true
+        },
+        {
+          "code": "blocked_case_uses_zero_calls",
+          "passed": true
+        },
+        {
+          "code": "parallel_provider_entry",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "call_aggregates_match",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "specialist-fanout-weather-timeout-v1",
+      "expected_status": "partial",
+      "actual_status": "partial",
+      "passed": true,
+      "expected_branch_count": 3,
+      "actual_branch_count": 3,
+      "branch_status_match_count": 3,
+      "exact_ordered_merge": true,
+      "typed_provider_failure_count": 1,
+      "preserved_success_count": 2,
+      "proactive_weather_call_count": 1,
+      "model_call_count": 4,
+      "provider_call_count": 3,
+      "usage_call_count": 0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "parallel_provider_peak": 0,
+      "source_traceability_passed": true,
+      "fanout_latency_ms": 19,
+      "branch_latency_sum_ms": 26,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "fanout_status_matches",
+          "passed": true
+        },
+        {
+          "code": "branch_statuses_match",
+          "passed": true
+        },
+        {
+          "code": "exact_ordered_merge",
+          "passed": true
+        },
+        {
+          "code": "typed_provider_failure",
+          "passed": true
+        },
+        {
+          "code": "successful_branches_preserved",
+          "passed": true
+        },
+        {
+          "code": "proactive_weather_lookup",
+          "passed": true
+        },
+        {
+          "code": "blocked_case_uses_zero_calls",
+          "passed": true
+        },
+        {
+          "code": "parallel_provider_entry",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "call_aggregates_match",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "specialist-fanout-unsupported-city-v1",
+      "expected_status": "blocked",
+      "actual_status": "blocked",
+      "passed": true,
+      "expected_branch_count": 3,
+      "actual_branch_count": 3,
+      "branch_status_match_count": 3,
+      "exact_ordered_merge": true,
+      "typed_provider_failure_count": 0,
+      "preserved_success_count": 0,
+      "proactive_weather_call_count": 0,
+      "model_call_count": 0,
+      "provider_call_count": 0,
+      "usage_call_count": 0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0,
+      "parallel_provider_peak": 0,
+      "source_traceability_passed": true,
+      "fanout_latency_ms": 3,
+      "branch_latency_sum_ms": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "fanout_status_matches",
+          "passed": true
+        },
+        {
+          "code": "branch_statuses_match",
+          "passed": true
+        },
+        {
+          "code": "exact_ordered_merge",
+          "passed": true
+        },
+        {
+          "code": "typed_provider_failure",
+          "passed": true
+        },
+        {
+          "code": "successful_branches_preserved",
+          "passed": true
+        },
+        {
+          "code": "proactive_weather_lookup",
+          "passed": true
+        },
+        {
+          "code": "blocked_case_uses_zero_calls",
+          "passed": true
+        },
+        {
+          "code": "parallel_provider_entry",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "call_aggregates_match",
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "五条案例使用显式 fixture 候选与天气风险, 不评估实时高德召回率或天气新鲜度。",
+    "两条超时是可控的 Provider 故障注入, 证明降级契约而非生产故障率。",
+    "并发证据证明三个 Provider 分支同时在途, 不代表所有外部服务都有相同延迟。",
+    "当前输出是专业信息包而非最终 TripPlan, 尚不能声称多 Agent 提升最终行程质量。",
+    "该开发集用于编排回归, 不应解释为未见数据上的泛化准确率。"
+  ]
+}

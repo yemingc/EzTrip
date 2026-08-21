@@ -1,6 +1,6 @@
 # EzTrip API
 
-Gate 0 FastAPI service plus the first offline Gate 2 vertical slice and recoverable HITL wrapper. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, the first three-node planning Graph, isolated schema-constrained Constraint, Explore and Stay Agents, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, and a SQLite-checkpointed main Graph using native LangGraph interrupt/resume. These components are not yet exposed as a product planning API and never auto-finalize the Gate 2 draft.
+Gate 0 FastAPI service plus the first offline Gate 2 vertical slice, recoverable HITL wrapper, and specialist fan-out. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, schema-constrained Constraint/Explore/Stay Agents, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, a SQLite-checkpointed main Graph using native LangGraph interrupt/resume, and an independent parallel Explore/Stay/proactive-Weather information-gathering Graph. These components are not yet exposed as a product planning API and the specialist bundle is not yet a final itinerary.
 
 ```powershell
 uv sync --all-groups
@@ -25,6 +25,7 @@ uv run python -m scripts.export_single_planner_schema
 uv run python -m scripts.export_explore_agent_schemas
 uv run python -m scripts.export_stay_agent_schemas
 uv run python -m scripts.export_checkpoint_hitl_schemas
+uv run python -m scripts.export_specialist_fanout_schemas
 uv run python -m scripts.export_plan_validation_example
 uv run python -m scripts.export_planner_context_example
 uv run python -m scripts.run_minimal_planning_graph --write-example
@@ -123,6 +124,17 @@ uv run pytest tests/test_stateful_planning.py --no-cov
 ```
 
 The main Graph persists JSON-compatible state in SQLite, pauses with LangGraph `interrupt()`, and resumes from a newly constructed runtime via `Command(resume=...)`. The committed fixture report records 2/2 cases and 20/20 checks; both restored runs make zero provider and Planner-model calls. Approval still leaves `TripPlan.status=draft`, while a conflicted plan cannot use the approval action. SQLite is local evidence, not a production concurrency, encryption, or availability claim.
+
+Run the specialist fan-out regression offline or explicitly refresh its live-model baseline:
+
+```powershell
+uv run python -m scripts.export_specialist_fanout_schemas
+uv run python -m scripts.run_specialist_fanout_eval
+uv run python -m scripts.run_specialist_fanout_eval --live
+uv run pytest tests/test_specialist_fanout.py tests/test_specialist_fanout_eval.py --no-cov
+```
+
+The Graph fans out to Explore, Stay, and zero-model Weather branches, then merges one reducer-accumulated result per specialist. Capability blocks skip only the affected branch; typed Provider failures preserve the other branches and retain completed model usage for cost accounting. The live-model report uses DeepSeek and LangSmith over fixture Providers. It proves orchestration mechanics, not real-time AMap quality or a final multi-Agent itinerary improvement.
 
 Run the live observability probe only after configuring the local root `.env`:
 

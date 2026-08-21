@@ -11,9 +11,11 @@ from app.providers.ports import (
     POISearchRequest,
     RetryPolicy,
     RouteRequest,
+    SpecialistProvider,
     StaySearchProvider,
     StaySearchRequest,
     TravelDataProvider,
+    WeatherRiskProvider,
     WeatherRiskRequest,
 )
 
@@ -24,9 +26,11 @@ __all__ = [
     "ProviderRequestError",
     "RetryPolicy",
     "RouteRequest",
+    "SpecialistProvider",
     "StaySearchProvider",
     "StaySearchRequest",
     "TravelDataProvider",
+    "WeatherRiskProvider",
     "WeatherRiskRequest",
     "load_fixture_amap_provider",
     "open_live_amap_provider",
