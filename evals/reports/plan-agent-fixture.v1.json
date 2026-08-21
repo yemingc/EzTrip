@@ -1,0 +1,509 @@
+{
+  "schema_version": "1.0",
+  "suite": "plan-agent-v1",
+  "agent_version": "multi-agent-plan-v1",
+  "execution_mode": "fixture",
+  "model": "fixture-plan-agent-model",
+  "dataset_sha256": "1089d11ea279b19f4675b0bb75d8455cf24f7ef36c666daccd0bce09bc887dfe",
+  "case_count": 6,
+  "passed_case_count": 6,
+  "case_pass_rate": "1.0000",
+  "planned_case_count": 4,
+  "skipped_case_count": 2,
+  "model_call_count": 4,
+  "candidate_count": 12,
+  "scheduled_candidate_count": 12,
+  "grounding_rate": "1.0000",
+  "source_traceability_rate": "1.0000",
+  "route_lineage_rate": "1.0000",
+  "weather_preservation_rate": "1.0000",
+  "zero_cost_claim_case_count": 4,
+  "skipped_zero_model_call_case_count": 2,
+  "usage_case_count": 4,
+  "total_prompt_tokens": 800,
+  "total_completion_tokens": 160,
+  "total_tokens": 960,
+  "p50_latency_ms": 25,
+  "p95_latency_ms": 25,
+  "results": [
+    {
+      "case_id": "plan-agent-beijing-history-v1",
+      "passed": true,
+      "expected_material_status": "ready",
+      "actual_material_status": "ready",
+      "expected_run_status": "planned",
+      "actual_run_status": "planned",
+      "candidate_count": 3,
+      "scheduled_candidate_count": 3,
+      "grounded_candidate_count": 3,
+      "traceable_candidate_count": 3,
+      "route_backed_candidate_count": 3,
+      "input_weather_risk_count": 1,
+      "preserved_weather_risk_count": 1,
+      "day_count": 3,
+      "cost_item_count": 0,
+      "model_call_count": 1,
+      "validation_status": "warning",
+      "latency_ms": 25,
+      "usage": {
+        "prompt_tokens": 200,
+        "completion_tokens": 40,
+        "total_tokens": 240
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "material_status_matches",
+          "passed": true
+        },
+        {
+          "code": "run_status_matches",
+          "passed": true
+        },
+        {
+          "code": "model_call_routing_matches",
+          "passed": true
+        },
+        {
+          "code": "candidate_scope_matches",
+          "passed": true
+        },
+        {
+          "code": "exact_candidate_coverage",
+          "passed": true
+        },
+        {
+          "code": "candidate_facts_grounded",
+          "passed": true
+        },
+        {
+          "code": "candidate_sources_traceable",
+          "passed": true
+        },
+        {
+          "code": "route_lineage_preserved",
+          "passed": true
+        },
+        {
+          "code": "weather_output_preserved",
+          "passed": true
+        },
+        {
+          "code": "complete_trip_dates",
+          "passed": true
+        },
+        {
+          "code": "budget_targets_not_price_claims",
+          "passed": true
+        },
+        {
+          "code": "soft_budget_does_not_create_hard_conflict",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "plan-agent-beijing-food-v1",
+      "passed": true,
+      "expected_material_status": "ready",
+      "actual_material_status": "ready",
+      "expected_run_status": "planned",
+      "actual_run_status": "planned",
+      "candidate_count": 3,
+      "scheduled_candidate_count": 3,
+      "grounded_candidate_count": 3,
+      "traceable_candidate_count": 3,
+      "route_backed_candidate_count": 3,
+      "input_weather_risk_count": 1,
+      "preserved_weather_risk_count": 1,
+      "day_count": 2,
+      "cost_item_count": 0,
+      "model_call_count": 1,
+      "validation_status": "warning",
+      "latency_ms": 25,
+      "usage": {
+        "prompt_tokens": 200,
+        "completion_tokens": 40,
+        "total_tokens": 240
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "material_status_matches",
+          "passed": true
+        },
+        {
+          "code": "run_status_matches",
+          "passed": true
+        },
+        {
+          "code": "model_call_routing_matches",
+          "passed": true
+        },
+        {
+          "code": "candidate_scope_matches",
+          "passed": true
+        },
+        {
+          "code": "exact_candidate_coverage",
+          "passed": true
+        },
+        {
+          "code": "candidate_facts_grounded",
+          "passed": true
+        },
+        {
+          "code": "candidate_sources_traceable",
+          "passed": true
+        },
+        {
+          "code": "route_lineage_preserved",
+          "passed": true
+        },
+        {
+          "code": "weather_output_preserved",
+          "passed": true
+        },
+        {
+          "code": "complete_trip_dates",
+          "passed": true
+        },
+        {
+          "code": "budget_targets_not_price_claims",
+          "passed": true
+        },
+        {
+          "code": "soft_budget_does_not_create_hard_conflict",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "plan-agent-shanghai-view-food-v1",
+      "passed": true,
+      "expected_material_status": "ready",
+      "actual_material_status": "ready",
+      "expected_run_status": "planned",
+      "actual_run_status": "planned",
+      "candidate_count": 3,
+      "scheduled_candidate_count": 3,
+      "grounded_candidate_count": 3,
+      "traceable_candidate_count": 3,
+      "route_backed_candidate_count": 3,
+      "input_weather_risk_count": 1,
+      "preserved_weather_risk_count": 1,
+      "day_count": 2,
+      "cost_item_count": 0,
+      "model_call_count": 1,
+      "validation_status": "warning",
+      "latency_ms": 25,
+      "usage": {
+        "prompt_tokens": 200,
+        "completion_tokens": 40,
+        "total_tokens": 240
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "material_status_matches",
+          "passed": true
+        },
+        {
+          "code": "run_status_matches",
+          "passed": true
+        },
+        {
+          "code": "model_call_routing_matches",
+          "passed": true
+        },
+        {
+          "code": "candidate_scope_matches",
+          "passed": true
+        },
+        {
+          "code": "exact_candidate_coverage",
+          "passed": true
+        },
+        {
+          "code": "candidate_facts_grounded",
+          "passed": true
+        },
+        {
+          "code": "candidate_sources_traceable",
+          "passed": true
+        },
+        {
+          "code": "route_lineage_preserved",
+          "passed": true
+        },
+        {
+          "code": "weather_output_preserved",
+          "passed": true
+        },
+        {
+          "code": "complete_trip_dates",
+          "passed": true
+        },
+        {
+          "code": "budget_targets_not_price_claims",
+          "passed": true
+        },
+        {
+          "code": "soft_budget_does_not_create_hard_conflict",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "plan-agent-chengdu-family-v1",
+      "passed": true,
+      "expected_material_status": "ready",
+      "actual_material_status": "ready",
+      "expected_run_status": "planned",
+      "actual_run_status": "planned",
+      "candidate_count": 3,
+      "scheduled_candidate_count": 3,
+      "grounded_candidate_count": 3,
+      "traceable_candidate_count": 3,
+      "route_backed_candidate_count": 3,
+      "input_weather_risk_count": 1,
+      "preserved_weather_risk_count": 1,
+      "day_count": 3,
+      "cost_item_count": 0,
+      "model_call_count": 1,
+      "validation_status": "warning",
+      "latency_ms": 25,
+      "usage": {
+        "prompt_tokens": 200,
+        "completion_tokens": 40,
+        "total_tokens": 240
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "material_status_matches",
+          "passed": true
+        },
+        {
+          "code": "run_status_matches",
+          "passed": true
+        },
+        {
+          "code": "model_call_routing_matches",
+          "passed": true
+        },
+        {
+          "code": "candidate_scope_matches",
+          "passed": true
+        },
+        {
+          "code": "exact_candidate_coverage",
+          "passed": true
+        },
+        {
+          "code": "candidate_facts_grounded",
+          "passed": true
+        },
+        {
+          "code": "candidate_sources_traceable",
+          "passed": true
+        },
+        {
+          "code": "route_lineage_preserved",
+          "passed": true
+        },
+        {
+          "code": "weather_output_preserved",
+          "passed": true
+        },
+        {
+          "code": "complete_trip_dates",
+          "passed": true
+        },
+        {
+          "code": "budget_targets_not_price_claims",
+          "passed": true
+        },
+        {
+          "code": "soft_budget_does_not_create_hard_conflict",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "plan-agent-route-timeout-skip-v1",
+      "passed": true,
+      "expected_material_status": "partial",
+      "actual_material_status": "partial",
+      "expected_run_status": "skipped",
+      "actual_run_status": "skipped",
+      "candidate_count": 3,
+      "scheduled_candidate_count": 0,
+      "grounded_candidate_count": 0,
+      "traceable_candidate_count": 0,
+      "route_backed_candidate_count": 0,
+      "input_weather_risk_count": 1,
+      "preserved_weather_risk_count": 0,
+      "day_count": 0,
+      "cost_item_count": 0,
+      "model_call_count": 0,
+      "validation_status": null,
+      "latency_ms": 0,
+      "usage": null,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "material_status_matches",
+          "passed": true
+        },
+        {
+          "code": "run_status_matches",
+          "passed": true
+        },
+        {
+          "code": "model_call_routing_matches",
+          "passed": true
+        },
+        {
+          "code": "candidate_scope_matches",
+          "passed": true
+        },
+        {
+          "code": "exact_candidate_coverage",
+          "passed": true
+        },
+        {
+          "code": "candidate_facts_grounded",
+          "passed": true
+        },
+        {
+          "code": "candidate_sources_traceable",
+          "passed": true
+        },
+        {
+          "code": "route_lineage_preserved",
+          "passed": true
+        },
+        {
+          "code": "weather_output_preserved",
+          "passed": true
+        },
+        {
+          "code": "complete_trip_dates",
+          "passed": true
+        },
+        {
+          "code": "budget_targets_not_price_claims",
+          "passed": true
+        },
+        {
+          "code": "soft_budget_does_not_create_hard_conflict",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "plan-agent-unsupported-city-skip-v1",
+      "passed": true,
+      "expected_material_status": "blocked",
+      "actual_material_status": "blocked",
+      "expected_run_status": "skipped",
+      "actual_run_status": "skipped",
+      "candidate_count": 0,
+      "scheduled_candidate_count": 0,
+      "grounded_candidate_count": 0,
+      "traceable_candidate_count": 0,
+      "route_backed_candidate_count": 0,
+      "input_weather_risk_count": 0,
+      "preserved_weather_risk_count": 0,
+      "day_count": 0,
+      "cost_item_count": 0,
+      "model_call_count": 0,
+      "validation_status": null,
+      "latency_ms": 0,
+      "usage": null,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "material_status_matches",
+          "passed": true
+        },
+        {
+          "code": "run_status_matches",
+          "passed": true
+        },
+        {
+          "code": "model_call_routing_matches",
+          "passed": true
+        },
+        {
+          "code": "candidate_scope_matches",
+          "passed": true
+        },
+        {
+          "code": "exact_candidate_coverage",
+          "passed": true
+        },
+        {
+          "code": "candidate_facts_grounded",
+          "passed": true
+        },
+        {
+          "code": "candidate_sources_traceable",
+          "passed": true
+        },
+        {
+          "code": "route_lineage_preserved",
+          "passed": true
+        },
+        {
+          "code": "weather_output_preserved",
+          "passed": true
+        },
+        {
+          "code": "complete_trip_dates",
+          "passed": true
+        },
+        {
+          "code": "budget_targets_not_price_claims",
+          "passed": true
+        },
+        {
+          "code": "soft_budget_does_not_create_hard_conflict",
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "候选、住宿、天气与路线来自显式 fixture, 不代表实时高德数据质量。",
+    "评测验证候选 grounding、材料消费和停止路由, 不等于行程主观质量准确率。",
+    "预算 allocation 是目标 envelope; 当前没有价格事实, 因而不生成 CostItem。",
+    "营业时间、must/avoid 硬校验与定向修复属于后续 Validator 和 Repair Router。",
+    "live 模式只替换 Plan Agent 模型, 上游 specialist 保持 fixture 以隔离变量。"
+  ]
+}

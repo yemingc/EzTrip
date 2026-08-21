@@ -46,6 +46,24 @@ from app.evaluation.explore_contracts import (
     ExploreAgentExpectation,
     ExploreFixtureCandidateSpec,
 )
+from app.evaluation.plan_agent import (
+    PLAN_AGENT_SUITE_PATH,
+    PlanAgentEvaluationError,
+    PlanAgentFixtureModel,
+    PlanAgentRunner,
+    build_plan_agent_materials,
+    evaluate_plan_agent_case,
+    evaluate_plan_agent_suite,
+    load_plan_agent_suite,
+    plan_agent_dataset_sha256,
+)
+from app.evaluation.plan_agent_contracts import (
+    PlanAgentBaselineReport,
+    PlanAgentCaseResult,
+    PlanAgentEvalCase,
+    PlanAgentEvalSuite,
+    PlanAgentExpectation,
+)
 from app.evaluation.planning_materials import (
     PlanningMaterialEvaluationError,
     PlanningMaterialFixtureExploreModel,
@@ -123,6 +141,7 @@ from app.evaluation.vertical_slice_contracts import (
 )
 
 __all__ = [
+    "PLAN_AGENT_SUITE_PATH",
     "CheckpointHitlCase",
     "CheckpointHitlCaseResult",
     "CheckpointHitlReport",
@@ -142,6 +161,14 @@ __all__ = [
     "ExploreScenarioProvider",
     "FixtureExploreModel",
     "FixtureStayModel",
+    "PlanAgentBaselineReport",
+    "PlanAgentCaseResult",
+    "PlanAgentEvalCase",
+    "PlanAgentEvalSuite",
+    "PlanAgentEvaluationError",
+    "PlanAgentExpectation",
+    "PlanAgentFixtureModel",
+    "PlanAgentRunner",
     "PlanningMaterialBaselineReport",
     "PlanningMaterialCaseResult",
     "PlanningMaterialEvalCase",
@@ -180,6 +207,7 @@ __all__ = [
     "VerticalSliceCaseResult",
     "VerticalSliceGateReport",
     "VerticalSliceSuite",
+    "build_plan_agent_materials",
     "build_specialist_scenario_provider",
     "checkpoint_hitl_dataset_sha256",
     "constraint_agent_dataset_sha256",
@@ -189,6 +217,8 @@ __all__ = [
     "evaluate_constraint_agent_suite",
     "evaluate_explore_agent_case",
     "evaluate_explore_agent_suite",
+    "evaluate_plan_agent_case",
+    "evaluate_plan_agent_suite",
     "evaluate_planning_material_case",
     "evaluate_planning_material_suite",
     "evaluate_planning_seed_suite",
@@ -204,11 +234,13 @@ __all__ = [
     "load_checkpoint_hitl_suite",
     "load_constraint_agent_expectations",
     "load_explore_agent_suite",
+    "load_plan_agent_suite",
     "load_planning_material_suite",
     "load_planning_seed_suite",
     "load_specialist_fanout_suite",
     "load_stay_agent_suite",
     "load_vertical_slice_suite",
+    "plan_agent_dataset_sha256",
     "planning_material_dataset_sha256",
     "run_vertical_slice_case",
     "specialist_fanout_dataset_sha256",
