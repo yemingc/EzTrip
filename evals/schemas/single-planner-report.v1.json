@@ -1,0 +1,443 @@
+{
+  "$defs": {
+    "EvaluationCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Code",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "passed"
+      ],
+      "title": "EvaluationCheck",
+      "type": "object"
+    },
+    "ModelTokenUsage": {
+      "additionalProperties": false,
+      "properties": {
+        "prompt_tokens": {
+          "minimum": 0,
+          "title": "Prompt Tokens",
+          "type": "integer"
+        },
+        "completion_tokens": {
+          "minimum": 0,
+          "title": "Completion Tokens",
+          "type": "integer"
+        },
+        "total_tokens": {
+          "minimum": 0,
+          "title": "Total Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens"
+      ],
+      "title": "ModelTokenUsage",
+      "type": "object"
+    },
+    "PlanningWorkflowStatus": {
+      "enum": [
+        "needs_clarification",
+        "no_candidate_query",
+        "candidates_ready",
+        "provider_failed"
+      ],
+      "title": "PlanningWorkflowStatus",
+      "type": "string"
+    },
+    "SeedTier": {
+      "enum": [
+        "standard",
+        "hard"
+      ],
+      "title": "SeedTier",
+      "type": "string"
+    },
+    "SinglePlannerCaseResult": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "tier": {
+          "$ref": "#/$defs/SeedTier"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "upstream_status": {
+          "$ref": "#/$defs/PlanningWorkflowStatus"
+        },
+        "outcome": {
+          "$ref": "#/$defs/SinglePlannerOutcome"
+        },
+        "planning_expected": {
+          "title": "Planning Expected",
+          "type": "boolean"
+        },
+        "model_called": {
+          "title": "Model Called",
+          "type": "boolean"
+        },
+        "candidate_count": {
+          "minimum": 0,
+          "title": "Candidate Count",
+          "type": "integer"
+        },
+        "scheduled_candidate_count": {
+          "minimum": 0,
+          "title": "Scheduled Candidate Count",
+          "type": "integer"
+        },
+        "grounded_item_count": {
+          "minimum": 0,
+          "title": "Grounded Item Count",
+          "type": "integer"
+        },
+        "traceable_item_count": {
+          "minimum": 0,
+          "title": "Traceable Item Count",
+          "type": "integer"
+        },
+        "valid_day_plan_count": {
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Valid Day Plan Count",
+          "type": "integer"
+        },
+        "latency_ms": {
+          "minimum": 0,
+          "title": "Latency Ms",
+          "type": "integer"
+        },
+        "usage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelTokenUsage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/EvaluationCheck"
+          },
+          "minItems": 1,
+          "title": "Checks",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "tier",
+        "passed",
+        "upstream_status",
+        "outcome",
+        "planning_expected",
+        "model_called",
+        "candidate_count",
+        "scheduled_candidate_count",
+        "grounded_item_count",
+        "traceable_item_count",
+        "valid_day_plan_count",
+        "latency_ms",
+        "checks"
+      ],
+      "title": "SinglePlannerCaseResult",
+      "type": "object"
+    },
+    "SinglePlannerOutcome": {
+      "enum": [
+        "planned",
+        "skipped",
+        "failed"
+      ],
+      "title": "SinglePlannerOutcome",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "suite": {
+      "const": "single-planner-planning-seed-v1",
+      "default": "single-planner-planning-seed-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "workflow_version": {
+      "const": "minimal-planning-graph-v1",
+      "default": "minimal-planning-graph-v1",
+      "title": "Workflow Version",
+      "type": "string"
+    },
+    "agent_version": {
+      "const": "single-planner-v1",
+      "default": "single-planner-v1",
+      "title": "Agent Version",
+      "type": "string"
+    },
+    "prompt_version": {
+      "const": "candidate-placement-v1",
+      "default": "candidate-placement-v1",
+      "title": "Prompt Version",
+      "type": "string"
+    },
+    "execution_mode": {
+      "enum": [
+        "fixture",
+        "live"
+      ],
+      "title": "Execution Mode",
+      "type": "string"
+    },
+    "model": {
+      "minLength": 1,
+      "title": "Model",
+      "type": "string"
+    },
+    "dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Dataset Sha256",
+      "type": "string"
+    },
+    "case_count": {
+      "const": 10,
+      "default": 10,
+      "title": "Case Count",
+      "type": "integer"
+    },
+    "planning_expected_case_count": {
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Planning Expected Case Count",
+      "type": "integer"
+    },
+    "model_call_count": {
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Model Call Count",
+      "type": "integer"
+    },
+    "planned_case_count": {
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Planned Case Count",
+      "type": "integer"
+    },
+    "skipped_case_count": {
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Skipped Case Count",
+      "type": "integer"
+    },
+    "failed_case_count": {
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Failed Case Count",
+      "type": "integer"
+    },
+    "passed_case_count": {
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Passed Case Count",
+      "type": "integer"
+    },
+    "case_pass_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Case Pass Rate"
+    },
+    "candidate_count": {
+      "minimum": 0,
+      "title": "Candidate Count",
+      "type": "integer"
+    },
+    "scheduled_candidate_count": {
+      "minimum": 0,
+      "title": "Scheduled Candidate Count",
+      "type": "integer"
+    },
+    "candidate_coverage_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Candidate Coverage Rate"
+    },
+    "grounded_item_count": {
+      "minimum": 0,
+      "title": "Grounded Item Count",
+      "type": "integer"
+    },
+    "grounding_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Grounding Rate"
+    },
+    "traceable_item_count": {
+      "minimum": 0,
+      "title": "Traceable Item Count",
+      "type": "integer"
+    },
+    "source_traceability_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Source Traceability Rate"
+    },
+    "usage_case_count": {
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Usage Case Count",
+      "type": "integer"
+    },
+    "total_prompt_tokens": {
+      "minimum": 0,
+      "title": "Total Prompt Tokens",
+      "type": "integer"
+    },
+    "total_completion_tokens": {
+      "minimum": 0,
+      "title": "Total Completion Tokens",
+      "type": "integer"
+    },
+    "total_tokens": {
+      "minimum": 0,
+      "title": "Total Tokens",
+      "type": "integer"
+    },
+    "p50_latency_ms": {
+      "minimum": 0,
+      "title": "P50 Latency Ms",
+      "type": "integer"
+    },
+    "p95_latency_ms": {
+      "minimum": 0,
+      "title": "P95 Latency Ms",
+      "type": "integer"
+    },
+    "results": {
+      "items": {
+        "$ref": "#/$defs/SinglePlannerCaseResult"
+      },
+      "maxItems": 10,
+      "minItems": 10,
+      "title": "Results",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Limitations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "execution_mode",
+    "model",
+    "dataset_sha256",
+    "planning_expected_case_count",
+    "model_call_count",
+    "planned_case_count",
+    "skipped_case_count",
+    "failed_case_count",
+    "passed_case_count",
+    "case_pass_rate",
+    "candidate_count",
+    "scheduled_candidate_count",
+    "candidate_coverage_rate",
+    "grounded_item_count",
+    "grounding_rate",
+    "traceable_item_count",
+    "source_traceability_rate",
+    "usage_case_count",
+    "total_prompt_tokens",
+    "total_completion_tokens",
+    "total_tokens",
+    "p50_latency_ms",
+    "p95_latency_ms",
+    "results",
+    "limitations"
+  ],
+  "title": "SinglePlannerBaselineReport",
+  "type": "object"
+}

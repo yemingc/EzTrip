@@ -2443,6 +2443,555 @@
       "title": "ConstraintAgentResult",
       "type": "object"
     },
+    "PlannerProposalBatch": {
+      "$defs": {
+        "PlannerPlacementProposal": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Candidate Id",
+              "type": "string"
+            },
+            "day_number": {
+              "maximum": 5,
+              "minimum": 1,
+              "title": "Day Number",
+              "type": "integer"
+            },
+            "start_time": {
+              "pattern": "^(?:0[8-9]|1\\d|2[0-1]):(?:00|30)$",
+              "title": "Start Time",
+              "type": "string"
+            },
+            "reason": {
+              "maxLength": 160,
+              "minLength": 1,
+              "title": "Reason",
+              "type": "string"
+            }
+          },
+          "required": [
+            "candidate_id",
+            "day_number",
+            "start_time",
+            "reason"
+          ],
+          "title": "PlannerPlacementProposal",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/PlannerPlacementProposal"
+          },
+          "maxItems": 12,
+          "minItems": 1,
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "PlannerProposalBatch",
+      "type": "object"
+    },
+    "SinglePlannerAgentResult": {
+      "$defs": {
+        "ActivityKind": {
+          "enum": [
+            "attraction",
+            "meal",
+            "stay",
+            "transit",
+            "free_time"
+          ],
+          "title": "ActivityKind",
+          "type": "string"
+        },
+        "DataMode": {
+          "enum": [
+            "live",
+            "fixture",
+            "user_input",
+            "estimate"
+          ],
+          "title": "DataMode",
+          "type": "string"
+        },
+        "DayPlan": {
+          "additionalProperties": false,
+          "properties": {
+            "date": {
+              "format": "date",
+              "title": "Date",
+              "type": "string"
+            },
+            "items": {
+              "items": {
+                "$ref": "#/$defs/ItineraryItem"
+              },
+              "minItems": 1,
+              "title": "Items",
+              "type": "array"
+            },
+            "weather_risk_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Weather Risk Ids",
+              "type": "array"
+            }
+          },
+          "required": [
+            "date",
+            "items"
+          ],
+          "title": "DayPlan",
+          "type": "object"
+        },
+        "GeoPoint": {
+          "additionalProperties": false,
+          "properties": {
+            "latitude": {
+              "maximum": 90,
+              "minimum": -90,
+              "title": "Latitude",
+              "type": "number"
+            },
+            "longitude": {
+              "maximum": 180,
+              "minimum": -180,
+              "title": "Longitude",
+              "type": "number"
+            }
+          },
+          "required": [
+            "latitude",
+            "longitude"
+          ],
+          "title": "GeoPoint",
+          "type": "object"
+        },
+        "ItineraryItem": {
+          "additionalProperties": false,
+          "properties": {
+            "item_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Item Id",
+              "type": "string"
+            },
+            "kind": {
+              "$ref": "#/$defs/ActivityKind"
+            },
+            "title": {
+              "minLength": 1,
+              "title": "Title",
+              "type": "string"
+            },
+            "start_at": {
+              "format": "date-time",
+              "title": "Start At",
+              "type": "string"
+            },
+            "end_at": {
+              "format": "date-time",
+              "title": "End At",
+              "type": "string"
+            },
+            "candidate_id": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Candidate Id"
+            },
+            "source": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/SourceReference"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "route_from_previous": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/RouteLeg"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "cost_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Cost Item Ids",
+              "type": "array"
+            },
+            "notes": {
+              "default": [],
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "Notes",
+              "type": "array"
+            }
+          },
+          "required": [
+            "item_id",
+            "kind",
+            "title",
+            "start_at",
+            "end_at"
+          ],
+          "title": "ItineraryItem",
+          "type": "object"
+        },
+        "ModelTokenUsage": {
+          "additionalProperties": false,
+          "properties": {
+            "prompt_tokens": {
+              "minimum": 0,
+              "title": "Prompt Tokens",
+              "type": "integer"
+            },
+            "completion_tokens": {
+              "minimum": 0,
+              "title": "Completion Tokens",
+              "type": "integer"
+            },
+            "total_tokens": {
+              "minimum": 0,
+              "title": "Total Tokens",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "prompt_tokens",
+            "completion_tokens",
+            "total_tokens"
+          ],
+          "title": "ModelTokenUsage",
+          "type": "object"
+        },
+        "PlannerPlacementDecision": {
+          "additionalProperties": false,
+          "properties": {
+            "proposal": {
+              "$ref": "#/$defs/PlannerPlacementProposal"
+            },
+            "item": {
+              "$ref": "#/$defs/ItineraryItem"
+            }
+          },
+          "required": [
+            "proposal",
+            "item"
+          ],
+          "title": "PlannerPlacementDecision",
+          "type": "object"
+        },
+        "PlannerPlacementProposal": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Candidate Id",
+              "type": "string"
+            },
+            "day_number": {
+              "maximum": 5,
+              "minimum": 1,
+              "title": "Day Number",
+              "type": "integer"
+            },
+            "start_time": {
+              "pattern": "^(?:0[8-9]|1\\d|2[0-1]):(?:00|30)$",
+              "title": "Start Time",
+              "type": "string"
+            },
+            "reason": {
+              "maxLength": 160,
+              "minLength": 1,
+              "title": "Reason",
+              "type": "string"
+            }
+          },
+          "required": [
+            "candidate_id",
+            "day_number",
+            "start_time",
+            "reason"
+          ],
+          "title": "PlannerPlacementProposal",
+          "type": "object"
+        },
+        "RouteEndpoint": {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "minLength": 1,
+              "title": "Name",
+              "type": "string"
+            },
+            "candidate_id": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Candidate Id"
+            },
+            "location": {
+              "$ref": "#/$defs/GeoPoint"
+            }
+          },
+          "required": [
+            "name",
+            "location"
+          ],
+          "title": "RouteEndpoint",
+          "type": "object"
+        },
+        "RouteLeg": {
+          "additionalProperties": false,
+          "properties": {
+            "route_leg_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Route Leg Id",
+              "type": "string"
+            },
+            "origin": {
+              "$ref": "#/$defs/RouteEndpoint"
+            },
+            "destination": {
+              "$ref": "#/$defs/RouteEndpoint"
+            },
+            "mode": {
+              "$ref": "#/$defs/RouteMode"
+            },
+            "distance_meters": {
+              "minimum": 0,
+              "title": "Distance Meters",
+              "type": "integer"
+            },
+            "duration_minutes": {
+              "exclusiveMinimum": 0,
+              "maximum": 1440,
+              "title": "Duration Minutes",
+              "type": "integer"
+            },
+            "source": {
+              "$ref": "#/$defs/SourceReference"
+            }
+          },
+          "required": [
+            "route_leg_id",
+            "origin",
+            "destination",
+            "mode",
+            "distance_meters",
+            "duration_minutes",
+            "source"
+          ],
+          "title": "RouteLeg",
+          "type": "object"
+        },
+        "RouteMode": {
+          "enum": [
+            "walking",
+            "transit",
+            "driving",
+            "cycling"
+          ],
+          "title": "RouteMode",
+          "type": "string"
+        },
+        "SourceReference": {
+          "additionalProperties": false,
+          "description": "Traceable origin for provider data or an explicit estimate.",
+          "properties": {
+            "provider": {
+              "minLength": 1,
+              "title": "Provider",
+              "type": "string"
+            },
+            "provider_id": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Provider Id"
+            },
+            "data_mode": {
+              "$ref": "#/$defs/DataMode"
+            },
+            "retrieved_at": {
+              "format": "date-time",
+              "title": "Retrieved At",
+              "type": "string"
+            },
+            "raw_response_sha256": {
+              "anyOf": [
+                {
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Raw Response Sha256"
+            }
+          },
+          "required": [
+            "provider",
+            "data_mode",
+            "retrieved_at"
+          ],
+          "title": "SourceReference",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "agent_version": {
+          "const": "single-planner-v1",
+          "default": "single-planner-v1",
+          "title": "Agent Version",
+          "type": "string"
+        },
+        "prompt_version": {
+          "const": "candidate-placement-v1",
+          "default": "candidate-placement-v1",
+          "title": "Prompt Version",
+          "type": "string"
+        },
+        "request_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "context_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Context Id",
+          "type": "string"
+        },
+        "input_candidates_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Input Candidates Sha256",
+          "type": "string"
+        },
+        "model": {
+          "minLength": 1,
+          "title": "Model",
+          "type": "string"
+        },
+        "latency_ms": {
+          "minimum": 0,
+          "title": "Latency Ms",
+          "type": "integer"
+        },
+        "usage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelTokenUsage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "decisions": {
+          "items": {
+            "$ref": "#/$defs/PlannerPlacementDecision"
+          },
+          "minItems": 1,
+          "title": "Decisions",
+          "type": "array"
+        },
+        "day_plans": {
+          "items": {
+            "$ref": "#/$defs/DayPlan"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "title": "Day Plans",
+          "type": "array"
+        }
+      },
+      "required": [
+        "request_id",
+        "context_id",
+        "input_candidates_sha256",
+        "model",
+        "latency_ms",
+        "decisions",
+        "day_plans"
+      ],
+      "title": "SinglePlannerAgentResult",
+      "type": "object"
+    },
     "Party": {
       "additionalProperties": false,
       "properties": {
