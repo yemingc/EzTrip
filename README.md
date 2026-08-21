@@ -2,7 +2,7 @@
 
 面向中国城市自由行的可验证、可调整、可追溯旅行规划助手。
 
-当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、开放式景点/餐饮 Explore Agent、住宿区域筛选 Stay Agent、确定性预算/基础计划 Validator、北京三日 Gate 2 最小纵向切片、基于 SQLite checkpoint 的可恢复主编排与原生 HITL，以及 Explore/Stay/主动天气三分支并行编排。模型路径都有真实 DeepSeek/LangSmith 隔离评测；纵向切片、恢复和 fan-out 评测使用 fixture 来建立可重放证据。仓库尚未把专业信息包合成为完整多 Agent `TripPlan`，也未实现前端人工审核或产品规划 API。
+当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、开放式景点/餐饮 Explore Agent、住宿区域筛选 Stay Agent、确定性预算/基础计划 Validator、北京三日 Gate 2 最小纵向切片、基于 SQLite checkpoint 的可恢复主编排与原生 HITL、Explore/Stay/主动天气三分支并行编排，以及供后续 Plan Agent 消费的有界路线矩阵和确定性预算材料层。模型路径都有真实 DeepSeek/LangSmith 隔离评测；纵向切片、恢复、fan-out 和材料层评测使用 fixture 来建立可重放证据。仓库尚未把专业信息包合成为完整多 Agent `TripPlan`，也未实现前端人工审核或产品规划 API。
 
 ## 技术基线
 
@@ -248,6 +248,20 @@ uv run python -m scripts.run_specialist_fanout_eval --live
 
 离线与 live 评测都使用显式 fixture Provider；`--live` 只把 Explore/Stay 模型替换为 DeepSeek 并上传 LangSmith trace。这证明并发、合并、降级、成本记录与恢复契约，不证明实时高德效果或多 Agent 已提升最终行程质量。
 
+## 路线矩阵与预算材料层
+
+[`docs/planning/route-budget-materials.md`](docs/planning/route-budget-materials.md) 把 specialist 信息包收敛成最多 4 个 POI 与 1 个住宿锚点，并生成最多 20 条有向公交路线。默认并发上限为 4；单条 Provider timeout 保留为 typed partial failure，城市能力被阻断时路线调用固定为 0。`budget-allocator-v1` 则用 `Decimal`、版本化类别权重和间夜/人次/天数尺度生成目标 envelope，不让模型做金额算术或猜测缺失房间数。
+
+[`docs/evaluation/route-budget-materials-baseline.md`](docs/evaluation/route-budget-materials-baseline.md) 的可重放 fixture 套件为 5/5 cases、42/42 路线边、1/1 类型化单边超时、2/2 预算精确回总额、1/1 blocked case 零路线调用，并且 5/5 cases 遵守并发上限。
+
+```powershell
+Set-Location backend
+uv run pytest tests/test_planning_materials.py tests/test_planning_material_eval.py --no-cov
+uv run python -m scripts.run_planning_material_eval
+```
+
+该层没有新增 LLM 调用，提交指标不是模型准确率。路线 fixture 不代表当前高德实时耗时，预算目标也不是价格或可行性保证；输出仍是最终 Plan Agent 之前的材料，而不是完整 `TripPlan`。
+
 ## AMap live contract probe
 
 [`docs/probes/amap-mcp-live-probe-2026-08-20.md`](docs/probes/amap-mcp-live-probe-2026-08-20.md) 记录一次固定北京真实探针：官方 MCP 当前发现 15 个工具，并验证 POI、天气、距离、步行和公交响应；版本化 fixture 只保留字段白名单并执行凭据/PII 脱敏。CI 回放 fixture，不读取 Key 或访问高德。
@@ -285,6 +299,6 @@ uv run python -m scripts.run_amap_provider_smoke --live
 - 不提供订票、订房、支付或实时房价；
 - 当前健康页不是旅行规划产品完成度；
 - 当前三节点探针只证明观测链路可接入，不证明模型规划质量；
-- 当前领域契约、PlannerContext 编译器、provider adapter、Single Planner 和 Validator 已在 Gate 2 fixture 纵向切片及可恢复 HITL 主编排中连通；Explore、Stay 与主动 Weather 已在独立 fan-out 中并行，但该专业信息包尚未进入路线、预算和最终排程，Constraint Agent 也尚未接入产品入口；
+- 当前领域契约、PlannerContext 编译器、provider adapter、Single Planner 和 Validator 已在 Gate 2 fixture 纵向切片及可恢复 HITL 主编排中连通；Explore、Stay 与主动 Weather 的信息包已进入独立路线矩阵和预算材料层，但尚未由 Plan Agent 合成为同构最终 TripPlan，Constraint Agent 也尚未接入产品入口；
 - 高德 live fixture 是 2026-08-20 的点时样本，不是当前天气、实时酒店价格或生产 SLA；
 - 后续功能必须通过真实 provider contract、固定评测和可回放 trace 验证后再写入项目成果。

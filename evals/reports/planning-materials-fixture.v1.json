@@ -1,0 +1,358 @@
+{
+  "schema_version": "1.0",
+  "suite": "planning-materials-v1",
+  "bundle_version": "planning-materials-v1",
+  "route_matrix_version": "route-matrix-v1",
+  "budget_allocator_version": "budget-allocator-v1",
+  "execution_mode": "fixture",
+  "dataset_sha256": "eeeff5b8638b7aba7e981195f793d5cc1f043a28c4fde2c7ba76762d76b70e7f",
+  "case_count": 5,
+  "passed_case_count": 5,
+  "case_pass_rate": "1.0000",
+  "expected_edge_count": 42,
+  "actual_edge_count": 42,
+  "route_provider_call_count": 42,
+  "typed_route_failure_count": 1,
+  "exact_budget_case_count": 2,
+  "blocked_zero_route_call_case_count": 1,
+  "bounded_concurrency_case_count": 5,
+  "source_traceability_case_count": 4,
+  "results": [
+    {
+      "case_id": "planning-materials-ready-v1",
+      "expected_material_status": "ready",
+      "actual_material_status": "ready",
+      "passed": true,
+      "expected_edge_count": 12,
+      "actual_edge_count": 12,
+      "failed_edge_count": 0,
+      "typed_route_failure_count": 0,
+      "route_provider_call_count": 12,
+      "route_provider_peak": 4,
+      "source_traceability_passed": true,
+      "budget_sum_exact": true,
+      "budget_target_total": "3000.00",
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "material_status_matches",
+          "passed": true
+        },
+        {
+          "code": "route_status_matches",
+          "passed": true
+        },
+        {
+          "code": "budget_status_matches",
+          "passed": true
+        },
+        {
+          "code": "edge_count_matches",
+          "passed": true
+        },
+        {
+          "code": "failed_edge_count_matches",
+          "passed": true
+        },
+        {
+          "code": "route_calls_match",
+          "passed": true
+        },
+        {
+          "code": "typed_route_failures",
+          "passed": true
+        },
+        {
+          "code": "budget_sum_exact",
+          "passed": true
+        },
+        {
+          "code": "blocked_route_uses_zero_calls",
+          "passed": true
+        },
+        {
+          "code": "route_concurrency_bounded",
+          "passed": true
+        },
+        {
+          "code": "route_sources_traceable",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "planning-materials-route-timeout-v1",
+      "expected_material_status": "partial",
+      "actual_material_status": "partial",
+      "passed": true,
+      "expected_edge_count": 12,
+      "actual_edge_count": 12,
+      "failed_edge_count": 1,
+      "typed_route_failure_count": 1,
+      "route_provider_call_count": 12,
+      "route_provider_peak": 4,
+      "source_traceability_passed": true,
+      "budget_sum_exact": true,
+      "budget_target_total": "3000.00",
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "material_status_matches",
+          "passed": true
+        },
+        {
+          "code": "route_status_matches",
+          "passed": true
+        },
+        {
+          "code": "budget_status_matches",
+          "passed": true
+        },
+        {
+          "code": "edge_count_matches",
+          "passed": true
+        },
+        {
+          "code": "failed_edge_count_matches",
+          "passed": true
+        },
+        {
+          "code": "route_calls_match",
+          "passed": true
+        },
+        {
+          "code": "typed_route_failures",
+          "passed": true
+        },
+        {
+          "code": "budget_sum_exact",
+          "passed": true
+        },
+        {
+          "code": "blocked_route_uses_zero_calls",
+          "passed": true
+        },
+        {
+          "code": "route_concurrency_bounded",
+          "passed": true
+        },
+        {
+          "code": "route_sources_traceable",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "planning-materials-no-budget-v1",
+      "expected_material_status": "partial",
+      "actual_material_status": "partial",
+      "passed": true,
+      "expected_edge_count": 12,
+      "actual_edge_count": 12,
+      "failed_edge_count": 0,
+      "typed_route_failure_count": 0,
+      "route_provider_call_count": 12,
+      "route_provider_peak": 4,
+      "source_traceability_passed": true,
+      "budget_sum_exact": false,
+      "budget_target_total": "0",
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "material_status_matches",
+          "passed": true
+        },
+        {
+          "code": "route_status_matches",
+          "passed": true
+        },
+        {
+          "code": "budget_status_matches",
+          "passed": true
+        },
+        {
+          "code": "edge_count_matches",
+          "passed": true
+        },
+        {
+          "code": "failed_edge_count_matches",
+          "passed": true
+        },
+        {
+          "code": "route_calls_match",
+          "passed": true
+        },
+        {
+          "code": "typed_route_failures",
+          "passed": true
+        },
+        {
+          "code": "budget_sum_exact",
+          "passed": true
+        },
+        {
+          "code": "blocked_route_uses_zero_calls",
+          "passed": true
+        },
+        {
+          "code": "route_concurrency_bounded",
+          "passed": true
+        },
+        {
+          "code": "route_sources_traceable",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "planning-materials-missing-rooms-v1",
+      "expected_material_status": "partial",
+      "actual_material_status": "partial",
+      "passed": true,
+      "expected_edge_count": 6,
+      "actual_edge_count": 6,
+      "failed_edge_count": 0,
+      "typed_route_failure_count": 0,
+      "route_provider_call_count": 6,
+      "route_provider_peak": 4,
+      "source_traceability_passed": true,
+      "budget_sum_exact": false,
+      "budget_target_total": "0",
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "material_status_matches",
+          "passed": true
+        },
+        {
+          "code": "route_status_matches",
+          "passed": true
+        },
+        {
+          "code": "budget_status_matches",
+          "passed": true
+        },
+        {
+          "code": "edge_count_matches",
+          "passed": true
+        },
+        {
+          "code": "failed_edge_count_matches",
+          "passed": true
+        },
+        {
+          "code": "route_calls_match",
+          "passed": true
+        },
+        {
+          "code": "typed_route_failures",
+          "passed": true
+        },
+        {
+          "code": "budget_sum_exact",
+          "passed": true
+        },
+        {
+          "code": "blocked_route_uses_zero_calls",
+          "passed": true
+        },
+        {
+          "code": "route_concurrency_bounded",
+          "passed": true
+        },
+        {
+          "code": "route_sources_traceable",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "planning-materials-unsupported-city-v1",
+      "expected_material_status": "blocked",
+      "actual_material_status": "blocked",
+      "passed": true,
+      "expected_edge_count": 0,
+      "actual_edge_count": 0,
+      "failed_edge_count": 0,
+      "typed_route_failure_count": 0,
+      "route_provider_call_count": 0,
+      "route_provider_peak": 0,
+      "source_traceability_passed": false,
+      "budget_sum_exact": false,
+      "budget_target_total": "0",
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "material_status_matches",
+          "passed": true
+        },
+        {
+          "code": "route_status_matches",
+          "passed": true
+        },
+        {
+          "code": "budget_status_matches",
+          "passed": true
+        },
+        {
+          "code": "edge_count_matches",
+          "passed": true
+        },
+        {
+          "code": "failed_edge_count_matches",
+          "passed": true
+        },
+        {
+          "code": "route_calls_match",
+          "passed": true
+        },
+        {
+          "code": "typed_route_failures",
+          "passed": true
+        },
+        {
+          "code": "budget_sum_exact",
+          "passed": true
+        },
+        {
+          "code": "blocked_route_uses_zero_calls",
+          "passed": true
+        },
+        {
+          "code": "route_concurrency_bounded",
+          "passed": true
+        },
+        {
+          "code": "route_sources_traceable",
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "路线使用可控 fixture, 不代表实时高德公交耗时、换乘或拥堵数据。",
+    "预算分配是工程策略目标, 不是价格来源、报价或预算满足证明。",
+    "候选沿用开发集标签, 本套件验证材料编排而非未见城市上的推荐质量。",
+    "当前产物是最终行程生成前的确定性材料层, 尚未生成逐日 TripPlan。"
+  ]
+}
