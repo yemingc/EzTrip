@@ -1,0 +1,485 @@
+{
+  "schema_version": "1.0",
+  "suite": "single-planner-planning-seed-v1",
+  "workflow_version": "minimal-planning-graph-v1",
+  "agent_version": "single-planner-v1",
+  "prompt_version": "candidate-placement-v1",
+  "execution_mode": "live",
+  "model": "deepseek-v4-pro",
+  "dataset_sha256": "e4bc2529b052beca15d31041ed5c8c2d88fe87b38bb4797f28ff8aff36c6d7cd",
+  "case_count": 10,
+  "planning_expected_case_count": 6,
+  "model_call_count": 6,
+  "planned_case_count": 6,
+  "skipped_case_count": 4,
+  "failed_case_count": 0,
+  "passed_case_count": 10,
+  "case_pass_rate": "1.0000",
+  "candidate_count": 6,
+  "scheduled_candidate_count": 6,
+  "candidate_coverage_rate": "1.0000",
+  "grounded_item_count": 6,
+  "grounding_rate": "1.0000",
+  "traceable_item_count": 6,
+  "source_traceability_rate": "1.0000",
+  "usage_case_count": 6,
+  "total_prompt_tokens": 5603,
+  "total_completion_tokens": 632,
+  "total_tokens": 6235,
+  "p50_latency_ms": 2797,
+  "p95_latency_ms": 3968,
+  "results": [
+    {
+      "case_id": "seed-standard-beijing-history-v1",
+      "tier": "standard",
+      "passed": true,
+      "upstream_status": "candidates_ready",
+      "outcome": "planned",
+      "planning_expected": true,
+      "model_called": true,
+      "candidate_count": 1,
+      "scheduled_candidate_count": 1,
+      "grounded_item_count": 1,
+      "traceable_item_count": 1,
+      "valid_day_plan_count": 1,
+      "latency_ms": 2488,
+      "usage": {
+        "prompt_tokens": 958,
+        "completion_tokens": 103,
+        "total_tokens": 1061
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "planner_protocol_succeeded",
+          "passed": true
+        },
+        {
+          "code": "request_and_context_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_coverage",
+          "passed": true
+        },
+        {
+          "code": "candidate_grounding",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "dates_within_trip",
+          "passed": true
+        },
+        {
+          "code": "partial_scope_preserved",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-standard-beijing-no-budget-v1",
+      "tier": "standard",
+      "passed": true,
+      "upstream_status": "candidates_ready",
+      "outcome": "planned",
+      "planning_expected": true,
+      "model_called": true,
+      "candidate_count": 1,
+      "scheduled_candidate_count": 1,
+      "grounded_item_count": 1,
+      "traceable_item_count": 1,
+      "valid_day_plan_count": 1,
+      "latency_ms": 3968,
+      "usage": {
+        "prompt_tokens": 901,
+        "completion_tokens": 106,
+        "total_tokens": 1007
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "planner_protocol_succeeded",
+          "passed": true
+        },
+        {
+          "code": "request_and_context_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_coverage",
+          "passed": true
+        },
+        {
+          "code": "candidate_grounding",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "dates_within_trip",
+          "passed": true
+        },
+        {
+          "code": "partial_scope_preserved",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-standard-beijing-no-must-visit-v1",
+      "tier": "standard",
+      "passed": true,
+      "upstream_status": "no_candidate_query",
+      "outcome": "skipped",
+      "planning_expected": false,
+      "model_called": false,
+      "candidate_count": 0,
+      "scheduled_candidate_count": 0,
+      "grounded_item_count": 0,
+      "traceable_item_count": 0,
+      "valid_day_plan_count": 0,
+      "latency_ms": 0,
+      "usage": null,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "upstream_status_matches",
+          "passed": true
+        },
+        {
+          "code": "planner_routing_matches",
+          "passed": true
+        },
+        {
+          "code": "model_not_called",
+          "passed": true
+        },
+        {
+          "code": "no_fabricated_schedule",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-standard-shanghai-bund-v1",
+      "tier": "standard",
+      "passed": true,
+      "upstream_status": "candidates_ready",
+      "outcome": "planned",
+      "planning_expected": true,
+      "model_called": true,
+      "candidate_count": 1,
+      "scheduled_candidate_count": 1,
+      "grounded_item_count": 1,
+      "traceable_item_count": 1,
+      "valid_day_plan_count": 1,
+      "latency_ms": 2644,
+      "usage": {
+        "prompt_tokens": 902,
+        "completion_tokens": 103,
+        "total_tokens": 1005
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "planner_protocol_succeeded",
+          "passed": true
+        },
+        {
+          "code": "request_and_context_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_coverage",
+          "passed": true
+        },
+        {
+          "code": "candidate_grounding",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "dates_within_trip",
+          "passed": true
+        },
+        {
+          "code": "partial_scope_preserved",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-standard-chengdu-family-panda-v1",
+      "tier": "standard",
+      "passed": true,
+      "upstream_status": "candidates_ready",
+      "outcome": "planned",
+      "planning_expected": true,
+      "model_called": true,
+      "candidate_count": 1,
+      "scheduled_candidate_count": 1,
+      "grounded_item_count": 1,
+      "traceable_item_count": 1,
+      "valid_day_plan_count": 1,
+      "latency_ms": 3429,
+      "usage": {
+        "prompt_tokens": 954,
+        "completion_tokens": 100,
+        "total_tokens": 1054
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "planner_protocol_succeeded",
+          "passed": true
+        },
+        {
+          "code": "request_and_context_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_coverage",
+          "passed": true
+        },
+        {
+          "code": "candidate_grounding",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "dates_within_trip",
+          "passed": true
+        },
+        {
+          "code": "partial_scope_preserved",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-standard-beijing-senior-low-budget-v1",
+      "tier": "standard",
+      "passed": true,
+      "upstream_status": "candidates_ready",
+      "outcome": "planned",
+      "planning_expected": true,
+      "model_called": true,
+      "candidate_count": 1,
+      "scheduled_candidate_count": 1,
+      "grounded_item_count": 1,
+      "traceable_item_count": 1,
+      "valid_day_plan_count": 1,
+      "latency_ms": 2797,
+      "usage": {
+        "prompt_tokens": 974,
+        "completion_tokens": 109,
+        "total_tokens": 1083
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "planner_protocol_succeeded",
+          "passed": true
+        },
+        {
+          "code": "request_and_context_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_coverage",
+          "passed": true
+        },
+        {
+          "code": "candidate_grounding",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "dates_within_trip",
+          "passed": true
+        },
+        {
+          "code": "partial_scope_preserved",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-hard-unsupported-nanjing-v1",
+      "tier": "hard",
+      "passed": true,
+      "upstream_status": "needs_clarification",
+      "outcome": "skipped",
+      "planning_expected": false,
+      "model_called": false,
+      "candidate_count": 0,
+      "scheduled_candidate_count": 0,
+      "grounded_item_count": 0,
+      "traceable_item_count": 0,
+      "valid_day_plan_count": 0,
+      "latency_ms": 0,
+      "usage": null,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "upstream_status_matches",
+          "passed": true
+        },
+        {
+          "code": "planner_routing_matches",
+          "passed": true
+        },
+        {
+          "code": "model_not_called",
+          "passed": true
+        },
+        {
+          "code": "no_fabricated_schedule",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-hard-missing-rooms-lodging-v1",
+      "tier": "hard",
+      "passed": true,
+      "upstream_status": "candidates_ready",
+      "outcome": "planned",
+      "planning_expected": true,
+      "model_called": true,
+      "candidate_count": 1,
+      "scheduled_candidate_count": 1,
+      "grounded_item_count": 1,
+      "traceable_item_count": 1,
+      "valid_day_plan_count": 1,
+      "latency_ms": 2884,
+      "usage": {
+        "prompt_tokens": 914,
+        "completion_tokens": 111,
+        "total_tokens": 1025
+      },
+      "error_code": null,
+      "checks": [
+        {
+          "code": "planner_protocol_succeeded",
+          "passed": true
+        },
+        {
+          "code": "request_and_context_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_coverage",
+          "passed": true
+        },
+        {
+          "code": "candidate_grounding",
+          "passed": true
+        },
+        {
+          "code": "source_traceability",
+          "passed": true
+        },
+        {
+          "code": "dates_within_trip",
+          "passed": true
+        },
+        {
+          "code": "partial_scope_preserved",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-hard-unconfirmed-must-visit-v1",
+      "tier": "hard",
+      "passed": true,
+      "upstream_status": "no_candidate_query",
+      "outcome": "skipped",
+      "planning_expected": false,
+      "model_called": false,
+      "candidate_count": 0,
+      "scheduled_candidate_count": 0,
+      "grounded_item_count": 0,
+      "traceable_item_count": 0,
+      "valid_day_plan_count": 0,
+      "latency_ms": 0,
+      "usage": null,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "upstream_status_matches",
+          "passed": true
+        },
+        {
+          "code": "planner_routing_matches",
+          "passed": true
+        },
+        {
+          "code": "model_not_called",
+          "passed": true
+        },
+        {
+          "code": "no_fabricated_schedule",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-hard-provider-timeout-v1",
+      "tier": "hard",
+      "passed": true,
+      "upstream_status": "provider_failed",
+      "outcome": "skipped",
+      "planning_expected": false,
+      "model_called": false,
+      "candidate_count": 0,
+      "scheduled_candidate_count": 0,
+      "grounded_item_count": 0,
+      "traceable_item_count": 0,
+      "valid_day_plan_count": 0,
+      "latency_ms": 0,
+      "usage": null,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "upstream_status_matches",
+          "passed": true
+        },
+        {
+          "code": "planner_routing_matches",
+          "passed": true
+        },
+        {
+          "code": "model_not_called",
+          "passed": true
+        },
+        {
+          "code": "no_fabricated_schedule",
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "候选来自 10 条 planning-seed 中的显式 fixture provider, 不评估实时数据覆盖。",
+    "当前只有 6 条可规划案例且每条仅 1 个必去候选, 不能衡量多景点排序质量。",
+    "输出是只覆盖已有候选的部分 DayPlan, 不是完整 TripPlan 或可直接执行的行程。",
+    "尚未接入开放式推荐、营业时间、路线、天气、酒店或预算可行性校验。"
+  ]
+}

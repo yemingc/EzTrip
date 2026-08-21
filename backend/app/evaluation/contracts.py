@@ -492,3 +492,158 @@ def _nearest_rank(values: list[int], percentile: int) -> int:
         return 0
     rank = (percentile * len(values) + 99) // 100
     return values[max(rank - 1, 0)]
+
+
+class SinglePlannerOutcome(StrEnum):
+    PLANNED = "planned"
+    SKIPPED = "skipped"
+    FAILED = "failed"
+
+
+class SinglePlannerCaseResult(DomainModel):
+    case_id: Identifier
+    tier: SeedTier
+    passed: bool
+    upstream_status: PlanningWorkflowStatus
+    outcome: SinglePlannerOutcome
+    planning_expected: bool
+    model_called: bool
+    candidate_count: int = Field(ge=0)
+    scheduled_candidate_count: int = Field(ge=0)
+    grounded_item_count: int = Field(ge=0)
+    traceable_item_count: int = Field(ge=0)
+    valid_day_plan_count: int = Field(ge=0, le=5)
+    latency_ms: int = Field(ge=0)
+    usage: ModelTokenUsage | None = None
+    error_code: Identifier | None = None
+    checks: tuple[EvaluationCheck, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_single_planner_case(self) -> "SinglePlannerCaseResult":
+        if self.scheduled_candidate_count > self.candidate_count:
+            raise ValueError("scheduled candidates cannot exceed input candidates")
+        if self.grounded_item_count > self.scheduled_candidate_count:
+            raise ValueError("grounded items cannot exceed scheduled candidates")
+        if self.traceable_item_count > self.grounded_item_count:
+            raise ValueError("traceable items cannot exceed grounded items")
+        if self.planning_expected != (
+            self.upstream_status == PlanningWorkflowStatus.CANDIDATES_READY
+        ):
+            raise ValueError("planning_expected must follow the upstream workflow status")
+        if self.outcome == SinglePlannerOutcome.PLANNED:
+            if not self.planning_expected or not self.model_called or self.error_code is not None:
+                raise ValueError("planned cases require an eligible model call without error")
+        elif self.outcome == SinglePlannerOutcome.SKIPPED:
+            if self.planning_expected or self.model_called or self.error_code is not None:
+                raise ValueError("skipped cases must stop before the model")
+            if any(
+                (
+                    self.scheduled_candidate_count,
+                    self.grounded_item_count,
+                    self.traceable_item_count,
+                    self.valid_day_plan_count,
+                    self.latency_ms,
+                )
+            ):
+                raise ValueError("skipped cases cannot contain Planner outputs")
+        elif not self.planning_expected or not self.model_called or self.error_code is None:
+            raise ValueError("failed cases require an eligible model call and error code")
+        if self.passed != all(check.passed for check in self.checks):
+            raise ValueError("case passed must equal the conjunction of checks")
+        return self
+
+
+class SinglePlannerBaselineReport(DomainModel):
+    schema_version: Literal["1.0"] = "1.0"
+    suite: Literal["single-planner-planning-seed-v1"] = "single-planner-planning-seed-v1"
+    workflow_version: Literal["minimal-planning-graph-v1"] = "minimal-planning-graph-v1"
+    agent_version: Literal["single-planner-v1"] = "single-planner-v1"
+    prompt_version: Literal["candidate-placement-v1"] = "candidate-placement-v1"
+    execution_mode: Literal["fixture", "live"]
+    model: NonEmptyText
+    dataset_sha256: Sha256Digest
+    case_count: Literal[10] = 10
+    planning_expected_case_count: int = Field(ge=0, le=10)
+    model_call_count: int = Field(ge=0, le=10)
+    planned_case_count: int = Field(ge=0, le=10)
+    skipped_case_count: int = Field(ge=0, le=10)
+    failed_case_count: int = Field(ge=0, le=10)
+    passed_case_count: int = Field(ge=0, le=10)
+    case_pass_rate: Decimal = Field(ge=0, le=1, decimal_places=4)
+    candidate_count: int = Field(ge=0)
+    scheduled_candidate_count: int = Field(ge=0)
+    candidate_coverage_rate: Decimal = Field(ge=0, le=1, decimal_places=4)
+    grounded_item_count: int = Field(ge=0)
+    grounding_rate: Decimal = Field(ge=0, le=1, decimal_places=4)
+    traceable_item_count: int = Field(ge=0)
+    source_traceability_rate: Decimal = Field(ge=0, le=1, decimal_places=4)
+    usage_case_count: int = Field(ge=0, le=10)
+    total_prompt_tokens: int = Field(ge=0)
+    total_completion_tokens: int = Field(ge=0)
+    total_tokens: int = Field(ge=0)
+    p50_latency_ms: int = Field(ge=0)
+    p95_latency_ms: int = Field(ge=0)
+    results: tuple[SinglePlannerCaseResult, ...] = Field(min_length=10, max_length=10)
+    limitations: tuple[NonEmptyText, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_single_planner_aggregates(self) -> "SinglePlannerBaselineReport":
+        if len({item.case_id for item in self.results}) != self.case_count:
+            raise ValueError("single Planner report case ids must be unique")
+        aggregates = {
+            "planning_expected_case_count": sum(item.planning_expected for item in self.results),
+            "model_call_count": sum(item.model_called for item in self.results),
+            "planned_case_count": sum(
+                item.outcome == SinglePlannerOutcome.PLANNED for item in self.results
+            ),
+            "skipped_case_count": sum(
+                item.outcome == SinglePlannerOutcome.SKIPPED for item in self.results
+            ),
+            "failed_case_count": sum(
+                item.outcome == SinglePlannerOutcome.FAILED for item in self.results
+            ),
+            "passed_case_count": sum(item.passed for item in self.results),
+            "candidate_count": sum(item.candidate_count for item in self.results),
+            "scheduled_candidate_count": sum(
+                item.scheduled_candidate_count for item in self.results
+            ),
+            "grounded_item_count": sum(item.grounded_item_count for item in self.results),
+            "traceable_item_count": sum(item.traceable_item_count for item in self.results),
+            "usage_case_count": sum(item.usage is not None for item in self.results),
+            "total_prompt_tokens": sum(
+                item.usage.prompt_tokens for item in self.results if item.usage is not None
+            ),
+            "total_completion_tokens": sum(
+                item.usage.completion_tokens for item in self.results if item.usage is not None
+            ),
+            "total_tokens": sum(
+                item.usage.total_tokens for item in self.results if item.usage is not None
+            ),
+        }
+        for field_name, expected in aggregates.items():
+            if getattr(self, field_name) != expected:
+                raise ValueError(f"{field_name} must match case results")
+        rates = {
+            "case_pass_rate": expected_rate(self.passed_case_count, self.case_count),
+            "candidate_coverage_rate": expected_rate(
+                self.scheduled_candidate_count,
+                self.candidate_count,
+            ),
+            "grounding_rate": expected_rate(
+                self.grounded_item_count,
+                self.scheduled_candidate_count,
+            ),
+            "source_traceability_rate": expected_rate(
+                self.traceable_item_count,
+                self.grounded_item_count,
+            ),
+        }
+        for field_name, rate_expected in rates.items():
+            if getattr(self, field_name) != rate_expected:
+                raise ValueError(f"{field_name} must match aggregate counts")
+        called_latencies = sorted(item.latency_ms for item in self.results if item.model_called)
+        if self.p50_latency_ms != _nearest_rank(called_latencies, 50):
+            raise ValueError("p50_latency_ms must match called cases")
+        if self.p95_latency_ms != _nearest_rank(called_latencies, 95):
+            raise ValueError("p95_latency_ms must match called cases")
+        return self

@@ -1,6 +1,6 @@
 # EzTrip API
 
-Gate 0 FastAPI service. It exposes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel domain contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, the first three-node planning Graph, and an isolated schema-constrained Constraint Agent. These components are not yet exposed as a product planning API and do not generate a final itinerary.
+Gate 0 FastAPI service. It exposes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel domain contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, the first three-node planning Graph, an isolated schema-constrained Constraint Agent, and a provider-grounded single-Planner baseline. These components are not yet exposed as a product planning API and do not generate a final itinerary.
 
 ```powershell
 uv sync --all-groups
@@ -21,6 +21,7 @@ Regenerate the committed domain JSON Schema bundle after changing a contract:
 ```powershell
 uv run python -m scripts.export_domain_schemas
 uv run python -m scripts.export_constraint_agent_schemas
+uv run python -m scripts.export_single_planner_schema
 uv run python -m scripts.export_planner_context_example
 uv run python -m scripts.run_minimal_planning_graph --write-example
 ```
@@ -62,6 +63,15 @@ uv run python -m scripts.run_constraint_agent_eval --live
 ```
 
 The fake-model tests enforce exact evidence, schema output, deterministic IDs, source/confirmation mapping, uncertainty guards, and aggregate report contracts. The live command uses DeepSeek and LangSmith and currently records 9/10 exact cases with one retained hard/soft accessibility ambiguity. It must not run in CI.
+
+Run the single-Planner tests offline or explicitly refresh its live baseline:
+
+```powershell
+uv run pytest tests/test_single_planner.py tests/test_single_planner_evaluation.py --no-cov
+uv run python -m scripts.run_single_planner_eval --live
+```
+
+The Planner can place only the candidate IDs returned by the upstream fixture provider. Deterministic code enforces exact candidate coverage, copies names and sources, validates trip dates and non-overlapping timelines, and assembles partial `DayPlan` objects. The live baseline invokes DeepSeek for 6 eligible cases and stops before the model for 4 ineligible cases. It does not measure itinerary quality and does not generate a complete `TripPlan`.
 
 Run the live observability probe only after configuring the local root `.env`:
 

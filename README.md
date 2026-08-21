@@ -2,7 +2,7 @@
 
 面向中国城市自由行的可验证、可调整、可追溯旅行规划助手。
 
-当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线，以及首个 schema-constrained Constraint Agent 和真实 DeepSeek 评测。该 Agent 仍是独立子图；仓库尚未实现多 Agent 完整工作流、产品规划 API 或逐日行程生成。
+当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent，以及受 provider 候选约束的单 Planner 基线。两个 Agent 都有真实 DeepSeek/LangSmith 评测，但仍是隔离子图；仓库尚未实现多 Agent 完整工作流、产品规划 API 或完整逐日行程。
 
 ## 技术基线
 
@@ -153,6 +153,20 @@ uv run python -m scripts.run_constraint_agent_eval --live
 
 测试默认使用 fake model。`--live` 会产生 DeepSeek 用量并上传 LangSmith trace，不能在 CI 运行。当前 Agent 只替换已有 `TripRequest` 的 constraints slice，尚未接入产品 API、主 planning Graph 或完整行程生成。
 
+## 单 Planner 基线
+
+[`docs/agents/single-planner.md`](docs/agents/single-planner.md) 实现 `propose_schedule → deterministic_normalizer` 子图。模型只能为 provider 已返回的 candidate ID 提议 day、start time 和审计理由；代码要求每个候选恰好出现一次，并复制候选名称/来源、检查旅行日期和时间线，再组装只覆盖已有候选的部分 `DayPlan`。
+
+[`docs/evaluation/single-planner-baseline.md`](docs/evaluation/single-planner-baseline.md) 记录同一 10-case 上的真实 `deepseek-v4-pro` point-in-time 结果：6 条候选就绪请求调用模型并生成部分 DayPlan，4 条请求按上游状态停止；10/10 路由与结构检查通过，6/6 candidates covered/grounded/source-traceable，共 6235 tokens，模型调用 p50/p95 为 2797/3968 ms。
+
+```powershell
+Set-Location backend
+uv run pytest tests/test_single_planner.py tests/test_single_planner_evaluation.py --no-cov
+uv run python -m scripts.run_single_planner_eval --live
+```
+
+这些指标验证候选 grounding、停止路由和契约，不是行程质量分数。当前每条成功案例只有一个 fixture 必去候选，也没有营业时间、路线、天气、酒店或预算校验，因此输出不能称为完整旅行计划。
+
 ## AMap live contract probe
 
 [`docs/probes/amap-mcp-live-probe-2026-08-20.md`](docs/probes/amap-mcp-live-probe-2026-08-20.md) 记录一次固定北京真实探针：官方 MCP 当前发现 15 个工具，并验证 POI、天气、距离、步行和公交响应；版本化 fixture 只保留字段白名单并执行凭据/PII 脱敏。CI 回放 fixture，不读取 Key 或访问高德。
@@ -190,6 +204,6 @@ uv run python -m scripts.run_amap_provider_smoke --live
 - 不提供订票、订房、支付或实时房价；
 - 当前健康页不是旅行规划产品完成度；
 - 当前三节点探针只证明观测链路可接入，不证明模型规划质量；
-- 当前领域契约、PlannerContext 编译器和 provider adapter 已接入首条确定性 LangGraph；首个 Constraint Agent 已形成独立子图和 live 基线，但尚未接入产品主链，多 Agent 协作仍未实现；
+- 当前领域契约、PlannerContext 编译器和 provider adapter 已接入首条确定性 LangGraph；Constraint Agent 与单 Planner 已形成独立子图和 live 基线，但尚未接入产品主链，多 Agent 协作仍未实现；
 - 高德 live fixture 是 2026-08-20 的点时样本，不是当前天气、实时酒店价格或生产 SLA；
 - 后续功能必须通过真实 provider contract、固定评测和可回放 trace 验证后再写入项目成果。
