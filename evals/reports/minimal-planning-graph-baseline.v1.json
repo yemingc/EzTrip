@@ -1,0 +1,625 @@
+{
+  "schema_version": "1.0",
+  "suite": "planning-seed-v1",
+  "workflow_version": "minimal-planning-graph-v1",
+  "dataset_sha256": "597f1a5a5a804e059b3241cd993a8558511b0a78f53caf413218cc6f75c82f2c",
+  "case_count": 10,
+  "standard_case_count": 6,
+  "hard_case_count": 4,
+  "passed_case_count": 10,
+  "case_pass_rate": "1.0000",
+  "check_count": 120,
+  "passed_check_count": 120,
+  "check_pass_rate": "1.0000",
+  "candidate_count": 6,
+  "traceable_candidate_count": 6,
+  "source_traceability_rate": "1.0000",
+  "results": [
+    {
+      "case_id": "seed-standard-beijing-history-v1",
+      "tier": "standard",
+      "passed": true,
+      "expected_status": "candidates_ready",
+      "actual_status": "candidates_ready",
+      "provider_call_count": 1,
+      "candidate_count": 1,
+      "traceable_candidate_count": 1,
+      "checks": [
+        {
+          "code": "result_contract_valid",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "readiness_matches",
+          "passed": true
+        },
+        {
+          "code": "ready_capabilities_match",
+          "passed": true
+        },
+        {
+          "code": "blocked_capabilities_match",
+          "passed": true
+        },
+        {
+          "code": "confirmed_hard_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "confirmed_soft_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "pending_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_count_matches",
+          "passed": true
+        },
+        {
+          "code": "candidate_names_match",
+          "passed": true
+        },
+        {
+          "code": "provider_calls_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_sources_traceable",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-standard-beijing-no-budget-v1",
+      "tier": "standard",
+      "passed": true,
+      "expected_status": "candidates_ready",
+      "actual_status": "candidates_ready",
+      "provider_call_count": 1,
+      "candidate_count": 1,
+      "traceable_candidate_count": 1,
+      "checks": [
+        {
+          "code": "result_contract_valid",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "readiness_matches",
+          "passed": true
+        },
+        {
+          "code": "ready_capabilities_match",
+          "passed": true
+        },
+        {
+          "code": "blocked_capabilities_match",
+          "passed": true
+        },
+        {
+          "code": "confirmed_hard_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "confirmed_soft_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "pending_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_count_matches",
+          "passed": true
+        },
+        {
+          "code": "candidate_names_match",
+          "passed": true
+        },
+        {
+          "code": "provider_calls_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_sources_traceable",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-standard-beijing-no-must-visit-v1",
+      "tier": "standard",
+      "passed": true,
+      "expected_status": "no_candidate_query",
+      "actual_status": "no_candidate_query",
+      "provider_call_count": 0,
+      "candidate_count": 0,
+      "traceable_candidate_count": 0,
+      "checks": [
+        {
+          "code": "result_contract_valid",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "readiness_matches",
+          "passed": true
+        },
+        {
+          "code": "ready_capabilities_match",
+          "passed": true
+        },
+        {
+          "code": "blocked_capabilities_match",
+          "passed": true
+        },
+        {
+          "code": "confirmed_hard_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "confirmed_soft_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "pending_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_count_matches",
+          "passed": true
+        },
+        {
+          "code": "candidate_names_match",
+          "passed": true
+        },
+        {
+          "code": "provider_calls_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_sources_traceable",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-standard-shanghai-bund-v1",
+      "tier": "standard",
+      "passed": true,
+      "expected_status": "candidates_ready",
+      "actual_status": "candidates_ready",
+      "provider_call_count": 1,
+      "candidate_count": 1,
+      "traceable_candidate_count": 1,
+      "checks": [
+        {
+          "code": "result_contract_valid",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "readiness_matches",
+          "passed": true
+        },
+        {
+          "code": "ready_capabilities_match",
+          "passed": true
+        },
+        {
+          "code": "blocked_capabilities_match",
+          "passed": true
+        },
+        {
+          "code": "confirmed_hard_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "confirmed_soft_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "pending_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_count_matches",
+          "passed": true
+        },
+        {
+          "code": "candidate_names_match",
+          "passed": true
+        },
+        {
+          "code": "provider_calls_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_sources_traceable",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-standard-chengdu-family-panda-v1",
+      "tier": "standard",
+      "passed": true,
+      "expected_status": "candidates_ready",
+      "actual_status": "candidates_ready",
+      "provider_call_count": 1,
+      "candidate_count": 1,
+      "traceable_candidate_count": 1,
+      "checks": [
+        {
+          "code": "result_contract_valid",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "readiness_matches",
+          "passed": true
+        },
+        {
+          "code": "ready_capabilities_match",
+          "passed": true
+        },
+        {
+          "code": "blocked_capabilities_match",
+          "passed": true
+        },
+        {
+          "code": "confirmed_hard_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "confirmed_soft_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "pending_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_count_matches",
+          "passed": true
+        },
+        {
+          "code": "candidate_names_match",
+          "passed": true
+        },
+        {
+          "code": "provider_calls_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_sources_traceable",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-standard-beijing-senior-low-budget-v1",
+      "tier": "standard",
+      "passed": true,
+      "expected_status": "candidates_ready",
+      "actual_status": "candidates_ready",
+      "provider_call_count": 1,
+      "candidate_count": 1,
+      "traceable_candidate_count": 1,
+      "checks": [
+        {
+          "code": "result_contract_valid",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "readiness_matches",
+          "passed": true
+        },
+        {
+          "code": "ready_capabilities_match",
+          "passed": true
+        },
+        {
+          "code": "blocked_capabilities_match",
+          "passed": true
+        },
+        {
+          "code": "confirmed_hard_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "confirmed_soft_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "pending_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_count_matches",
+          "passed": true
+        },
+        {
+          "code": "candidate_names_match",
+          "passed": true
+        },
+        {
+          "code": "provider_calls_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_sources_traceable",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-hard-unsupported-nanjing-v1",
+      "tier": "hard",
+      "passed": true,
+      "expected_status": "needs_clarification",
+      "actual_status": "needs_clarification",
+      "provider_call_count": 0,
+      "candidate_count": 0,
+      "traceable_candidate_count": 0,
+      "checks": [
+        {
+          "code": "result_contract_valid",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "readiness_matches",
+          "passed": true
+        },
+        {
+          "code": "ready_capabilities_match",
+          "passed": true
+        },
+        {
+          "code": "blocked_capabilities_match",
+          "passed": true
+        },
+        {
+          "code": "confirmed_hard_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "confirmed_soft_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "pending_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_count_matches",
+          "passed": true
+        },
+        {
+          "code": "candidate_names_match",
+          "passed": true
+        },
+        {
+          "code": "provider_calls_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_sources_traceable",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-hard-missing-rooms-lodging-v1",
+      "tier": "hard",
+      "passed": true,
+      "expected_status": "candidates_ready",
+      "actual_status": "candidates_ready",
+      "provider_call_count": 1,
+      "candidate_count": 1,
+      "traceable_candidate_count": 1,
+      "checks": [
+        {
+          "code": "result_contract_valid",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "readiness_matches",
+          "passed": true
+        },
+        {
+          "code": "ready_capabilities_match",
+          "passed": true
+        },
+        {
+          "code": "blocked_capabilities_match",
+          "passed": true
+        },
+        {
+          "code": "confirmed_hard_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "confirmed_soft_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "pending_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_count_matches",
+          "passed": true
+        },
+        {
+          "code": "candidate_names_match",
+          "passed": true
+        },
+        {
+          "code": "provider_calls_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_sources_traceable",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-hard-unconfirmed-must-visit-v1",
+      "tier": "hard",
+      "passed": true,
+      "expected_status": "no_candidate_query",
+      "actual_status": "no_candidate_query",
+      "provider_call_count": 0,
+      "candidate_count": 0,
+      "traceable_candidate_count": 0,
+      "checks": [
+        {
+          "code": "result_contract_valid",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "readiness_matches",
+          "passed": true
+        },
+        {
+          "code": "ready_capabilities_match",
+          "passed": true
+        },
+        {
+          "code": "blocked_capabilities_match",
+          "passed": true
+        },
+        {
+          "code": "confirmed_hard_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "confirmed_soft_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "pending_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_count_matches",
+          "passed": true
+        },
+        {
+          "code": "candidate_names_match",
+          "passed": true
+        },
+        {
+          "code": "provider_calls_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_sources_traceable",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "seed-hard-provider-timeout-v1",
+      "tier": "hard",
+      "passed": true,
+      "expected_status": "provider_failed",
+      "actual_status": "provider_failed",
+      "provider_call_count": 1,
+      "candidate_count": 0,
+      "traceable_candidate_count": 0,
+      "checks": [
+        {
+          "code": "result_contract_valid",
+          "passed": true
+        },
+        {
+          "code": "status_matches",
+          "passed": true
+        },
+        {
+          "code": "readiness_matches",
+          "passed": true
+        },
+        {
+          "code": "ready_capabilities_match",
+          "passed": true
+        },
+        {
+          "code": "blocked_capabilities_match",
+          "passed": true
+        },
+        {
+          "code": "confirmed_hard_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "confirmed_soft_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "pending_constraints_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_count_matches",
+          "passed": true
+        },
+        {
+          "code": "candidate_names_match",
+          "passed": true
+        },
+        {
+          "code": "provider_calls_match",
+          "passed": true
+        },
+        {
+          "code": "candidate_sources_traceable",
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "输入是已结构化 TripRequest, 本报告不评估中文需求抽取质量。",
+    "provider 全部为显式 fixture/scenario, 本报告不评估实时数据覆盖或 SLA。",
+    "当前 Graph 没有模型 Agent、候选排序、预算校验或逐日行程生成。",
+    "数据集库存固定为 10 条, 不能外推为生产旅行规划质量。"
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "case_id": "seed-standard-shanghai-bund-v1",
+  "tier": "standard",
+  "title": "上海两日必去外滩",
+  "request": {
+    "request_id": "seed_request_shanghai_bund",
+    "raw_text": "两位成年人从杭州去上海玩两天，必须去外滩，偏好城市风光。",
+    "origin_city": "杭州市",
+    "destination_city": "上海",
+    "start_date": "2026-10-09",
+    "end_date": "2026-10-10",
+    "party": {"adults": 2, "rooms": 1},
+    "budget": {"total_limit": "1800.00", "included_categories": ["transport", "food", "admission", "activity"]},
+    "travel_styles": ["城市风光"],
+    "constraints": {"items": [
+      {"constraint_id": "must_visit_bund", "kind": "must_visit", "value": "外滩", "strength": "hard", "priority": 5, "source": "user_explicit", "confirmed": true}
+    ]}
+  },
+  "provider": {
+    "behavior": "success",
+    "expected_calls": [{"keywords": "外滩", "city_adcode": "310000", "limit": 1}],
+    "candidates": [{
+      "candidate_id": "eval-poi-shanghai-bund",
+      "name": "外滩",
+      "city": "上海市",
+      "address": "中山东一路",
+      "location": {"latitude": 31.24001, "longitude": 121.49054},
+      "categories": ["风景名胜", "城市观光"],
+      "environment": "outdoor",
+      "source": {"provider": "eval_fixture", "provider_id": "fixture-shanghai-bund", "data_mode": "fixture", "retrieved_at": "2026-08-21T08:00:00+08:00"}
+    }]
+  },
+  "expected": {
+    "status": "candidates_ready",
+    "readiness": "ready",
+    "ready_capabilities": ["candidate_search", "stay_search", "weather_lookup", "route_planning", "budget_validation", "plan_finalization"],
+    "blocked_capabilities": [],
+    "candidate_count": 1,
+    "candidate_names": ["外滩"],
+    "constraint_buckets": {"confirmed_hard": ["must_visit_bund"], "confirmed_soft": [], "pending": []}
+  },
+  "future_expectations": [{"code": "route_data_required", "description": "未来排程前必须查询路线而不是使用直线距离。"}],
+  "boundary_notes": ["外滩候选是明确标记的 eval fixture，不冒充本轮实时高德响应。"]
+}

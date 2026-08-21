@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "case_id": "seed-hard-provider-timeout-v1",
+  "tier": "hard",
+  "title": "高德候选搜索最终超时后保留 typed failure",
+  "request": {
+    "request_id": "seed_request_provider_timeout",
+    "raw_text": "两位成年人去北京两天，必须去故宫，当地预算 1800 元。",
+    "destination_city": "北京市",
+    "start_date": "2026-10-24",
+    "end_date": "2026-10-25",
+    "party": {"adults": 2, "rooms": 1},
+    "budget": {"total_limit": "1800.00", "included_categories": ["transport", "food", "admission", "activity"]},
+    "constraints": {"items": [
+      {"constraint_id": "must_visit_forbidden_city", "kind": "must_visit", "value": "故宫", "strength": "hard", "priority": 5, "source": "user_explicit", "confirmed": true}
+    ]}
+  },
+  "provider": {
+    "behavior": "failure",
+    "expected_calls": [{"keywords": "故宫博物院", "city_adcode": "110000", "limit": 1}],
+    "failure": {"provider": "amap", "operation": "maps_text_search", "category": "timeout", "message": "seed fixture timeout after adapter retries", "retryable": true}
+  },
+  "expected": {
+    "status": "provider_failed",
+    "readiness": "ready",
+    "ready_capabilities": ["candidate_search", "stay_search", "weather_lookup", "route_planning", "budget_validation", "plan_finalization"],
+    "blocked_capabilities": [],
+    "candidate_count": 0,
+    "candidate_names": [],
+    "constraint_buckets": {"confirmed_hard": ["must_visit_forbidden_city"], "confirmed_soft": [], "pending": []}
+  },
+  "future_expectations": [{"code": "repair_router_receives_failure", "description": "后续 repair router 必须根据 typed timeout 决定重试、降级或请求稍后再试。"}],
+  "boundary_notes": ["这是显式注入的最终超时，不是本轮真实高德可用性测量。"]
+}

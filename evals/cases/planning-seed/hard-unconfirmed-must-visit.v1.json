@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "case_id": "seed-hard-unconfirmed-must-visit-v1",
+  "tier": "hard",
+  "title": "Agent 推断但未确认的必去地点不得触发搜索",
+  "request": {
+    "request_id": "seed_request_unconfirmed_must_visit",
+    "raw_text": "两位成年人去北京两天，模型推测用户可能想去故宫，但用户还没有确认。",
+    "destination_city": "北京市",
+    "start_date": "2026-10-22",
+    "end_date": "2026-10-23",
+    "party": {"adults": 2, "rooms": 1},
+    "budget": {"total_limit": "1600.00", "included_categories": ["transport", "food", "admission", "activity"]},
+    "constraints": {"items": [
+      {"constraint_id": "pending_must_visit_forbidden_city", "kind": "must_visit", "value": "故宫", "strength": "hard", "priority": 4, "source": "agent_inferred", "confirmed": false}
+    ]}
+  },
+  "provider": {"behavior": "forbidden"},
+  "expected": {
+    "status": "no_candidate_query",
+    "readiness": "needs_clarification",
+    "ready_capabilities": ["candidate_search", "stay_search", "weather_lookup", "route_planning", "budget_validation"],
+    "blocked_capabilities": ["plan_finalization"],
+    "candidate_count": 0,
+    "candidate_names": [],
+    "constraint_buckets": {"confirmed_hard": [], "confirmed_soft": [], "pending": ["pending_must_visit_forbidden_city"]}
+  },
+  "future_expectations": [{"code": "constraint_confirmation_hitl", "description": "用户确认后才允许把推断升级为必去硬约束。"}],
+  "boundary_notes": ["未确认硬约束会阻止最终定稿，但不会被静默用于 provider 查询。"]
+}

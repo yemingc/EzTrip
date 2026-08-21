@@ -1,0 +1,879 @@
+{
+  "$defs": {
+    "ActivityEnvironment": {
+      "enum": [
+        "indoor",
+        "outdoor",
+        "mixed",
+        "unknown"
+      ],
+      "title": "ActivityEnvironment",
+      "type": "string"
+    },
+    "BudgetCategory": {
+      "enum": [
+        "lodging",
+        "transport",
+        "food",
+        "admission",
+        "activity",
+        "other"
+      ],
+      "title": "BudgetCategory",
+      "type": "string"
+    },
+    "BudgetConstraint": {
+      "additionalProperties": false,
+      "properties": {
+        "total_limit": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+              "type": "string"
+            }
+          ],
+          "title": "Total Limit"
+        },
+        "currency": {
+          "const": "CNY",
+          "default": "CNY",
+          "title": "Currency",
+          "type": "string"
+        },
+        "scope": {
+          "const": "party_total",
+          "default": "party_total",
+          "title": "Scope",
+          "type": "string"
+        },
+        "period": {
+          "const": "whole_trip",
+          "default": "whole_trip",
+          "title": "Period",
+          "type": "string"
+        },
+        "included_categories": {
+          "items": {
+            "$ref": "#/$defs/BudgetCategory"
+          },
+          "minItems": 1,
+          "title": "Included Categories",
+          "type": "array"
+        },
+        "hard_limit": {
+          "default": true,
+          "title": "Hard Limit",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "total_limit",
+        "included_categories"
+      ],
+      "title": "BudgetConstraint",
+      "type": "object"
+    },
+    "CandidatePOI": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Candidate Id",
+          "type": "string"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "city": {
+          "minLength": 1,
+          "title": "City",
+          "type": "string"
+        },
+        "district": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "District"
+        },
+        "address": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Address"
+        },
+        "location": {
+          "$ref": "#/$defs/GeoPoint"
+        },
+        "categories": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Categories",
+          "type": "array"
+        },
+        "environment": {
+          "$ref": "#/$defs/ActivityEnvironment",
+          "default": "unknown"
+        },
+        "suggested_duration_minutes": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 720,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Suggested Duration Minutes"
+        },
+        "tags": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceReference"
+        }
+      },
+      "required": [
+        "candidate_id",
+        "name",
+        "city",
+        "location",
+        "categories",
+        "source"
+      ],
+      "title": "CandidatePOI",
+      "type": "object"
+    },
+    "Constraint": {
+      "additionalProperties": false,
+      "properties": {
+        "constraint_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Constraint Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/ConstraintKind"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "title": "Value"
+        },
+        "strength": {
+          "$ref": "#/$defs/ConstraintStrength"
+        },
+        "priority": {
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Priority",
+          "type": "integer"
+        },
+        "source": {
+          "$ref": "#/$defs/ConstraintSource"
+        },
+        "applies_to_dates": {
+          "default": [],
+          "items": {
+            "format": "date",
+            "type": "string"
+          },
+          "title": "Applies To Dates",
+          "type": "array"
+        },
+        "confirmed": {
+          "title": "Confirmed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "constraint_id",
+        "kind",
+        "value",
+        "strength",
+        "priority",
+        "source",
+        "confirmed"
+      ],
+      "title": "Constraint",
+      "type": "object"
+    },
+    "ConstraintKind": {
+      "enum": [
+        "must_visit",
+        "avoid",
+        "interest",
+        "walking_intensity",
+        "transport_mode",
+        "accommodation",
+        "meal",
+        "accessibility",
+        "schedule"
+      ],
+      "title": "ConstraintKind",
+      "type": "string"
+    },
+    "ConstraintSet": {
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Constraint"
+          },
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "title": "ConstraintSet",
+      "type": "object"
+    },
+    "ConstraintSource": {
+      "enum": [
+        "user_explicit",
+        "user_confirmed",
+        "agent_inferred",
+        "system"
+      ],
+      "title": "ConstraintSource",
+      "type": "string"
+    },
+    "ConstraintStrength": {
+      "enum": [
+        "hard",
+        "soft"
+      ],
+      "title": "ConstraintStrength",
+      "type": "string"
+    },
+    "DataMode": {
+      "enum": [
+        "live",
+        "fixture",
+        "user_input",
+        "estimate"
+      ],
+      "title": "DataMode",
+      "type": "string"
+    },
+    "ExpectedConstraintBuckets": {
+      "additionalProperties": false,
+      "properties": {
+        "confirmed_hard": {
+          "default": [],
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Confirmed Hard",
+          "type": "array"
+        },
+        "confirmed_soft": {
+          "default": [],
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Confirmed Soft",
+          "type": "array"
+        },
+        "pending": {
+          "default": [],
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Pending",
+          "type": "array"
+        }
+      },
+      "title": "ExpectedConstraintBuckets",
+      "type": "object"
+    },
+    "ExpectedPOISearchCall": {
+      "additionalProperties": false,
+      "properties": {
+        "keywords": {
+          "minLength": 1,
+          "title": "Keywords",
+          "type": "string"
+        },
+        "city_adcode": {
+          "pattern": "^\\d{6}$",
+          "title": "City Adcode",
+          "type": "string"
+        },
+        "limit": {
+          "default": 1,
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "keywords",
+        "city_adcode"
+      ],
+      "title": "ExpectedPOISearchCall",
+      "type": "object"
+    },
+    "FutureExpectation": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Code",
+          "type": "string"
+        },
+        "description": {
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "description"
+      ],
+      "title": "FutureExpectation",
+      "type": "object"
+    },
+    "GeoPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "latitude": {
+          "maximum": 90,
+          "minimum": -90,
+          "title": "Latitude",
+          "type": "number"
+        },
+        "longitude": {
+          "maximum": 180,
+          "minimum": -180,
+          "title": "Longitude",
+          "type": "number"
+        }
+      },
+      "required": [
+        "latitude",
+        "longitude"
+      ],
+      "title": "GeoPoint",
+      "type": "object"
+    },
+    "Party": {
+      "additionalProperties": false,
+      "properties": {
+        "adults": {
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Adults",
+          "type": "integer"
+        },
+        "children": {
+          "default": 0,
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Children",
+          "type": "integer"
+        },
+        "seniors": {
+          "default": 0,
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Seniors",
+          "type": "integer"
+        },
+        "rooms": {
+          "anyOf": [
+            {
+              "maximum": 20,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rooms"
+        }
+      },
+      "required": [
+        "adults"
+      ],
+      "title": "Party",
+      "type": "object"
+    },
+    "PlannerCapability": {
+      "enum": [
+        "candidate_search",
+        "stay_search",
+        "weather_lookup",
+        "route_planning",
+        "budget_validation",
+        "plan_finalization"
+      ],
+      "title": "PlannerCapability",
+      "type": "string"
+    },
+    "PlannerReadiness": {
+      "enum": [
+        "ready",
+        "ready_with_questions",
+        "needs_clarification"
+      ],
+      "title": "PlannerReadiness",
+      "type": "string"
+    },
+    "PlanningSeedExpectation": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/PlanningWorkflowStatus"
+        },
+        "readiness": {
+          "$ref": "#/$defs/PlannerReadiness"
+        },
+        "ready_capabilities": {
+          "items": {
+            "$ref": "#/$defs/PlannerCapability"
+          },
+          "title": "Ready Capabilities",
+          "type": "array"
+        },
+        "blocked_capabilities": {
+          "items": {
+            "$ref": "#/$defs/PlannerCapability"
+          },
+          "title": "Blocked Capabilities",
+          "type": "array"
+        },
+        "candidate_count": {
+          "minimum": 0,
+          "title": "Candidate Count",
+          "type": "integer"
+        },
+        "candidate_names": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Candidate Names",
+          "type": "array"
+        },
+        "constraint_buckets": {
+          "$ref": "#/$defs/ExpectedConstraintBuckets"
+        }
+      },
+      "required": [
+        "status",
+        "readiness",
+        "ready_capabilities",
+        "blocked_capabilities",
+        "candidate_count",
+        "constraint_buckets"
+      ],
+      "title": "PlanningSeedExpectation",
+      "type": "object"
+    },
+    "PlanningSeedProviderSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "behavior": {
+          "$ref": "#/$defs/SeedProviderBehavior"
+        },
+        "expected_calls": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExpectedPOISearchCall"
+          },
+          "title": "Expected Calls",
+          "type": "array"
+        },
+        "candidates": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CandidatePOI"
+          },
+          "title": "Candidates",
+          "type": "array"
+        },
+        "failure": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProviderFailure"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "behavior"
+      ],
+      "title": "PlanningSeedProviderSpec",
+      "type": "object"
+    },
+    "PlanningWorkflowStatus": {
+      "enum": [
+        "needs_clarification",
+        "no_candidate_query",
+        "candidates_ready",
+        "provider_failed"
+      ],
+      "title": "PlanningWorkflowStatus",
+      "type": "string"
+    },
+    "ProviderErrorCategory": {
+      "enum": [
+        "timeout",
+        "rate_limited",
+        "empty_result",
+        "missing_field",
+        "authentication_failed",
+        "unrecoverable"
+      ],
+      "title": "ProviderErrorCategory",
+      "type": "string"
+    },
+    "ProviderFailure": {
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "minLength": 1,
+          "title": "Provider",
+          "type": "string"
+        },
+        "operation": {
+          "minLength": 1,
+          "title": "Operation",
+          "type": "string"
+        },
+        "category": {
+          "$ref": "#/$defs/ProviderErrorCategory"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "retryable": {
+          "title": "Retryable",
+          "type": "boolean"
+        },
+        "retry_after_seconds": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retry After Seconds"
+        }
+      },
+      "required": [
+        "provider",
+        "operation",
+        "category",
+        "message",
+        "retryable"
+      ],
+      "title": "ProviderFailure",
+      "type": "object"
+    },
+    "SeedProviderBehavior": {
+      "enum": [
+        "success",
+        "failure",
+        "forbidden"
+      ],
+      "title": "SeedProviderBehavior",
+      "type": "string"
+    },
+    "SeedTier": {
+      "enum": [
+        "standard",
+        "hard"
+      ],
+      "title": "SeedTier",
+      "type": "string"
+    },
+    "SourceReference": {
+      "additionalProperties": false,
+      "description": "Traceable origin for provider data or an explicit estimate.",
+      "properties": {
+        "provider": {
+          "minLength": 1,
+          "title": "Provider",
+          "type": "string"
+        },
+        "provider_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider Id"
+        },
+        "data_mode": {
+          "$ref": "#/$defs/DataMode"
+        },
+        "retrieved_at": {
+          "format": "date-time",
+          "title": "Retrieved At",
+          "type": "string"
+        },
+        "raw_response_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Raw Response Sha256"
+        }
+      },
+      "required": [
+        "provider",
+        "data_mode",
+        "retrieved_at"
+      ],
+      "title": "SourceReference",
+      "type": "object"
+    },
+    "TripRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "request_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "locale": {
+          "const": "zh-CN",
+          "default": "zh-CN",
+          "title": "Locale",
+          "type": "string"
+        },
+        "raw_text": {
+          "minLength": 1,
+          "title": "Raw Text",
+          "type": "string"
+        },
+        "origin_city": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Origin City"
+        },
+        "destination_city": {
+          "minLength": 1,
+          "title": "Destination City",
+          "type": "string"
+        },
+        "start_date": {
+          "format": "date",
+          "title": "Start Date",
+          "type": "string"
+        },
+        "end_date": {
+          "format": "date",
+          "title": "End Date",
+          "type": "string"
+        },
+        "party": {
+          "$ref": "#/$defs/Party"
+        },
+        "budget": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BudgetConstraint"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "travel_styles": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Travel Styles",
+          "type": "array"
+        },
+        "constraints": {
+          "$ref": "#/$defs/ConstraintSet"
+        }
+      },
+      "required": [
+        "request_id",
+        "raw_text",
+        "destination_city",
+        "start_date",
+        "end_date",
+        "party"
+      ],
+      "title": "TripRequest",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 1,
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "case_id": {
+      "maxLength": 100,
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+      "title": "Case Id",
+      "type": "string"
+    },
+    "tier": {
+      "$ref": "#/$defs/SeedTier"
+    },
+    "title": {
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "request": {
+      "$ref": "#/$defs/TripRequest"
+    },
+    "provider": {
+      "$ref": "#/$defs/PlanningSeedProviderSpec"
+    },
+    "expected": {
+      "$ref": "#/$defs/PlanningSeedExpectation"
+    },
+    "future_expectations": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/FutureExpectation"
+      },
+      "title": "Future Expectations",
+      "type": "array"
+    },
+    "boundary_notes": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Boundary Notes",
+      "type": "array"
+    }
+  },
+  "required": [
+    "case_id",
+    "tier",
+    "title",
+    "request",
+    "provider",
+    "expected",
+    "boundary_notes"
+  ],
+  "title": "EzTrip executable planning seed case V1",
+  "type": "object",
+  "$id": "https://eztrip.local/schemas/planning-seed-case.v1.json"
+}

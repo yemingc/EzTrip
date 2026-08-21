@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "case_id": "seed-standard-beijing-no-must-visit-v1",
+  "tier": "standard",
+  "title": "北京文化偏好但没有已确认必去地点",
+  "request": {
+    "request_id": "seed_request_beijing_no_must_visit",
+    "raw_text": "一个成年人去北京两天，喜欢历史文化，但没有指定必去景点。",
+    "destination_city": "北京市",
+    "start_date": "2026-10-07",
+    "end_date": "2026-10-08",
+    "party": {"adults": 1, "rooms": 1},
+    "budget": {"total_limit": "1200.00", "included_categories": ["transport", "food", "admission", "activity"]},
+    "travel_styles": ["历史文化"],
+    "constraints": {"items": [
+      {"constraint_id": "interest_history", "kind": "interest", "value": "历史文化", "strength": "soft", "priority": 3, "source": "user_explicit", "confirmed": true}
+    ]}
+  },
+  "provider": {"behavior": "forbidden"},
+  "expected": {
+    "status": "no_candidate_query",
+    "readiness": "ready",
+    "ready_capabilities": ["candidate_search", "stay_search", "weather_lookup", "route_planning", "budget_validation", "plan_finalization"],
+    "blocked_capabilities": [],
+    "candidate_count": 0,
+    "candidate_names": [],
+    "constraint_buckets": {"confirmed_hard": [], "confirmed_soft": ["interest_history"], "pending": []}
+  },
+  "future_expectations": [{"code": "explore_agent_required", "description": "后续 Explore Agent 需要根据偏好提出有来源的候选。"}],
+  "boundary_notes": ["当前确定性 Graph 不把历史文化偏好转换成未经评测的开放式推荐。"]
+}

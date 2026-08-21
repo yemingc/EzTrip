@@ -2,7 +2,7 @@
 
 面向中国城市自由行的可验证、可调整、可追溯旅行规划助手。
 
-当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层，以及首条三节点 LangGraph 主链。仓库尚未实现模型 Agent、多 Agent 完整工作流或逐日行程生成，也没有可对外声称的规划质量指标。
+当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链，以及 6 standard + 4 hard 的可执行确定性基线。仓库尚未实现模型 Agent、多 Agent 完整工作流或逐日行程生成，也没有可对外声称的规划质量指标。
 
 ## 技术基线
 
@@ -127,6 +127,17 @@ uv run python -m scripts.run_minimal_planning_graph
 ```
 
 默认命令完全离线，并明确关闭 LangSmith 上传。当前只返回带来源的必去景点候选，不做开放式推荐、排序、天气/路线汇合、预算分配或逐日排程。
+
+## 10-case 可执行基线
+
+[`docs/evaluation/planning-seed-baseline.md`](docs/evaluation/planning-seed-baseline.md) 固化 6 条 standard 和 4 条 hard 中国旅行请求，覆盖北京/上海/成都、亲子、老人、低预算、缺预算、缺房间数、未确认约束、未配置城市和 provider timeout。
+
+```powershell
+Set-Location backend
+uv run python -m scripts.run_planning_seed_eval
+```
+
+当前机械报告为 10/10 cases、120/120 deterministic checks、6/6 candidate sources traceable。输入已经结构化且数据来自明确 fixture/scenario，因此这些数字不能写成行程准确率或 Agent 成功率；它们是后续增加 Agent 前的可重放基线。
 
 ## AMap live contract probe
 

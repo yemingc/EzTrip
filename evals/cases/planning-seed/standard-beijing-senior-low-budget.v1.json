@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "case_id": "seed-standard-beijing-senior-low-budget-v1",
+  "tier": "standard",
+  "title": "北京老人轻步行与低预算请求",
+  "request": {
+    "request_id": "seed_request_beijing_senior_low_budget",
+    "raw_text": "一位成年人陪两位老人去北京三天，必须去故宫，希望少走路、减少台阶，当地预算 500 元且不含酒店。",
+    "destination_city": "北京市",
+    "start_date": "2026-10-14",
+    "end_date": "2026-10-16",
+    "party": {"adults": 1, "seniors": 2, "rooms": 1},
+    "budget": {"total_limit": "500.00", "included_categories": ["transport", "food", "admission", "activity"]},
+    "travel_styles": ["历史文化", "轻步行"],
+    "constraints": {"items": [
+      {"constraint_id": "must_visit_forbidden_city", "kind": "must_visit", "value": "故宫", "strength": "hard", "priority": 5, "source": "user_explicit", "confirmed": true},
+      {"constraint_id": "walking_intensity_low", "kind": "walking_intensity", "value": "low", "strength": "soft", "priority": 5, "source": "user_explicit", "confirmed": true},
+      {"constraint_id": "accessibility_reduce_stairs", "kind": "accessibility", "value": "减少台阶", "strength": "hard", "priority": 5, "source": "user_explicit", "confirmed": true}
+    ]}
+  },
+  "provider": {
+    "behavior": "success",
+    "expected_calls": [{"keywords": "故宫博物院", "city_adcode": "110000", "limit": 1}],
+    "candidates": [{
+      "candidate_id": "amap-poi-b000a8uin8",
+      "name": "故宫博物院",
+      "city": "北京市",
+      "address": "景山前街4号",
+      "location": {"latitude": 39.917839, "longitude": 116.397029},
+      "categories": ["风景名胜", "世界遗产", "博物馆"],
+      "environment": "mixed",
+      "source": {"provider": "amap", "provider_id": "B000A8UIN8", "data_mode": "fixture", "retrieved_at": "2026-08-20T08:37:56.896792Z", "raw_response_sha256": "1115defc199cf99f11335a4cb2aad34f17451dddc76beb54a18a6f4b4fa318d8"}
+    }]
+  },
+  "expected": {
+    "status": "candidates_ready",
+    "readiness": "ready",
+    "ready_capabilities": ["candidate_search", "stay_search", "weather_lookup", "route_planning", "budget_validation", "plan_finalization"],
+    "blocked_capabilities": [],
+    "candidate_count": 1,
+    "candidate_names": ["故宫博物院"],
+    "constraint_buckets": {"confirmed_hard": ["must_visit_forbidden_city", "accessibility_reduce_stairs"], "confirmed_soft": ["walking_intensity_low"], "pending": []}
+  },
+  "future_expectations": [
+    {"code": "budget_feasibility_checked", "description": "未来预算节点必须识别 500 元是否满足三人三日硬约束。"},
+    {"code": "accessibility_route_checked", "description": "未来路线和排程需验证步行与台阶强度。"}
+  ],
+  "boundary_notes": ["当前 Graph 只保留预算与无障碍约束，不声称故宫候选已满足这些条件。"]
+}
