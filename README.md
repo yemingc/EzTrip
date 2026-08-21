@@ -2,7 +2,7 @@
 
 面向中国城市自由行的可验证、可调整、可追溯旅行规划助手。
 
-当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线，以及确定性预算/基础计划 Validator。两个 Agent 都有真实 DeepSeek/LangSmith 评测，但仍是隔离子图；仓库尚未实现多 Agent 完整工作流、产品规划 API 或完整逐日行程。
+当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、确定性预算/基础计划 Validator，以及北京三日 Gate 2 最小纵向切片。两个 Agent 都有真实 DeepSeek/LangSmith 隔离评测；纵向切片当前使用固定模型提案与 fixture 来证明可重放组件闭环，仓库尚未实现多 Agent 完整工作流或产品规划 API。
 
 ## 技术基线
 
@@ -181,6 +181,18 @@ uv run python -m scripts.export_plan_validation_example
 
 提交的示例故意只含门票 `CostItem`，而请求预算还包含交通、餐饮和活动，因此报告稳定返回 `budget.incomplete_category_coverage`。这证明系统不会因为已知费用低于 3000 元就误称预算满足。
 
+## 北京三日 Gate 2 纵向切片
+
+[`docs/evaluation/beijing-three-day-gate2.md`](docs/evaluation/beijing-three-day-gate2.md) 把结构化请求、候选搜索、Single Planner、完整三日 `TripPlan` 组装与 Validator 接成首条端到端可重放路径。正常案例形成三个有 provider 来源的逐日景点并由 `CostItem` 重算 500 元 fixture 总额；硬预算案例保留相同必去候选和完整费用类别，以 900 元 fixture 下界对 300 元预算返回 600 元缺口并阻止 finalization。
+
+```powershell
+Set-Location backend
+uv run python -m scripts.run_vertical_slice_eval
+uv run pytest tests/test_vertical_slice.py --no-cov
+```
+
+提交报告为 2/2 cases、20/20 checks、6/6 candidate sources traceable、2/2 exact replays。这是结构、grounding、预算算术和失败语义的 Gate 2 证据；固定 Planner 提案、POI 与费用都是明确 fixture，不能写成模型行程准确率、实时价格或生产 SLA。
+
 ## AMap live contract probe
 
 [`docs/probes/amap-mcp-live-probe-2026-08-20.md`](docs/probes/amap-mcp-live-probe-2026-08-20.md) 记录一次固定北京真实探针：官方 MCP 当前发现 15 个工具，并验证 POI、天气、距离、步行和公交响应；版本化 fixture 只保留字段白名单并执行凭据/PII 脱敏。CI 回放 fixture，不读取 Key 或访问高德。
@@ -218,6 +230,6 @@ uv run python -m scripts.run_amap_provider_smoke --live
 - 不提供订票、订房、支付或实时房价；
 - 当前健康页不是旅行规划产品完成度；
 - 当前三节点探针只证明观测链路可接入，不证明模型规划质量；
-- 当前领域契约、PlannerContext 编译器和 provider adapter 已接入首条确定性 LangGraph；Constraint Agent 与单 Planner 已形成独立子图和 live 基线，确定性 Validator 已能定位基础计划/预算冲突，但这些组件尚未接入产品主链，多 Agent 协作仍未实现；
+- 当前领域契约、PlannerContext 编译器、provider adapter、Single Planner 和 Validator 已在 Gate 2 fixture 纵向切片中连通；Constraint Agent 尚未进入该主链，固定 Planner 提案不代表模型质量，多 Agent 协作仍未实现；
 - 高德 live fixture 是 2026-08-20 的点时样本，不是当前天气、实时酒店价格或生产 SLA；
 - 后续功能必须通过真实 provider contract、固定评测和可回放 trace 验证后再写入项目成果。

@@ -1,6 +1,6 @@
 # EzTrip API
 
-Gate 0 FastAPI service. It exposes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel domain contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, the first three-node planning Graph, an isolated schema-constrained Constraint Agent, a provider-grounded single-Planner baseline, and a deterministic plan/budget validator. These components are not yet exposed as a product planning API and do not generate a final itinerary.
+Gate 0 FastAPI service plus the first offline Gate 2 vertical slice. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, the first three-node planning Graph, an isolated schema-constrained Constraint Agent, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, and a fixture-backed complete Beijing three-day `TripPlan`. These components are not yet exposed as a product planning API and never auto-finalize the Gate 2 draft.
 
 ```powershell
 uv sync --all-groups
@@ -81,7 +81,17 @@ uv run pytest tests/test_plan_validator.py --no-cov
 uv run python -m scripts.export_plan_validation_example
 ```
 
-The validator cross-checks request/plan identity, city and dates, duplicate candidates, recommendation source modes, and budget scope. Budget totals are recomputed from `Decimal` `CostItem` values; missing included categories remain incomplete instead of becoming zero-cost assumptions. Hard errors block finalization through typed `ValidationIssue` results. Route feasibility, must/avoid coverage, repair routing, and a complete itinerary remain later work.
+The validator cross-checks request/plan identity, city and dates, duplicate candidates, recommendation source modes, and budget scope. Budget totals are recomputed from `Decimal` `CostItem` values; missing included categories remain incomplete instead of becoming zero-cost assumptions. Hard errors block finalization through typed `ValidationIssue` results. Route feasibility, must/avoid rule coverage, repair routing, and a product-ready itinerary remain later work.
+
+Run the complete offline Beijing three-day Gate 2 vertical slice:
+
+```powershell
+uv run python -m scripts.export_vertical_slice_schemas
+uv run python -m scripts.run_vertical_slice_eval
+uv run pytest tests/test_vertical_slice.py --no-cov
+```
+
+The committed result connects the existing context compiler, fixture provider, Single Planner, deterministic `TripPlan` assembler, and validator. It records 2/2 cases, 20/20 checks, 6/6 traceable candidate occurrences, and 2/2 exact replays. The normal case recomputes a 500 CNY fixture total; the hard case reports a 600 CNY gap without removing candidates or auto-finalizing. These are workflow-contract results over labelled fixtures and a fixed Planner proposal, not live price or model-quality claims.
 
 Run the live observability probe only after configuring the local root `.env`:
 

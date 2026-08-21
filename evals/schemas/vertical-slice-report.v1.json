@@ -1,0 +1,341 @@
+{
+  "$defs": {
+    "BudgetAssessmentStatus": {
+      "enum": [
+        "not_requested",
+        "within_limit",
+        "possible_overrun",
+        "exceeded",
+        "incomplete"
+      ],
+      "title": "BudgetAssessmentStatus",
+      "type": "string"
+    },
+    "EvaluationCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Code",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "passed"
+      ],
+      "title": "EvaluationCheck",
+      "type": "object"
+    },
+    "PlanValidationStatus": {
+      "enum": [
+        "passed",
+        "warning",
+        "conflicted"
+      ],
+      "title": "PlanValidationStatus",
+      "type": "string"
+    },
+    "VerticalSliceCaseResult": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "outcome": {
+          "$ref": "#/$defs/VerticalSliceOutcome"
+        },
+        "validation_status": {
+          "$ref": "#/$defs/PlanValidationStatus"
+        },
+        "budget_status": {
+          "$ref": "#/$defs/BudgetAssessmentStatus"
+        },
+        "can_finalize": {
+          "title": "Can Finalize",
+          "type": "boolean"
+        },
+        "provider_call_count": {
+          "minimum": 0,
+          "title": "Provider Call Count",
+          "type": "integer"
+        },
+        "candidate_count": {
+          "minimum": 0,
+          "title": "Candidate Count",
+          "type": "integer"
+        },
+        "scheduled_candidate_count": {
+          "minimum": 0,
+          "title": "Scheduled Candidate Count",
+          "type": "integer"
+        },
+        "traceable_candidate_count": {
+          "minimum": 0,
+          "title": "Traceable Candidate Count",
+          "type": "integer"
+        },
+        "day_count": {
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Day Count",
+          "type": "integer"
+        },
+        "budget_total_minimum": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+              "type": "string"
+            }
+          ],
+          "title": "Budget Total Minimum"
+        },
+        "budget_total_maximum": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+              "type": "string"
+            }
+          ],
+          "title": "Budget Total Maximum"
+        },
+        "budget_minimum_gap": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+              "type": "string"
+            }
+          ],
+          "title": "Budget Minimum Gap"
+        },
+        "issue_rule_codes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Issue Rule Codes",
+          "type": "array"
+        },
+        "deterministic_replay_match": {
+          "title": "Deterministic Replay Match",
+          "type": "boolean"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/EvaluationCheck"
+          },
+          "minItems": 1,
+          "title": "Checks",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "passed",
+        "outcome",
+        "validation_status",
+        "budget_status",
+        "can_finalize",
+        "provider_call_count",
+        "candidate_count",
+        "scheduled_candidate_count",
+        "traceable_candidate_count",
+        "day_count",
+        "budget_total_minimum",
+        "budget_total_maximum",
+        "budget_minimum_gap",
+        "issue_rule_codes",
+        "deterministic_replay_match",
+        "checks"
+      ],
+      "title": "VerticalSliceCaseResult",
+      "type": "object"
+    },
+    "VerticalSliceOutcome": {
+      "enum": [
+        "ready",
+        "conflicted"
+      ],
+      "title": "VerticalSliceOutcome",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "suite": {
+      "const": "beijing-three-day-vertical-slice-gate2-v1",
+      "default": "beijing-three-day-vertical-slice-gate2-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "workflow_version": {
+      "const": "beijing-three-day-vertical-slice-v1",
+      "default": "beijing-three-day-vertical-slice-v1",
+      "title": "Workflow Version",
+      "type": "string"
+    },
+    "execution_mode": {
+      "const": "fixture",
+      "default": "fixture",
+      "title": "Execution Mode",
+      "type": "string"
+    },
+    "model": {
+      "const": "fixture-planner-gate2-v1",
+      "default": "fixture-planner-gate2-v1",
+      "title": "Model",
+      "type": "string"
+    },
+    "dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Dataset Sha256",
+      "type": "string"
+    },
+    "case_count": {
+      "const": 2,
+      "default": 2,
+      "title": "Case Count",
+      "type": "integer"
+    },
+    "passed_case_count": {
+      "maximum": 2,
+      "minimum": 0,
+      "title": "Passed Case Count",
+      "type": "integer"
+    },
+    "case_pass_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Case Pass Rate"
+    },
+    "check_count": {
+      "minimum": 1,
+      "title": "Check Count",
+      "type": "integer"
+    },
+    "passed_check_count": {
+      "minimum": 0,
+      "title": "Passed Check Count",
+      "type": "integer"
+    },
+    "check_pass_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Check Pass Rate"
+    },
+    "candidate_count": {
+      "minimum": 0,
+      "title": "Candidate Count",
+      "type": "integer"
+    },
+    "traceable_candidate_count": {
+      "minimum": 0,
+      "title": "Traceable Candidate Count",
+      "type": "integer"
+    },
+    "source_traceability_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Source Traceability Rate"
+    },
+    "deterministic_replay_count": {
+      "maximum": 2,
+      "minimum": 0,
+      "title": "Deterministic Replay Count",
+      "type": "integer"
+    },
+    "results": {
+      "items": {
+        "$ref": "#/$defs/VerticalSliceCaseResult"
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "title": "Results",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Limitations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "dataset_sha256",
+    "passed_case_count",
+    "case_pass_rate",
+    "check_count",
+    "passed_check_count",
+    "check_pass_rate",
+    "candidate_count",
+    "traceable_candidate_count",
+    "source_traceability_rate",
+    "deterministic_replay_count",
+    "results",
+    "limitations"
+  ],
+  "title": "VerticalSliceGateReport",
+  "type": "object"
+}

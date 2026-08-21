@@ -26,6 +26,19 @@ from app.evaluation.single_planner import (
     evaluate_single_planner_case,
     evaluate_single_planner_suite,
 )
+from app.evaluation.vertical_slice import (
+    evaluate_vertical_slice_case,
+    evaluate_vertical_slice_suite,
+    load_vertical_slice_suite,
+    run_vertical_slice_case,
+    vertical_slice_dataset_sha256,
+)
+from app.evaluation.vertical_slice_contracts import (
+    VerticalSliceCase,
+    VerticalSliceCaseResult,
+    VerticalSliceGateReport,
+    VerticalSliceSuite,
+)
 
 __all__ = [
     "ConstraintAgentBaselineReport",
@@ -40,12 +53,21 @@ __all__ = [
     "SinglePlannerBaselineReport",
     "SinglePlannerCaseResult",
     "SinglePlannerOutcome",
+    "VerticalSliceCase",
+    "VerticalSliceCaseResult",
+    "VerticalSliceGateReport",
+    "VerticalSliceSuite",
     "constraint_agent_dataset_sha256",
     "evaluate_constraint_agent_case",
     "evaluate_constraint_agent_suite",
     "evaluate_planning_seed_suite",
     "evaluate_single_planner_case",
     "evaluate_single_planner_suite",
+    "evaluate_vertical_slice_case",
+    "evaluate_vertical_slice_suite",
     "load_constraint_agent_expectations",
     "load_planning_seed_suite",
+    "load_vertical_slice_suite",
+    "run_vertical_slice_case",
+    "vertical_slice_dataset_sha256",
 ]

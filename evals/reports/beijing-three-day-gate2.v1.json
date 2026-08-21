@@ -1,0 +1,148 @@
+{
+  "schema_version": "1.0",
+  "suite": "beijing-three-day-vertical-slice-gate2-v1",
+  "workflow_version": "beijing-three-day-vertical-slice-v1",
+  "execution_mode": "fixture",
+  "model": "fixture-planner-gate2-v1",
+  "dataset_sha256": "e91c4eff4d28922891e3d81f2324341625a44a2b2d0466039e81684fcd46ad20",
+  "case_count": 2,
+  "passed_case_count": 2,
+  "case_pass_rate": "1.0000",
+  "check_count": 20,
+  "passed_check_count": 20,
+  "check_pass_rate": "1.0000",
+  "candidate_count": 6,
+  "traceable_candidate_count": 6,
+  "source_traceability_rate": "1.0000",
+  "deterministic_replay_count": 2,
+  "results": [
+    {
+      "case_id": "gate2-beijing-normal-v1",
+      "passed": true,
+      "outcome": "ready",
+      "validation_status": "passed",
+      "budget_status": "within_limit",
+      "can_finalize": true,
+      "provider_call_count": 3,
+      "candidate_count": 3,
+      "scheduled_candidate_count": 3,
+      "traceable_candidate_count": 3,
+      "day_count": 3,
+      "budget_total_minimum": "500.00",
+      "budget_total_maximum": "500.00",
+      "budget_minimum_gap": "0.00",
+      "issue_rule_codes": [],
+      "deterministic_replay_match": true,
+      "checks": [
+        {
+          "code": "provider_calls_match",
+          "passed": true
+        },
+        {
+          "code": "request_constraints_preserved",
+          "passed": true
+        },
+        {
+          "code": "structured_three_day_plan",
+          "passed": true
+        },
+        {
+          "code": "candidate_coverage",
+          "passed": true
+        },
+        {
+          "code": "recommendation_sources_traceable",
+          "passed": true
+        },
+        {
+          "code": "budget_recomputed_from_cost_items",
+          "passed": true
+        },
+        {
+          "code": "expected_validation_outcome",
+          "passed": true
+        },
+        {
+          "code": "no_silent_constraint_relaxation",
+          "passed": true
+        },
+        {
+          "code": "plan_not_auto_finalized",
+          "passed": true
+        },
+        {
+          "code": "fixture_model_replay_is_deterministic",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "gate2-beijing-budget-conflict-v1",
+      "passed": true,
+      "outcome": "conflicted",
+      "validation_status": "conflicted",
+      "budget_status": "exceeded",
+      "can_finalize": false,
+      "provider_call_count": 3,
+      "candidate_count": 3,
+      "scheduled_candidate_count": 3,
+      "traceable_candidate_count": 3,
+      "day_count": 3,
+      "budget_total_minimum": "900.00",
+      "budget_total_maximum": "900.00",
+      "budget_minimum_gap": "600.00",
+      "issue_rule_codes": [
+        "budget.deterministic_floor_exceeds_limit"
+      ],
+      "deterministic_replay_match": true,
+      "checks": [
+        {
+          "code": "provider_calls_match",
+          "passed": true
+        },
+        {
+          "code": "request_constraints_preserved",
+          "passed": true
+        },
+        {
+          "code": "structured_three_day_plan",
+          "passed": true
+        },
+        {
+          "code": "candidate_coverage",
+          "passed": true
+        },
+        {
+          "code": "recommendation_sources_traceable",
+          "passed": true
+        },
+        {
+          "code": "budget_recomputed_from_cost_items",
+          "passed": true
+        },
+        {
+          "code": "expected_validation_outcome",
+          "passed": true
+        },
+        {
+          "code": "no_silent_constraint_relaxation",
+          "passed": true
+        },
+        {
+          "code": "plan_not_auto_finalized",
+          "passed": true
+        },
+        {
+          "code": "fixture_model_replay_is_deterministic",
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "输入是版本化 TripRequest, 本报告不评估中文字段抽取质量。",
+    "POI 与费用均为显式 fixture, 不代表实时票价、营业时间或市场价格。",
+    "Planner 使用固定注入提案以验证可重放主链, 本报告不衡量模型规划质量。",
+    "当前没有路线、天气、酒店可订状态、开放式推荐、HITL 执行或多 Agent 对照。"
+  ]
+}
