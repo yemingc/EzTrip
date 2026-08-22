@@ -1,3 +1,5 @@
+# Load Agent contracts before planning modules cross-reference them during a cold app import.
+from app import agents as _agents  # noqa: F401
 from app.planning.context_compiler import compile_planner_context
 from app.planning.hard_validator import HARD_VALIDATOR_VERSION, validate_hard_trip_plan
 from app.planning.material_builder import (
@@ -89,6 +91,7 @@ from app.planning.stateful_contracts import (
     StatefulPlanningEvent,
     StatefulPlanningNodeName,
     StatefulPlanningNodeOutcome,
+    StatefulPlanningProgress,
     StatefulPlanningSnapshot,
 )
 from app.planning.stateful_graph import (
@@ -200,6 +203,7 @@ __all__ = [
     "StatefulPlanningEvent",
     "StatefulPlanningNodeName",
     "StatefulPlanningNodeOutcome",
+    "StatefulPlanningProgress",
     "StatefulPlanningProtocolError",
     "StatefulPlanningRuntime",
     "StatefulPlanningSnapshot",

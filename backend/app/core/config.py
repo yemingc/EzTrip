@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, SecretStr, field_validator
@@ -80,6 +81,10 @@ class Settings(BaseSettings):
         default="https://restapi.amap.com/v3/weather/weatherInfo",
         validation_alias="AMAP_REST_WEATHER_URL",
     )
+    planning_live_enabled: bool = False
+    planning_checkpoint_dir: Path = Path("tmp/planning-task-checkpoints")
+    planning_sse_heartbeat_seconds: float = Field(default=15.0, gt=0)
+    planning_task_timeout_seconds: float = Field(default=120.0, gt=0)
 
     @field_validator("amap_mcp_url", "amap_rest_weather_url")
     @classmethod
