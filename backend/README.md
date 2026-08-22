@@ -1,6 +1,8 @@
 # EzTrip API
 
-Gate 0 FastAPI service plus the first offline Gate 2 vertical slice, recoverable HITL wrapper, specialist fan-out, deterministic planning-material layer, schema-constrained multi-Agent Plan Agent, deterministic Hard Validators, a bounded Repair Router, and provider-triggered local Weather Repair. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, schema-constrained Constraint/Explore/Stay Agents, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, a SQLite-checkpointed main Graph using native LangGraph interrupt/resume, an independent parallel Explore/Stay/proactive-Weather information-gathering Graph, a bounded route matrix plus auditable budget allocator, a Plan Agent that consumes those materials into the shared `TripPlan` contract, a zero-model finalization gate, deterministic issue-directed retry/HITL routing with artifact-reuse guards, and a zero-model Weather Repair Coordinator that grades validated proposals before auto-apply or HITL. These components are not yet exposed as a product planning API; live responsibility-node executors and scheduled WeatherWatch are not yet wired into the task Graph.
+Gate 0 FastAPI service plus the first offline Gate 2 vertical slice, recoverable HITL wrapper, specialist fan-out, deterministic planning-material layer, schema-constrained multi-Agent Plan Agent, deterministic Hard Validators, a bounded Repair Router, and provider-triggered local Weather Repair. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, schema-constrained Constraint/Explore/Stay Agents, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, a SQLite-checkpointed main Graph using native LangGraph interrupt/resume, an independent parallel Explore/Stay/proactive-Weather information-gathering Graph, a bounded route matrix plus auditable budget allocator, a Plan Agent that consumes those materials into the shared `TripPlan` contract, a zero-model finalization gate, deterministic issue-directed retry/HITL routing with artifact-reuse guards, and a zero-model Weather Repair Coordinator that grades validated proposals before auto-apply or HITL.
+
+The first product-facing planning API now wraps the existing checkpointed Gate 2 workflow. It creates asynchronous tasks, exposes typed snapshots, and streams committed LangGraph node updates through replayable SSE. This API increment does not yet connect the newer specialist/Plan/Repair/Weather components into one production task Graph; task metadata and SSE logs are process-local, HITL resume belongs to the next product increment, and scheduled WeatherWatch remains later work. See [the planning task API protocol](../docs/api/planning-task-api.md).
 
 ```powershell
 uv sync --all-groups
@@ -29,10 +31,24 @@ uv run python -m scripts.export_specialist_fanout_schemas
 uv run python -m scripts.export_planning_material_schemas
 uv run python -m scripts.export_plan_agent_schemas
 uv run python -m scripts.export_weather_repair_schemas
+uv run python -m scripts.export_planning_task_schemas
 uv run python -m scripts.export_plan_validation_example
 uv run python -m scripts.export_planner_context_example
 uv run python -m scripts.run_minimal_planning_graph --write-example
 ```
+
+Run the planning task API and its real-SSE protocol tests:
+
+```powershell
+uv run uvicorn app.main:app --reload
+uv run pytest tests/test_planning_task_api.py tests/test_planning_task_service.py --no-cov
+```
+
+The default `fixture` mode uses only allow-listed offline AMap captures and a deterministic
+fixture scheduler. `live` mode is rejected unless `EZTRIP_PLANNING_LIVE_ENABLED=true`; enabling
+it can call AMap and DeepSeek and consume quota. SSE emits committed graph-node events, heartbeat
+comments, typed terminal failures, and supports `Last-Event-ID` replay within the same server
+process.
 
 Compile the committed Beijing request into a deterministic planning context:
 

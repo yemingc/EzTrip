@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Literal
@@ -54,6 +54,21 @@ class StatefulPlanningEvent(DomainModel):
     node: StatefulPlanningNodeName
     outcome: StatefulPlanningNodeOutcome
     detail: NonEmptyText
+
+
+class StatefulPlanningProgress(DomainModel):
+    """One committed graph-node update, derived from LangGraph's update stream."""
+
+    schema_version: Literal["1.0"] = "1.0"
+    node: StatefulPlanningNodeName
+    state_status: PlanningThreadStatus
+    event: StatefulPlanningEvent
+
+    @model_validator(mode="after")
+    def validate_node_lineage(self) -> "StatefulPlanningProgress":
+        if self.event.node != self.node:
+            raise ValueError("progress node must match the committed planning event")
+        return self
 
 
 class HumanReviewRequest(DomainModel):
@@ -231,6 +246,7 @@ class CheckpointHistoryEntry(DomainModel):
 
 
 Clock = Callable[[], datetime]
+ProgressCallback = Callable[[StatefulPlanningProgress], Awaitable[None]]
 
 
 def utc_now() -> datetime:
