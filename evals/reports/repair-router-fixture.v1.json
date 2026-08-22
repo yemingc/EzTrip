@@ -1,0 +1,766 @@
+{
+  "schema_version": "1.0",
+  "suite": "repair-router-v1",
+  "router_version": "repair-router-v1",
+  "execution_mode": "fixture",
+  "dataset_sha256": "5876bc31d2b24a361964bebd1bc76d947c04052f29dc2c3fdf68f253f9d21c85",
+  "case_count": 9,
+  "passed_case_count": 9,
+  "case_pass_rate": "1.0000",
+  "exact_route_case_count": 9,
+  "exact_route_rate": "1.0000",
+  "retry_bound_case_count": 9,
+  "unaffected_reuse_case_count": 9,
+  "deterministic_replay_case_count": 9,
+  "total_repair_attempt_count": 9,
+  "router_model_call_count": 0,
+  "delegated_model_call_count": 5,
+  "results": [
+    {
+      "case_id": "repair-router-route-success-v1",
+      "passed": true,
+      "expected_outcome": "repaired",
+      "actual_outcome": "repaired",
+      "expected_stop_reason": "finalizable",
+      "actual_stop_reason": "finalizable",
+      "expected_attempt_actions": [
+        "rerun_route"
+      ],
+      "actual_attempt_actions": [
+        "rerun_route"
+      ],
+      "expected_executed_nodes": [
+        [
+          "route",
+          "plan"
+        ]
+      ],
+      "actual_executed_nodes": [
+        [
+          "route",
+          "plan"
+        ]
+      ],
+      "initial_error_codes": [
+        "route.missing_for_grounded_item"
+      ],
+      "expected_pending_error_codes": [],
+      "actual_pending_error_codes": [],
+      "retry_bound_respected": true,
+      "unaffected_nodes_reused": true,
+      "deterministic_replay": true,
+      "router_model_call_count": 0,
+      "delegated_model_call_count": 1,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "router_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "outcome_matches",
+          "passed": true
+        },
+        {
+          "code": "stop_reason_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "targeted_actions_match",
+          "passed": true
+        },
+        {
+          "code": "executed_nodes_match",
+          "passed": true
+        },
+        {
+          "code": "pending_errors_match",
+          "passed": true
+        },
+        {
+          "code": "retry_bound_respected",
+          "passed": true
+        },
+        {
+          "code": "unaffected_nodes_reused",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "repair-router-plan-success-v1",
+      "passed": true,
+      "expected_outcome": "repaired",
+      "actual_outcome": "repaired",
+      "expected_stop_reason": "finalizable",
+      "actual_stop_reason": "finalizable",
+      "expected_attempt_actions": [
+        "replan_day"
+      ],
+      "actual_attempt_actions": [
+        "replan_day"
+      ],
+      "expected_executed_nodes": [
+        [
+          "plan"
+        ]
+      ],
+      "actual_executed_nodes": [
+        [
+          "plan"
+        ]
+      ],
+      "initial_error_codes": [
+        "route.insufficient_transfer_window"
+      ],
+      "expected_pending_error_codes": [],
+      "actual_pending_error_codes": [],
+      "retry_bound_respected": true,
+      "unaffected_nodes_reused": true,
+      "deterministic_replay": true,
+      "router_model_call_count": 0,
+      "delegated_model_call_count": 1,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "router_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "outcome_matches",
+          "passed": true
+        },
+        {
+          "code": "stop_reason_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "targeted_actions_match",
+          "passed": true
+        },
+        {
+          "code": "executed_nodes_match",
+          "passed": true
+        },
+        {
+          "code": "pending_errors_match",
+          "passed": true
+        },
+        {
+          "code": "retry_bound_respected",
+          "passed": true
+        },
+        {
+          "code": "unaffected_nodes_reused",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "repair-router-opening-evidence-success-v1",
+      "passed": true,
+      "expected_outcome": "repaired",
+      "actual_outcome": "repaired",
+      "expected_stop_reason": "finalizable",
+      "actual_stop_reason": "finalizable",
+      "expected_attempt_actions": [
+        "rerun_explore"
+      ],
+      "actual_attempt_actions": [
+        "rerun_explore"
+      ],
+      "expected_executed_nodes": [
+        [
+          "explore"
+        ]
+      ],
+      "actual_executed_nodes": [
+        [
+          "explore"
+        ]
+      ],
+      "initial_error_codes": [
+        "opening_hours.evidence_missing"
+      ],
+      "expected_pending_error_codes": [],
+      "actual_pending_error_codes": [],
+      "retry_bound_respected": true,
+      "unaffected_nodes_reused": true,
+      "deterministic_replay": true,
+      "router_model_call_count": 0,
+      "delegated_model_call_count": 1,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "router_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "outcome_matches",
+          "passed": true
+        },
+        {
+          "code": "stop_reason_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "targeted_actions_match",
+          "passed": true
+        },
+        {
+          "code": "executed_nodes_match",
+          "passed": true
+        },
+        {
+          "code": "pending_errors_match",
+          "passed": true
+        },
+        {
+          "code": "retry_bound_respected",
+          "passed": true
+        },
+        {
+          "code": "unaffected_nodes_reused",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "repair-router-poi-city-success-v1",
+      "passed": true,
+      "expected_outcome": "repaired",
+      "actual_outcome": "repaired",
+      "expected_stop_reason": "finalizable",
+      "actual_stop_reason": "finalizable",
+      "expected_attempt_actions": [
+        "rerun_explore"
+      ],
+      "actual_attempt_actions": [
+        "rerun_explore"
+      ],
+      "expected_executed_nodes": [
+        [
+          "explore"
+        ]
+      ],
+      "actual_executed_nodes": [
+        [
+          "explore"
+        ]
+      ],
+      "initial_error_codes": [
+        "city.poi_candidate_mismatch"
+      ],
+      "expected_pending_error_codes": [],
+      "actual_pending_error_codes": [],
+      "retry_bound_respected": true,
+      "unaffected_nodes_reused": true,
+      "deterministic_replay": true,
+      "router_model_call_count": 0,
+      "delegated_model_call_count": 1,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "router_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "outcome_matches",
+          "passed": true
+        },
+        {
+          "code": "stop_reason_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "targeted_actions_match",
+          "passed": true
+        },
+        {
+          "code": "executed_nodes_match",
+          "passed": true
+        },
+        {
+          "code": "pending_errors_match",
+          "passed": true
+        },
+        {
+          "code": "retry_bound_respected",
+          "passed": true
+        },
+        {
+          "code": "unaffected_nodes_reused",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "repair-router-stay-city-success-v1",
+      "passed": true,
+      "expected_outcome": "repaired",
+      "actual_outcome": "repaired",
+      "expected_stop_reason": "finalizable",
+      "actual_stop_reason": "finalizable",
+      "expected_attempt_actions": [
+        "rerun_stay"
+      ],
+      "actual_attempt_actions": [
+        "rerun_stay"
+      ],
+      "expected_executed_nodes": [
+        [
+          "stay"
+        ]
+      ],
+      "actual_executed_nodes": [
+        [
+          "stay"
+        ]
+      ],
+      "initial_error_codes": [
+        "city.stay_candidate_mismatch"
+      ],
+      "expected_pending_error_codes": [],
+      "actual_pending_error_codes": [],
+      "retry_bound_respected": true,
+      "unaffected_nodes_reused": true,
+      "deterministic_replay": true,
+      "router_model_call_count": 0,
+      "delegated_model_call_count": 1,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "router_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "outcome_matches",
+          "passed": true
+        },
+        {
+          "code": "stop_reason_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "targeted_actions_match",
+          "passed": true
+        },
+        {
+          "code": "executed_nodes_match",
+          "passed": true
+        },
+        {
+          "code": "pending_errors_match",
+          "passed": true
+        },
+        {
+          "code": "retry_bound_respected",
+          "passed": true
+        },
+        {
+          "code": "unaffected_nodes_reused",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "repair-router-unrepairable-lineage-v1",
+      "passed": true,
+      "expected_outcome": "unresolved",
+      "actual_outcome": "unresolved",
+      "expected_stop_reason": "unrepairable_issue",
+      "actual_stop_reason": "unrepairable_issue",
+      "expected_attempt_actions": [],
+      "actual_attempt_actions": [],
+      "expected_executed_nodes": [],
+      "actual_executed_nodes": [],
+      "initial_error_codes": [
+        "source.candidate_lineage_mismatch"
+      ],
+      "expected_pending_error_codes": [
+        "source.candidate_lineage_mismatch"
+      ],
+      "actual_pending_error_codes": [
+        "source.candidate_lineage_mismatch"
+      ],
+      "retry_bound_respected": true,
+      "unaffected_nodes_reused": true,
+      "deterministic_replay": true,
+      "router_model_call_count": 0,
+      "delegated_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "router_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "outcome_matches",
+          "passed": true
+        },
+        {
+          "code": "stop_reason_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "targeted_actions_match",
+          "passed": true
+        },
+        {
+          "code": "executed_nodes_match",
+          "passed": true
+        },
+        {
+          "code": "pending_errors_match",
+          "passed": true
+        },
+        {
+          "code": "retry_bound_respected",
+          "passed": true
+        },
+        {
+          "code": "unaffected_nodes_reused",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "repair-router-budget-retry-bound-v1",
+      "passed": true,
+      "expected_outcome": "unresolved",
+      "actual_outcome": "unresolved",
+      "expected_stop_reason": "retry_limit_reached",
+      "actual_stop_reason": "retry_limit_reached",
+      "expected_attempt_actions": [
+        "recalculate_budget",
+        "recalculate_budget"
+      ],
+      "actual_attempt_actions": [
+        "recalculate_budget",
+        "recalculate_budget"
+      ],
+      "expected_executed_nodes": [
+        [
+          "budget"
+        ],
+        [
+          "budget"
+        ]
+      ],
+      "actual_executed_nodes": [
+        [
+          "budget"
+        ],
+        [
+          "budget"
+        ]
+      ],
+      "initial_error_codes": [
+        "budget.incomplete_category_coverage"
+      ],
+      "expected_pending_error_codes": [
+        "budget.incomplete_category_coverage"
+      ],
+      "actual_pending_error_codes": [
+        "budget.incomplete_category_coverage"
+      ],
+      "retry_bound_respected": true,
+      "unaffected_nodes_reused": true,
+      "deterministic_replay": true,
+      "router_model_call_count": 0,
+      "delegated_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "router_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "outcome_matches",
+          "passed": true
+        },
+        {
+          "code": "stop_reason_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "targeted_actions_match",
+          "passed": true
+        },
+        {
+          "code": "executed_nodes_match",
+          "passed": true
+        },
+        {
+          "code": "pending_errors_match",
+          "passed": true
+        },
+        {
+          "code": "retry_bound_respected",
+          "passed": true
+        },
+        {
+          "code": "unaffected_nodes_reused",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "repair-router-route-retry-bound-v1",
+      "passed": true,
+      "expected_outcome": "unresolved",
+      "actual_outcome": "unresolved",
+      "expected_stop_reason": "retry_limit_reached",
+      "actual_stop_reason": "retry_limit_reached",
+      "expected_attempt_actions": [
+        "rerun_route",
+        "rerun_route"
+      ],
+      "actual_attempt_actions": [
+        "rerun_route",
+        "rerun_route"
+      ],
+      "expected_executed_nodes": [
+        [
+          "route"
+        ],
+        [
+          "route"
+        ]
+      ],
+      "actual_executed_nodes": [
+        [
+          "route"
+        ],
+        [
+          "route"
+        ]
+      ],
+      "initial_error_codes": [
+        "route.missing_for_grounded_item"
+      ],
+      "expected_pending_error_codes": [
+        "route.missing_for_grounded_item"
+      ],
+      "actual_pending_error_codes": [
+        "route.missing_for_grounded_item"
+      ],
+      "retry_bound_respected": true,
+      "unaffected_nodes_reused": true,
+      "deterministic_replay": true,
+      "router_model_call_count": 0,
+      "delegated_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "router_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "outcome_matches",
+          "passed": true
+        },
+        {
+          "code": "stop_reason_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "targeted_actions_match",
+          "passed": true
+        },
+        {
+          "code": "executed_nodes_match",
+          "passed": true
+        },
+        {
+          "code": "pending_errors_match",
+          "passed": true
+        },
+        {
+          "code": "retry_bound_respected",
+          "passed": true
+        },
+        {
+          "code": "unaffected_nodes_reused",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "repair-router-budget-hitl-v1",
+      "passed": true,
+      "expected_outcome": "waiting_for_user",
+      "actual_outcome": "waiting_for_user",
+      "expected_stop_reason": "user_confirmation_required",
+      "actual_stop_reason": "user_confirmation_required",
+      "expected_attempt_actions": [],
+      "actual_attempt_actions": [],
+      "expected_executed_nodes": [],
+      "actual_executed_nodes": [],
+      "initial_error_codes": [
+        "budget.deterministic_floor_exceeds_limit"
+      ],
+      "expected_pending_error_codes": [
+        "budget.deterministic_floor_exceeds_limit"
+      ],
+      "actual_pending_error_codes": [
+        "budget.deterministic_floor_exceeds_limit"
+      ],
+      "retry_bound_respected": true,
+      "unaffected_nodes_reused": true,
+      "deterministic_replay": true,
+      "router_model_call_count": 0,
+      "delegated_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "router_zero_model_calls",
+          "passed": true
+        },
+        {
+          "code": "outcome_matches",
+          "passed": true
+        },
+        {
+          "code": "stop_reason_matches",
+          "passed": true
+        },
+        {
+          "code": "finalization_matches",
+          "passed": true
+        },
+        {
+          "code": "targeted_actions_match",
+          "passed": true
+        },
+        {
+          "code": "executed_nodes_match",
+          "passed": true
+        },
+        {
+          "code": "pending_errors_match",
+          "passed": true
+        },
+        {
+          "code": "retry_bound_respected",
+          "passed": true
+        },
+        {
+          "code": "unaffected_nodes_reused",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Repair Router 自身是零模型调用的确定性编排器; fixture executor 只模拟责任节点产物。",
+    "本报告验证路由、重试、停止条件、产物复用和 trace, 不代表实时高德或价格来源可用性。",
+    "成功案例恢复版本化 fixture 事实; 真实 Explore、Stay、Route 与 Plan 重跑将在任务 API 图中接线。",
+    "预算费用下界超过硬限制时只进入 HITL, 不自动提高预算或删除用户约束。",
+    "warning 不阻止定稿, 也不会触发 Router 自动循环; Review/UI 后续负责向用户展示。"
+  ]
+}

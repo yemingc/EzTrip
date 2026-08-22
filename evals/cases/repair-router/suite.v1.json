@@ -1,0 +1,160 @@
+{
+  "suite": "repair-router-v1",
+  "version": 1,
+  "cases": [
+    {
+      "case_id": "repair-router-route-success-v1",
+      "title": "缺路线时只执行 Route 与下游 Plan",
+      "source_hard_validator_case_id": "hard-validator-missing-route-v1",
+      "executor_scenario": "repair",
+      "expected": {
+        "outcome": "repaired",
+        "stop_reason": "finalizable",
+        "final_can_finalize": true,
+        "attempt_actions": ["rerun_route"],
+        "executed_nodes_by_attempt": [["route", "plan"]],
+        "pending_error_codes": []
+      },
+      "boundary_notes": [
+        "Explore、Stay、Weather 与 Budget 产物必须复用，不能因为一条路线缺失而全图重跑。"
+      ]
+    },
+    {
+      "case_id": "repair-router-plan-success-v1",
+      "title": "转场窗口不足时只重排 Plan",
+      "source_hard_validator_case_id": "hard-validator-tight-transfer-v1",
+      "executor_scenario": "repair",
+      "expected": {
+        "outcome": "repaired",
+        "stop_reason": "finalizable",
+        "final_can_finalize": true,
+        "attempt_actions": ["replan_day"],
+        "executed_nodes_by_attempt": [["plan"]],
+        "pending_error_codes": []
+      },
+      "boundary_notes": [
+        "路线事实已经存在，时间算术冲突不应重新搜索 POI、酒店或路线。"
+      ]
+    },
+    {
+      "case_id": "repair-router-opening-evidence-success-v1",
+      "title": "营业时间证据缺失时只刷新 Explore 证据",
+      "source_hard_validator_case_id": "hard-validator-missing-opening-evidence-v1",
+      "executor_scenario": "repair",
+      "expected": {
+        "outcome": "repaired",
+        "stop_reason": "finalizable",
+        "final_can_finalize": true,
+        "attempt_actions": ["rerun_explore"],
+        "executed_nodes_by_attempt": [["explore"]],
+        "pending_error_codes": []
+      },
+      "boundary_notes": [
+        "候选集合未变时只补 Provider 证据，不制造不必要的 Route 或 Plan 调用。"
+      ]
+    },
+    {
+      "case_id": "repair-router-poi-city-success-v1",
+      "title": "跨城 POI 由 Explore 定向纠正",
+      "source_hard_validator_case_id": "hard-validator-poi-cross-city-v1",
+      "executor_scenario": "repair",
+      "expected": {
+        "outcome": "repaired",
+        "stop_reason": "finalizable",
+        "final_can_finalize": true,
+        "attempt_actions": ["rerun_explore"],
+        "executed_nodes_by_attempt": [["explore"]],
+        "pending_error_codes": []
+      },
+      "boundary_notes": [
+        "fixture 仅恢复候选事实；Stay、Weather、Route、Budget 与 Plan 的语义产物保持不变。"
+      ]
+    },
+    {
+      "case_id": "repair-router-stay-city-success-v1",
+      "title": "跨城住宿锚点由 Stay 定向纠正",
+      "source_hard_validator_case_id": "hard-validator-stay-cross-city-v1",
+      "executor_scenario": "repair",
+      "expected": {
+        "outcome": "repaired",
+        "stop_reason": "finalizable",
+        "final_can_finalize": true,
+        "attempt_actions": ["rerun_stay"],
+        "executed_nodes_by_attempt": [["stay"]],
+        "pending_error_codes": []
+      },
+      "boundary_notes": [
+        "住宿错误不应丢弃已经有效的景点候选和天气结果。"
+      ]
+    },
+    {
+      "case_id": "repair-router-unrepairable-lineage-v1",
+      "title": "程序血缘错误不交给 Agent 自动掩盖",
+      "source_hard_validator_case_id": "hard-validator-candidate-source-lineage-v1",
+      "executor_scenario": "unused",
+      "expected": {
+        "outcome": "unresolved",
+        "stop_reason": "unrepairable_issue",
+        "final_can_finalize": false,
+        "attempt_actions": [],
+        "executed_nodes_by_attempt": [],
+        "pending_error_codes": ["source.candidate_lineage_mismatch"]
+      },
+      "boundary_notes": [
+        "Validator 不变量破坏直接暴露为工程错误，Router 不调用任何业务 Agent。"
+      ]
+    },
+    {
+      "case_id": "repair-router-budget-retry-bound-v1",
+      "title": "价格事实持续缺失时 Budget 最多尝试两次",
+      "source_hard_validator_case_id": "hard-validator-hard-budget-incomplete-v1",
+      "executor_scenario": "persistent_failure",
+      "expected": {
+        "outcome": "unresolved",
+        "stop_reason": "retry_limit_reached",
+        "final_can_finalize": false,
+        "attempt_actions": ["recalculate_budget", "recalculate_budget"],
+        "executed_nodes_by_attempt": [["budget"], ["budget"]],
+        "pending_error_codes": ["budget.incomplete_category_coverage"]
+      },
+      "boundary_notes": [
+        "没有价格来源时不得把预算 allocation 当报价，第二次失败后停止循环。"
+      ]
+    },
+    {
+      "case_id": "repair-router-route-retry-bound-v1",
+      "title": "路线 Provider 持续失败时 Route 最多尝试两次",
+      "source_hard_validator_case_id": "hard-validator-missing-route-v1",
+      "executor_scenario": "persistent_failure",
+      "expected": {
+        "outcome": "unresolved",
+        "stop_reason": "retry_limit_reached",
+        "final_can_finalize": false,
+        "attempt_actions": ["rerun_route", "rerun_route"],
+        "executed_nodes_by_attempt": [["route"], ["route"]],
+        "pending_error_codes": ["route.missing_for_grounded_item"]
+      },
+      "boundary_notes": [
+        "失败尝试丢弃部分输出并复用既有 checkpoint，不能无限重试或扩大到全图。"
+      ]
+    },
+    {
+      "case_id": "repair-router-budget-hitl-v1",
+      "title": "费用下界超过硬预算时进入 HITL",
+      "source_hard_validator_case_id": "hard-validator-confirmed-must-pass-v1",
+      "setup": "budget_floor",
+      "executor_scenario": "unused",
+      "expected": {
+        "outcome": "waiting_for_user",
+        "stop_reason": "user_confirmation_required",
+        "final_can_finalize": false,
+        "attempt_actions": [],
+        "executed_nodes_by_attempt": [],
+        "pending_error_codes": ["budget.deterministic_floor_exceeds_limit"]
+      },
+      "boundary_notes": [
+        "系统只能展示确定性预算缺口并等待用户选择，不能擅自提高预算或删除硬约束。"
+      ]
+    }
+  ]
+}

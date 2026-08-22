@@ -20,7 +20,7 @@ EZ-303 用版本化 fixture 验证 Hard Validator 是否能稳定发现问题，
 - deterministic replay：12/12；
 - Hard Validator model calls：0。
 
-`routing accuracy` 要求 rule code、severity、responsible node 和 repair action 同时匹配冻结标签。它不是路线 API 准确率，也不表示 Repair Router 已经执行修复。
+`routing accuracy` 要求 rule code、severity、responsible node 和 repair action 同时匹配冻结标签。它不是路线 API 准确率；修复执行由独立的 [`repair-router-baseline.md`](repair-router-baseline.md) 验证。
 
 ## 边界
 

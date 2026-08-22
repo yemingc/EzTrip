@@ -1,0 +1,201 @@
+{
+  "$defs": {
+    "RepairAction": {
+      "enum": [
+        "none",
+        "rerun_constraint",
+        "rerun_explore",
+        "rerun_stay",
+        "rerun_route",
+        "replan_day",
+        "recalculate_budget",
+        "ask_user"
+      ],
+      "title": "RepairAction",
+      "type": "string"
+    },
+    "RepairExecutorScenario": {
+      "enum": [
+        "repair",
+        "persistent_failure",
+        "unused"
+      ],
+      "title": "RepairExecutorScenario",
+      "type": "string"
+    },
+    "RepairFixtureSetup": {
+      "enum": [
+        "referenced_hard_case",
+        "budget_floor"
+      ],
+      "title": "RepairFixtureSetup",
+      "type": "string"
+    },
+    "RepairOutcome": {
+      "enum": [
+        "already_finalizable",
+        "repaired",
+        "waiting_for_user",
+        "unresolved"
+      ],
+      "title": "RepairOutcome",
+      "type": "string"
+    },
+    "RepairRouterEvalCase": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "source_hard_validator_case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Source Hard Validator Case Id",
+          "type": "string"
+        },
+        "setup": {
+          "$ref": "#/$defs/RepairFixtureSetup",
+          "default": "referenced_hard_case"
+        },
+        "executor_scenario": {
+          "$ref": "#/$defs/RepairExecutorScenario"
+        },
+        "expected": {
+          "$ref": "#/$defs/RepairRouterExpectation"
+        },
+        "boundary_notes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Boundary Notes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "title",
+        "source_hard_validator_case_id",
+        "executor_scenario",
+        "expected",
+        "boundary_notes"
+      ],
+      "title": "RepairRouterEvalCase",
+      "type": "object"
+    },
+    "RepairRouterExpectation": {
+      "additionalProperties": false,
+      "properties": {
+        "outcome": {
+          "$ref": "#/$defs/RepairOutcome"
+        },
+        "stop_reason": {
+          "$ref": "#/$defs/RepairStopReason"
+        },
+        "final_can_finalize": {
+          "title": "Final Can Finalize",
+          "type": "boolean"
+        },
+        "attempt_actions": {
+          "items": {
+            "$ref": "#/$defs/RepairAction"
+          },
+          "title": "Attempt Actions",
+          "type": "array"
+        },
+        "executed_nodes_by_attempt": {
+          "items": {
+            "items": {
+              "$ref": "#/$defs/ResponsibleNode"
+            },
+            "type": "array"
+          },
+          "title": "Executed Nodes By Attempt",
+          "type": "array"
+        },
+        "pending_error_codes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Pending Error Codes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "outcome",
+        "stop_reason",
+        "final_can_finalize",
+        "attempt_actions",
+        "executed_nodes_by_attempt",
+        "pending_error_codes"
+      ],
+      "title": "RepairRouterExpectation",
+      "type": "object"
+    },
+    "RepairStopReason": {
+      "enum": [
+        "finalizable",
+        "user_confirmation_required",
+        "unrepairable_issue",
+        "retry_limit_reached"
+      ],
+      "title": "RepairStopReason",
+      "type": "string"
+    },
+    "ResponsibleNode": {
+      "enum": [
+        "constraint",
+        "explore",
+        "stay",
+        "weather",
+        "route",
+        "plan",
+        "budget",
+        "validator"
+      ],
+      "title": "ResponsibleNode",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "suite": {
+      "const": "repair-router-v1",
+      "default": "repair-router-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "version": {
+      "const": 1,
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "cases": {
+      "items": {
+        "$ref": "#/$defs/RepairRouterEvalCase"
+      },
+      "maxItems": 9,
+      "minItems": 9,
+      "title": "Cases",
+      "type": "array"
+    }
+  },
+  "required": [
+    "cases"
+  ],
+  "title": "RepairRouterEvalSuite",
+  "type": "object"
+}

@@ -58,4 +58,4 @@ uv run pytest tests/test_hard_validator.py tests/test_hard_validator_evaluation.
 - 12/12 deterministic replays；
 - Hard Validator 0 次模型调用。
 
-这些指标是开发 fixture 上的规则回归，不是实时 Provider 准确率、预算满足率、行程质量分数或 Repair 成功率。EZ-304 才会根据这些 typed issues 执行有界、定向重跑。
+这些指标是开发 fixture 上的规则回归，不是实时 Provider 准确率、预算满足率、行程质量分数或 Repair 成功率。后续 [`repair-router.md`](repair-router.md) 消费这些 typed issues，独立验证有界、定向重跑契约。
