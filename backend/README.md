@@ -1,6 +1,6 @@
 # EzTrip API
 
-Gate 0 FastAPI service plus the first offline Gate 2 vertical slice, recoverable HITL wrapper, specialist fan-out, deterministic planning-material layer, schema-constrained multi-Agent Plan Agent, and deterministic Hard Validators. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, schema-constrained Constraint/Explore/Stay Agents, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, a SQLite-checkpointed main Graph using native LangGraph interrupt/resume, an independent parallel Explore/Stay/proactive-Weather information-gathering Graph, a bounded route matrix plus auditable budget allocator, a Plan Agent that consumes those materials into the shared `TripPlan` contract, and a zero-model finalization gate for must/avoid, city, source, route, opening-hours evidence, and hard-budget rules. These components are not yet exposed as a product planning API; repair routing remains a later stage.
+Gate 0 FastAPI service plus the first offline Gate 2 vertical slice, recoverable HITL wrapper, specialist fan-out, deterministic planning-material layer, schema-constrained multi-Agent Plan Agent, deterministic Hard Validators, and a bounded Repair Router. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, schema-constrained Constraint/Explore/Stay Agents, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, a SQLite-checkpointed main Graph using native LangGraph interrupt/resume, an independent parallel Explore/Stay/proactive-Weather information-gathering Graph, a bounded route matrix plus auditable budget allocator, a Plan Agent that consumes those materials into the shared `TripPlan` contract, a zero-model finalization gate, and deterministic issue-directed retry/HITL routing with artifact-reuse guards. These components are not yet exposed as a product planning API; live responsibility-node executors are not yet wired into the task Graph.
 
 ```powershell
 uv sync --all-groups
@@ -105,7 +105,7 @@ uv run pytest tests/test_plan_validator.py --no-cov
 uv run python -m scripts.export_plan_validation_example
 ```
 
-The base validator cross-checks request/plan identity, city and dates, duplicate candidates, recommendation source modes, and budget scope. Budget totals are recomputed from `Decimal` `CostItem` values; missing included categories remain incomplete instead of becoming zero-cost assumptions. Hard errors block finalization through typed `ValidationIssue` results. The downstream Hard Validator described below adds route feasibility, must/avoid, candidate city/lineage, and opening-hours evidence; repair routing and a product-ready itinerary remain later work.
+The base validator cross-checks request/plan identity, city and dates, duplicate candidates, recommendation source modes, and budget scope. Budget totals are recomputed from `Decimal` `CostItem` values; missing included categories remain incomplete instead of becoming zero-cost assumptions. Hard errors block finalization through typed `ValidationIssue` results. The downstream Hard Validator described below adds route feasibility, must/avoid, candidate city/lineage, and opening-hours evidence; the Repair Router then consumes those issues, while a product-ready itinerary remains later work.
 
 Run the complete offline Beijing three-day Gate 2 vertical slice:
 
@@ -167,7 +167,17 @@ uv run python -m scripts.run_hard_validator_eval
 uv run pytest tests/test_hard_validator.py tests/test_hard_validator_evaluation.py --no-cov
 ```
 
-The Hard Validator requires a grounded Plan draft, its exact planning-material bundle, and a separate provider-backed opening-hours evidence bundle. It checks confirmed hard must/avoid rules, shortlist/source lineage, POI and stay city, route presence/endpoints/matrix lineage, transfer windows, opening-hours coverage, and the existing hard-budget assessment without any LLM call. The committed fixture report records 12/12 cases, 22/22 exact issue routings, and 12/12 deterministic replays. This proves rule and responsibility contracts over fixtures, not live opening-hours accuracy or successful automatic repair.
+The Hard Validator requires a grounded Plan draft, its exact planning-material bundle, and a separate provider-backed opening-hours evidence bundle. It checks confirmed hard must/avoid rules, shortlist/source lineage, POI and stay city, route presence/endpoints/matrix lineage, transfer windows, opening-hours coverage, and the existing hard-budget assessment without any LLM call. The committed fixture report records 12/12 cases, 22/22 exact issue routings, and 12/12 deterministic replays. This proves rule and responsibility contracts over fixtures, not live opening-hours accuracy or automatic-repair quality.
+
+Run the bounded Repair Router regression:
+
+```powershell
+uv run python -m scripts.export_repair_router_schemas
+uv run python -m scripts.run_repair_router_eval
+uv run pytest tests/test_repair_router.py tests/test_repair_router_evaluation.py --no-cov
+```
+
+The deterministic Router automatically processes errors only, groups them by typed repair action, prioritizes upstream actions, stops `ASK_USER` before any Agent call, and caps each action at two attempts. Executors must declare executed nodes; semantic fingerprints reject changes to reused Constraint/Explore/Stay/Weather/Route/Budget/Plan artifacts. The committed fixture report records 9/9 exact action/node routes, retry bounds, reuse checks, and deterministic replays with zero Router model calls. Fixture executors simulate responsibility-node outputs; live Agent/Provider repair execution is not yet connected to the product task Graph.
 
 Run the live observability probe only after configuring the local root `.env`:
 

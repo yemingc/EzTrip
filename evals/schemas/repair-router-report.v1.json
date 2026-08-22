@@ -1,0 +1,374 @@
+{
+  "$defs": {
+    "EvaluationCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Code",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "passed"
+      ],
+      "title": "EvaluationCheck",
+      "type": "object"
+    },
+    "RepairAction": {
+      "enum": [
+        "none",
+        "rerun_constraint",
+        "rerun_explore",
+        "rerun_stay",
+        "rerun_route",
+        "replan_day",
+        "recalculate_budget",
+        "ask_user"
+      ],
+      "title": "RepairAction",
+      "type": "string"
+    },
+    "RepairOutcome": {
+      "enum": [
+        "already_finalizable",
+        "repaired",
+        "waiting_for_user",
+        "unresolved"
+      ],
+      "title": "RepairOutcome",
+      "type": "string"
+    },
+    "RepairRouterCaseResult": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "expected_outcome": {
+          "$ref": "#/$defs/RepairOutcome"
+        },
+        "actual_outcome": {
+          "$ref": "#/$defs/RepairOutcome"
+        },
+        "expected_stop_reason": {
+          "$ref": "#/$defs/RepairStopReason"
+        },
+        "actual_stop_reason": {
+          "$ref": "#/$defs/RepairStopReason"
+        },
+        "expected_attempt_actions": {
+          "items": {
+            "$ref": "#/$defs/RepairAction"
+          },
+          "title": "Expected Attempt Actions",
+          "type": "array"
+        },
+        "actual_attempt_actions": {
+          "items": {
+            "$ref": "#/$defs/RepairAction"
+          },
+          "title": "Actual Attempt Actions",
+          "type": "array"
+        },
+        "expected_executed_nodes": {
+          "items": {
+            "items": {
+              "$ref": "#/$defs/ResponsibleNode"
+            },
+            "type": "array"
+          },
+          "title": "Expected Executed Nodes",
+          "type": "array"
+        },
+        "actual_executed_nodes": {
+          "items": {
+            "items": {
+              "$ref": "#/$defs/ResponsibleNode"
+            },
+            "type": "array"
+          },
+          "title": "Actual Executed Nodes",
+          "type": "array"
+        },
+        "initial_error_codes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Initial Error Codes",
+          "type": "array"
+        },
+        "expected_pending_error_codes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Expected Pending Error Codes",
+          "type": "array"
+        },
+        "actual_pending_error_codes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Actual Pending Error Codes",
+          "type": "array"
+        },
+        "retry_bound_respected": {
+          "title": "Retry Bound Respected",
+          "type": "boolean"
+        },
+        "unaffected_nodes_reused": {
+          "title": "Unaffected Nodes Reused",
+          "type": "boolean"
+        },
+        "deterministic_replay": {
+          "title": "Deterministic Replay",
+          "type": "boolean"
+        },
+        "router_model_call_count": {
+          "const": 0,
+          "default": 0,
+          "title": "Router Model Call Count",
+          "type": "integer"
+        },
+        "delegated_model_call_count": {
+          "minimum": 0,
+          "title": "Delegated Model Call Count",
+          "type": "integer"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/EvaluationCheck"
+          },
+          "minItems": 1,
+          "title": "Checks",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "passed",
+        "expected_outcome",
+        "actual_outcome",
+        "expected_stop_reason",
+        "actual_stop_reason",
+        "expected_attempt_actions",
+        "actual_attempt_actions",
+        "expected_executed_nodes",
+        "actual_executed_nodes",
+        "initial_error_codes",
+        "expected_pending_error_codes",
+        "actual_pending_error_codes",
+        "retry_bound_respected",
+        "unaffected_nodes_reused",
+        "deterministic_replay",
+        "delegated_model_call_count",
+        "checks"
+      ],
+      "title": "RepairRouterCaseResult",
+      "type": "object"
+    },
+    "RepairStopReason": {
+      "enum": [
+        "finalizable",
+        "user_confirmation_required",
+        "unrepairable_issue",
+        "retry_limit_reached"
+      ],
+      "title": "RepairStopReason",
+      "type": "string"
+    },
+    "ResponsibleNode": {
+      "enum": [
+        "constraint",
+        "explore",
+        "stay",
+        "weather",
+        "route",
+        "plan",
+        "budget",
+        "validator"
+      ],
+      "title": "ResponsibleNode",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "suite": {
+      "const": "repair-router-v1",
+      "default": "repair-router-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "router_version": {
+      "const": "repair-router-v1",
+      "default": "repair-router-v1",
+      "title": "Router Version",
+      "type": "string"
+    },
+    "execution_mode": {
+      "const": "fixture",
+      "default": "fixture",
+      "title": "Execution Mode",
+      "type": "string"
+    },
+    "dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Dataset Sha256",
+      "type": "string"
+    },
+    "case_count": {
+      "const": 9,
+      "default": 9,
+      "title": "Case Count",
+      "type": "integer"
+    },
+    "passed_case_count": {
+      "maximum": 9,
+      "minimum": 0,
+      "title": "Passed Case Count",
+      "type": "integer"
+    },
+    "case_pass_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Case Pass Rate"
+    },
+    "exact_route_case_count": {
+      "maximum": 9,
+      "minimum": 0,
+      "title": "Exact Route Case Count",
+      "type": "integer"
+    },
+    "exact_route_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Exact Route Rate"
+    },
+    "retry_bound_case_count": {
+      "maximum": 9,
+      "minimum": 0,
+      "title": "Retry Bound Case Count",
+      "type": "integer"
+    },
+    "unaffected_reuse_case_count": {
+      "maximum": 9,
+      "minimum": 0,
+      "title": "Unaffected Reuse Case Count",
+      "type": "integer"
+    },
+    "deterministic_replay_case_count": {
+      "maximum": 9,
+      "minimum": 0,
+      "title": "Deterministic Replay Case Count",
+      "type": "integer"
+    },
+    "total_repair_attempt_count": {
+      "minimum": 0,
+      "title": "Total Repair Attempt Count",
+      "type": "integer"
+    },
+    "router_model_call_count": {
+      "const": 0,
+      "default": 0,
+      "title": "Router Model Call Count",
+      "type": "integer"
+    },
+    "delegated_model_call_count": {
+      "minimum": 0,
+      "title": "Delegated Model Call Count",
+      "type": "integer"
+    },
+    "results": {
+      "items": {
+        "$ref": "#/$defs/RepairRouterCaseResult"
+      },
+      "maxItems": 9,
+      "minItems": 9,
+      "title": "Results",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Limitations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "dataset_sha256",
+    "passed_case_count",
+    "case_pass_rate",
+    "exact_route_case_count",
+    "exact_route_rate",
+    "retry_bound_case_count",
+    "unaffected_reuse_case_count",
+    "deterministic_replay_case_count",
+    "total_repair_attempt_count",
+    "delegated_model_call_count",
+    "results",
+    "limitations"
+  ],
+  "title": "RepairRouterBaselineReport",
+  "type": "object"
+}
