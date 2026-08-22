@@ -176,11 +176,29 @@ from app.evaluation.vertical_slice_contracts import (
     VerticalSliceGateReport,
     VerticalSliceSuite,
 )
+from app.evaluation.weather_repair import (
+    WEATHER_REPAIR_SUITE_PATH,
+    WeatherRepairEvaluationError,
+    WeatherRepairFixtureExecutor,
+    evaluate_weather_repair_case,
+    evaluate_weather_repair_suite,
+    load_weather_repair_suite,
+    weather_repair_dataset_sha256,
+)
+from app.evaluation.weather_repair_contracts import (
+    WeatherRepairBaselineReport,
+    WeatherRepairCaseResult,
+    WeatherRepairEvalCase,
+    WeatherRepairEvalSuite,
+    WeatherRepairExpectation,
+    WeatherRepairScenario,
+)
 
 __all__ = [
     "HARD_VALIDATOR_SUITE_PATH",
     "PLAN_AGENT_SUITE_PATH",
     "REPAIR_ROUTER_SUITE_PATH",
+    "WEATHER_REPAIR_SUITE_PATH",
     "CheckpointHitlCase",
     "CheckpointHitlCaseResult",
     "CheckpointHitlReport",
@@ -265,6 +283,14 @@ __all__ = [
     "VerticalSliceCaseResult",
     "VerticalSliceGateReport",
     "VerticalSliceSuite",
+    "WeatherRepairBaselineReport",
+    "WeatherRepairCaseResult",
+    "WeatherRepairEvalCase",
+    "WeatherRepairEvalSuite",
+    "WeatherRepairEvaluationError",
+    "WeatherRepairExpectation",
+    "WeatherRepairFixtureExecutor",
+    "WeatherRepairScenario",
     "build_plan_agent_materials",
     "build_specialist_scenario_provider",
     "checkpoint_hitl_dataset_sha256",
@@ -292,6 +318,8 @@ __all__ = [
     "evaluate_stay_agent_suite",
     "evaluate_vertical_slice_case",
     "evaluate_vertical_slice_suite",
+    "evaluate_weather_repair_case",
+    "evaluate_weather_repair_suite",
     "explore_agent_dataset_sha256",
     "hard_validator_dataset_sha256",
     "load_checkpoint_hitl_suite",
@@ -305,6 +333,7 @@ __all__ = [
     "load_specialist_fanout_suite",
     "load_stay_agent_suite",
     "load_vertical_slice_suite",
+    "load_weather_repair_suite",
     "plan_agent_dataset_sha256",
     "planning_material_dataset_sha256",
     "repair_router_dataset_sha256",
@@ -312,4 +341,5 @@ __all__ = [
     "specialist_fanout_dataset_sha256",
     "stay_agent_dataset_sha256",
     "vertical_slice_dataset_sha256",
+    "weather_repair_dataset_sha256",
 ]

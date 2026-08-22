@@ -2,7 +2,7 @@
 
 面向中国城市自由行的可验证、可调整、可追溯旅行规划助手。
 
-当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、开放式景点/餐饮 Explore Agent、住宿区域筛选 Stay Agent、确定性预算/基础计划 Validator、北京三日 Gate 2 最小纵向切片、基于 SQLite checkpoint 的可恢复主编排与原生 HITL、Explore/Stay/主动天气三分支并行编排、有界路线矩阵和确定性预算材料层、把这些专业信息包合成为同构完整 `TripPlan` 草案的 schema-constrained Plan Agent、阻止不可靠草案定稿的 Hard Validators，以及消费 typed issue 的有界 Repair Router。模型路径都有真实 DeepSeek/LangSmith 隔离评测；纵向切片、恢复、fan-out、材料层、Plan Agent、Hard Validators 与 Repair Router 都有 fixture 可重放证据。仓库尚未把真实责任节点 executor 接入产品任务 Graph，也未实现天气触发局部修复、前端人工审核或产品规划 API。
+当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、开放式景点/餐饮 Explore Agent、住宿区域筛选 Stay Agent、确定性预算/基础计划 Validator、北京三日 Gate 2 最小纵向切片、基于 SQLite checkpoint 的可恢复主编排与原生 HITL、Explore/Stay/主动天气三分支并行编排、有界路线矩阵和确定性预算材料层、把这些专业信息包合成为同构完整 `TripPlan` 草案的 schema-constrained Plan Agent、阻止不可靠草案定稿的 Hard Validators、消费 typed issue 的有界 Repair Router，以及 Weather Provider 风险主动触发的局部修复协调器。模型路径都有真实 DeepSeek/LangSmith 隔离评测；纵向切片、恢复、fan-out、材料层、Plan Agent、Hard Validators、Repair Router 与 Weather Repair 都有 fixture 可重放证据。仓库尚未把真实责任节点 executor 接入产品任务 Graph，也未实现定时 WeatherWatch、前端人工审核或产品规划 API。
 
 ## 技术基线
 
@@ -74,7 +74,7 @@ pnpm build
 
 ## Gate 0 smoke scenarios
 
-`evals/cases/smoke/` 固化了 3 条规格级场景：正常北京三日游、确定性预算冲突、天气工具主动发现风险。它们当前只定义输入、注入条件和必须/禁止行为，不代表 Agent 或真实数据源已经实现。
+`evals/cases/smoke/` 固化了 3 条端到端规格场景：正常北京三日游、确定性预算冲突、天气工具主动发现风险。它们定义跨组件输入、注入条件和必须/禁止行为；底层能力分别由版本化组件评测覆盖，但当前仍没有产品 API 把三条场景完整串联。
 
 ```powershell
 Set-Location backend
@@ -308,6 +308,21 @@ uv run pytest tests/test_repair_router.py tests/test_repair_router_evaluation.py
 
 提交的 fixture 报告记录 9/9 cases、9/9 exact action + executed-node routes、9/9 两次重试上限、9/9 未受影响节点复用和 9/9 确定性重放。Router 自身 0 次模型调用；fixture executor 只模拟责任节点产物，因此这些数字是编排契约回归，不是实时自动修复成功率。真实 Agent/Provider executor 接线留给产品任务 Graph。
 
+## Weather Repair Coordinator
+
+[`docs/planning/weather-repair.md`](docs/planning/weather-repair.md) 实现 `run_weather_repair(...)`：最新 Weather Provider 风险无需用户追加天气文本，即可按 severity、aware datetime 重叠和候选活动环境定位受影响 item，并主动创建只包含风险、日期和 item ID 的局部重规划任务。
+
+Coordinator 自身零模型调用。执行器候选方案必须消除原风险，通过作用域保护和 Hard Validator；同日时间调整等 minor 方案可自动采用，跨日移动、候选集合变化或多日变化标记为 major，只暴露 `pending_confirmation` 方案并保留原计划。失败、越界改写或无效方案最多尝试两次。
+
+```powershell
+Set-Location backend
+uv run python -m scripts.export_weather_repair_schemas
+uv run python -m scripts.run_weather_repair_eval
+uv run pytest tests/test_weather_repair.py tests/test_weather_repair_evaluation.py --no-cov
+```
+
+提交的 fixture 报告记录 10/10 cases、5/5 非影响场景零误触发、5 个 Provider 风险主动任务、1 个 minor 自动采用、1 个 major HITL、3 个有界双重试场景、风险来源追踪率 1.0000 和 10/10 确定性重放。该报告证明触发与安全契约，不代表实时天气准确率或真实重规划成功率。
+
 ## AMap live contract probe
 
 [`docs/probes/amap-mcp-live-probe-2026-08-20.md`](docs/probes/amap-mcp-live-probe-2026-08-20.md) 记录一次固定北京真实探针：官方 MCP 当前发现 15 个工具，并验证 POI、天气、距离、步行和公交响应；版本化 fixture 只保留字段白名单并执行凭据/PII 脱敏。CI 回放 fixture，不读取 Key 或访问高德。
@@ -338,13 +353,13 @@ uv run python -m scripts.run_amap_provider_smoke
 uv run python -m scripts.run_amap_provider_smoke --live
 ```
 
-天气风险由 provider 数据触发并通过确定性阈值生成，不需要用户先追加“第二天下雨”。当前仍没有 Agent 使用这些结果生成行程。
+天气风险由 provider 数据触发并归一化为结构化 severity、时间范围和受影响活动类型，不需要用户先追加“第二天下雨”。Weather Repair Coordinator 已能据此生成局部候选方案；定时刷新与产品任务 Graph 接线仍未实现。
 
 ## 当前边界
 
 - 不提供订票、订房、支付或实时房价；
 - 当前健康页不是旅行规划产品完成度；
 - 当前三节点探针只证明观测链路可接入，不证明模型规划质量；
-- 当前领域契约、PlannerContext 编译器、provider adapter、Single Planner 和基础 Validator 已在 Gate 2 fixture 纵向切片及可恢复 HITL 主编排中连通；Explore、Stay 与主动 Weather 的信息包已经通过路线/预算材料层进入 Plan Agent，并合成为同构完整 `TripPlan` 草案；独立 Hard Validator 已能阻止违反 must/avoid、城市、路线、营业时间证据和硬预算的草案定稿，Repair Router 也已实现有界路由、复用保护和 trace，但真实责任节点 executor、产品 API 与 Constraint Agent 产品入口仍未接入；
+- 当前领域契约、PlannerContext 编译器、provider adapter、Single Planner 和基础 Validator 已在 Gate 2 fixture 纵向切片及可恢复 HITL 主编排中连通；Explore、Stay 与主动 Weather 的信息包已经通过路线/预算材料层进入 Plan Agent，并合成为同构完整 `TripPlan` 草案；独立 Hard Validator、Repair Router 与 Weather Repair Coordinator 已实现定稿保护、有界修复、局部作用域和重大变化 HITL 契约，但真实责任节点 executor、产品 API、定时 WeatherWatch 与 Constraint Agent 产品入口仍未接入；
 - 高德 live fixture 是 2026-08-20 的点时样本，不是当前天气、实时酒店价格或生产 SLA；
 - 后续功能必须通过真实 provider contract、固定评测和可回放 trace 验证后再写入项目成果。

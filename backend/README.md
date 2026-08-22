@@ -1,6 +1,6 @@
 # EzTrip API
 
-Gate 0 FastAPI service plus the first offline Gate 2 vertical slice, recoverable HITL wrapper, specialist fan-out, deterministic planning-material layer, schema-constrained multi-Agent Plan Agent, deterministic Hard Validators, and a bounded Repair Router. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, schema-constrained Constraint/Explore/Stay Agents, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, a SQLite-checkpointed main Graph using native LangGraph interrupt/resume, an independent parallel Explore/Stay/proactive-Weather information-gathering Graph, a bounded route matrix plus auditable budget allocator, a Plan Agent that consumes those materials into the shared `TripPlan` contract, a zero-model finalization gate, and deterministic issue-directed retry/HITL routing with artifact-reuse guards. These components are not yet exposed as a product planning API; live responsibility-node executors are not yet wired into the task Graph.
+Gate 0 FastAPI service plus the first offline Gate 2 vertical slice, recoverable HITL wrapper, specialist fan-out, deterministic planning-material layer, schema-constrained multi-Agent Plan Agent, deterministic Hard Validators, a bounded Repair Router, and provider-triggered local Weather Repair. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, schema-constrained Constraint/Explore/Stay Agents, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, a SQLite-checkpointed main Graph using native LangGraph interrupt/resume, an independent parallel Explore/Stay/proactive-Weather information-gathering Graph, a bounded route matrix plus auditable budget allocator, a Plan Agent that consumes those materials into the shared `TripPlan` contract, a zero-model finalization gate, deterministic issue-directed retry/HITL routing with artifact-reuse guards, and a zero-model Weather Repair Coordinator that grades validated proposals before auto-apply or HITL. These components are not yet exposed as a product planning API; live responsibility-node executors and scheduled WeatherWatch are not yet wired into the task Graph.
 
 ```powershell
 uv sync --all-groups
@@ -28,6 +28,7 @@ uv run python -m scripts.export_checkpoint_hitl_schemas
 uv run python -m scripts.export_specialist_fanout_schemas
 uv run python -m scripts.export_planning_material_schemas
 uv run python -m scripts.export_plan_agent_schemas
+uv run python -m scripts.export_weather_repair_schemas
 uv run python -m scripts.export_plan_validation_example
 uv run python -m scripts.export_planner_context_example
 uv run python -m scripts.run_minimal_planning_graph --write-example
@@ -178,6 +179,16 @@ uv run pytest tests/test_repair_router.py tests/test_repair_router_evaluation.py
 ```
 
 The deterministic Router automatically processes errors only, groups them by typed repair action, prioritizes upstream actions, stops `ASK_USER` before any Agent call, and caps each action at two attempts. Executors must declare executed nodes; semantic fingerprints reject changes to reused Constraint/Explore/Stay/Weather/Route/Budget/Plan artifacts. The committed fixture report records 9/9 exact action/node routes, retry bounds, reuse checks, and deterministic replays with zero Router model calls. Fixture executors simulate responsibility-node outputs; live Agent/Provider repair execution is not yet connected to the product task Graph.
+
+Run the proactive Weather Repair regression:
+
+```powershell
+uv run python -m scripts.export_weather_repair_schemas
+uv run python -m scripts.run_weather_repair_eval
+uv run pytest tests/test_weather_repair.py tests/test_weather_repair_evaluation.py --no-cov
+```
+
+The zero-model Coordinator matches significant provider risks to itinerary items using aware-time overlap and grounded activity environments. It creates a local task without user weather text, rejects changes to unrelated items, rechecks residual exposure and Hard Validator results, and caps delegated replanning at two attempts. Minor same-day changes may auto-apply; cross-day or multi-day changes retain the effective plan and expose a `pending_confirmation` proposal. The committed fixture report records 10/10 cases, five no-false-positive scenarios, five proactive tasks, one auto-apply, one HITL proposal, three bounded retry cases, full source traceability, and deterministic replay. Scheduled refresh and real Plan Agent execution remain product-Graph work.
 
 Run the live observability probe only after configuring the local root `.env`:
 

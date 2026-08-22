@@ -1,0 +1,768 @@
+{
+  "schema_version": "1.0",
+  "suite": "weather-repair-v1",
+  "coordinator_version": "weather-repair-v1",
+  "execution_mode": "fixture",
+  "dataset_sha256": "26554c8d194d0c21065ca62633a4295e8c62c0829524f40f08ccfef583919ea5",
+  "case_count": 10,
+  "passed_case_count": 10,
+  "case_pass_rate": "1.0000",
+  "no_false_positive_case_count": 5,
+  "proactive_task_case_count": 5,
+  "auto_applied_case_count": 1,
+  "hitl_case_count": 1,
+  "bounded_retry_case_count": 3,
+  "source_traceability_rate": "1.0000",
+  "deterministic_replay_case_count": 10,
+  "coordinator_model_call_count": 0,
+  "delegated_model_call_count": 6,
+  "results": [
+    {
+      "case_id": "weather-repair-no-risk-v1",
+      "passed": true,
+      "expected_outcome": "no_action",
+      "actual_outcome": "no_action",
+      "expected_stop_reason": "no_significant_impact",
+      "actual_stop_reason": "no_significant_impact",
+      "expected_impact_count": 0,
+      "actual_impact_count": 0,
+      "expected_attempt_count": 0,
+      "actual_attempt_count": 0,
+      "expected_change_grade": "none",
+      "actual_change_grade": "none",
+      "expected_confirmation": false,
+      "actual_confirmation": false,
+      "task_created_proactively": false,
+      "source_traceable_impact_count": 0,
+      "retry_bound_respected": true,
+      "effective_plan_preserved_for_hitl_or_failure": true,
+      "deterministic_replay": true,
+      "coordinator_model_call_count": 0,
+      "delegated_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "outcome_matches",
+          "passed": true
+        },
+        {
+          "code": "stop_reason_matches",
+          "passed": true
+        },
+        {
+          "code": "impact_count_matches",
+          "passed": true
+        },
+        {
+          "code": "attempt_count_matches",
+          "passed": true
+        },
+        {
+          "code": "change_grade_matches",
+          "passed": true
+        },
+        {
+          "code": "confirmation_matches",
+          "passed": true
+        },
+        {
+          "code": "proactive_task_routing",
+          "passed": true
+        },
+        {
+          "code": "risk_sources_traceable",
+          "passed": true
+        },
+        {
+          "code": "retry_bound_respected",
+          "passed": true
+        },
+        {
+          "code": "effective_plan_safety",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "weather-repair-low-severity-v1",
+      "passed": true,
+      "expected_outcome": "no_action",
+      "actual_outcome": "no_action",
+      "expected_stop_reason": "no_significant_impact",
+      "actual_stop_reason": "no_significant_impact",
+      "expected_impact_count": 0,
+      "actual_impact_count": 0,
+      "expected_attempt_count": 0,
+      "actual_attempt_count": 0,
+      "expected_change_grade": "none",
+      "actual_change_grade": "none",
+      "expected_confirmation": false,
+      "actual_confirmation": false,
+      "task_created_proactively": false,
+      "source_traceable_impact_count": 0,
+      "retry_bound_respected": true,
+      "effective_plan_preserved_for_hitl_or_failure": true,
+      "deterministic_replay": true,
+      "coordinator_model_call_count": 0,
+      "delegated_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "outcome_matches",
+          "passed": true
+        },
+        {
+          "code": "stop_reason_matches",
+          "passed": true
+        },
+        {
+          "code": "impact_count_matches",
+          "passed": true
+        },
+        {
+          "code": "attempt_count_matches",
+          "passed": true
+        },
+        {
+          "code": "change_grade_matches",
+          "passed": true
+        },
+        {
+          "code": "confirmation_matches",
+          "passed": true
+        },
+        {
+          "code": "proactive_task_routing",
+          "passed": true
+        },
+        {
+          "code": "risk_sources_traceable",
+          "passed": true
+        },
+        {
+          "code": "retry_bound_respected",
+          "passed": true
+        },
+        {
+          "code": "effective_plan_safety",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "weather-repair-indoor-only-v1",
+      "passed": true,
+      "expected_outcome": "no_action",
+      "actual_outcome": "no_action",
+      "expected_stop_reason": "no_significant_impact",
+      "actual_stop_reason": "no_significant_impact",
+      "expected_impact_count": 0,
+      "actual_impact_count": 0,
+      "expected_attempt_count": 0,
+      "actual_attempt_count": 0,
+      "expected_change_grade": "none",
+      "actual_change_grade": "none",
+      "expected_confirmation": false,
+      "actual_confirmation": false,
+      "task_created_proactively": false,
+      "source_traceable_impact_count": 0,
+      "retry_bound_respected": true,
+      "effective_plan_preserved_for_hitl_or_failure": true,
+      "deterministic_replay": true,
+      "coordinator_model_call_count": 0,
+      "delegated_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "outcome_matches",
+          "passed": true
+        },
+        {
+          "code": "stop_reason_matches",
+          "passed": true
+        },
+        {
+          "code": "impact_count_matches",
+          "passed": true
+        },
+        {
+          "code": "attempt_count_matches",
+          "passed": true
+        },
+        {
+          "code": "change_grade_matches",
+          "passed": true
+        },
+        {
+          "code": "confirmation_matches",
+          "passed": true
+        },
+        {
+          "code": "proactive_task_routing",
+          "passed": true
+        },
+        {
+          "code": "risk_sources_traceable",
+          "passed": true
+        },
+        {
+          "code": "retry_bound_respected",
+          "passed": true
+        },
+        {
+          "code": "effective_plan_safety",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "weather-repair-outside-time-v1",
+      "passed": true,
+      "expected_outcome": "no_action",
+      "actual_outcome": "no_action",
+      "expected_stop_reason": "no_significant_impact",
+      "actual_stop_reason": "no_significant_impact",
+      "expected_impact_count": 0,
+      "actual_impact_count": 0,
+      "expected_attempt_count": 0,
+      "actual_attempt_count": 0,
+      "expected_change_grade": "none",
+      "actual_change_grade": "none",
+      "expected_confirmation": false,
+      "actual_confirmation": false,
+      "task_created_proactively": false,
+      "source_traceable_impact_count": 0,
+      "retry_bound_respected": true,
+      "effective_plan_preserved_for_hitl_or_failure": true,
+      "deterministic_replay": true,
+      "coordinator_model_call_count": 0,
+      "delegated_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "outcome_matches",
+          "passed": true
+        },
+        {
+          "code": "stop_reason_matches",
+          "passed": true
+        },
+        {
+          "code": "impact_count_matches",
+          "passed": true
+        },
+        {
+          "code": "attempt_count_matches",
+          "passed": true
+        },
+        {
+          "code": "change_grade_matches",
+          "passed": true
+        },
+        {
+          "code": "confirmation_matches",
+          "passed": true
+        },
+        {
+          "code": "proactive_task_routing",
+          "passed": true
+        },
+        {
+          "code": "risk_sources_traceable",
+          "passed": true
+        },
+        {
+          "code": "retry_bound_respected",
+          "passed": true
+        },
+        {
+          "code": "effective_plan_safety",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "weather-repair-type-mismatch-v1",
+      "passed": true,
+      "expected_outcome": "no_action",
+      "actual_outcome": "no_action",
+      "expected_stop_reason": "no_significant_impact",
+      "actual_stop_reason": "no_significant_impact",
+      "expected_impact_count": 0,
+      "actual_impact_count": 0,
+      "expected_attempt_count": 0,
+      "actual_attempt_count": 0,
+      "expected_change_grade": "none",
+      "actual_change_grade": "none",
+      "expected_confirmation": false,
+      "actual_confirmation": false,
+      "task_created_proactively": false,
+      "source_traceable_impact_count": 0,
+      "retry_bound_respected": true,
+      "effective_plan_preserved_for_hitl_or_failure": true,
+      "deterministic_replay": true,
+      "coordinator_model_call_count": 0,
+      "delegated_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "outcome_matches",
+          "passed": true
+        },
+        {
+          "code": "stop_reason_matches",
+          "passed": true
+        },
+        {
+          "code": "impact_count_matches",
+          "passed": true
+        },
+        {
+          "code": "attempt_count_matches",
+          "passed": true
+        },
+        {
+          "code": "change_grade_matches",
+          "passed": true
+        },
+        {
+          "code": "confirmation_matches",
+          "passed": true
+        },
+        {
+          "code": "proactive_task_routing",
+          "passed": true
+        },
+        {
+          "code": "risk_sources_traceable",
+          "passed": true
+        },
+        {
+          "code": "retry_bound_respected",
+          "passed": true
+        },
+        {
+          "code": "effective_plan_safety",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "weather-repair-minor-auto-v1",
+      "passed": true,
+      "expected_outcome": "auto_applied",
+      "actual_outcome": "auto_applied",
+      "expected_stop_reason": "finalizable",
+      "actual_stop_reason": "finalizable",
+      "expected_impact_count": 1,
+      "actual_impact_count": 1,
+      "expected_attempt_count": 1,
+      "actual_attempt_count": 1,
+      "expected_change_grade": "minor",
+      "actual_change_grade": "minor",
+      "expected_confirmation": false,
+      "actual_confirmation": false,
+      "task_created_proactively": true,
+      "source_traceable_impact_count": 1,
+      "retry_bound_respected": true,
+      "effective_plan_preserved_for_hitl_or_failure": true,
+      "deterministic_replay": true,
+      "coordinator_model_call_count": 0,
+      "delegated_model_call_count": 1,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "outcome_matches",
+          "passed": true
+        },
+        {
+          "code": "stop_reason_matches",
+          "passed": true
+        },
+        {
+          "code": "impact_count_matches",
+          "passed": true
+        },
+        {
+          "code": "attempt_count_matches",
+          "passed": true
+        },
+        {
+          "code": "change_grade_matches",
+          "passed": true
+        },
+        {
+          "code": "confirmation_matches",
+          "passed": true
+        },
+        {
+          "code": "proactive_task_routing",
+          "passed": true
+        },
+        {
+          "code": "risk_sources_traceable",
+          "passed": true
+        },
+        {
+          "code": "retry_bound_respected",
+          "passed": true
+        },
+        {
+          "code": "effective_plan_safety",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "weather-repair-major-hitl-v1",
+      "passed": true,
+      "expected_outcome": "waiting_for_user",
+      "actual_outcome": "waiting_for_user",
+      "expected_stop_reason": "user_confirmation_required",
+      "actual_stop_reason": "user_confirmation_required",
+      "expected_impact_count": 1,
+      "actual_impact_count": 1,
+      "expected_attempt_count": 1,
+      "actual_attempt_count": 1,
+      "expected_change_grade": "major",
+      "actual_change_grade": "major",
+      "expected_confirmation": true,
+      "actual_confirmation": true,
+      "task_created_proactively": true,
+      "source_traceable_impact_count": 1,
+      "retry_bound_respected": true,
+      "effective_plan_preserved_for_hitl_or_failure": true,
+      "deterministic_replay": true,
+      "coordinator_model_call_count": 0,
+      "delegated_model_call_count": 1,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "outcome_matches",
+          "passed": true
+        },
+        {
+          "code": "stop_reason_matches",
+          "passed": true
+        },
+        {
+          "code": "impact_count_matches",
+          "passed": true
+        },
+        {
+          "code": "attempt_count_matches",
+          "passed": true
+        },
+        {
+          "code": "change_grade_matches",
+          "passed": true
+        },
+        {
+          "code": "confirmation_matches",
+          "passed": true
+        },
+        {
+          "code": "proactive_task_routing",
+          "passed": true
+        },
+        {
+          "code": "risk_sources_traceable",
+          "passed": true
+        },
+        {
+          "code": "retry_bound_respected",
+          "passed": true
+        },
+        {
+          "code": "effective_plan_safety",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "weather-repair-scope-guard-v1",
+      "passed": true,
+      "expected_outcome": "unresolved",
+      "actual_outcome": "unresolved",
+      "expected_stop_reason": "retry_limit_reached",
+      "actual_stop_reason": "retry_limit_reached",
+      "expected_impact_count": 1,
+      "actual_impact_count": 1,
+      "expected_attempt_count": 2,
+      "actual_attempt_count": 2,
+      "expected_change_grade": "major",
+      "actual_change_grade": "major",
+      "expected_confirmation": false,
+      "actual_confirmation": false,
+      "task_created_proactively": true,
+      "source_traceable_impact_count": 1,
+      "retry_bound_respected": true,
+      "effective_plan_preserved_for_hitl_or_failure": true,
+      "deterministic_replay": true,
+      "coordinator_model_call_count": 0,
+      "delegated_model_call_count": 2,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "outcome_matches",
+          "passed": true
+        },
+        {
+          "code": "stop_reason_matches",
+          "passed": true
+        },
+        {
+          "code": "impact_count_matches",
+          "passed": true
+        },
+        {
+          "code": "attempt_count_matches",
+          "passed": true
+        },
+        {
+          "code": "change_grade_matches",
+          "passed": true
+        },
+        {
+          "code": "confirmation_matches",
+          "passed": true
+        },
+        {
+          "code": "proactive_task_routing",
+          "passed": true
+        },
+        {
+          "code": "risk_sources_traceable",
+          "passed": true
+        },
+        {
+          "code": "retry_bound_respected",
+          "passed": true
+        },
+        {
+          "code": "effective_plan_safety",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "weather-repair-executor-failure-v1",
+      "passed": true,
+      "expected_outcome": "unresolved",
+      "actual_outcome": "unresolved",
+      "expected_stop_reason": "retry_limit_reached",
+      "actual_stop_reason": "retry_limit_reached",
+      "expected_impact_count": 1,
+      "actual_impact_count": 1,
+      "expected_attempt_count": 2,
+      "actual_attempt_count": 2,
+      "expected_change_grade": "none",
+      "actual_change_grade": "none",
+      "expected_confirmation": false,
+      "actual_confirmation": false,
+      "task_created_proactively": true,
+      "source_traceable_impact_count": 1,
+      "retry_bound_respected": true,
+      "effective_plan_preserved_for_hitl_or_failure": true,
+      "deterministic_replay": true,
+      "coordinator_model_call_count": 0,
+      "delegated_model_call_count": 0,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "outcome_matches",
+          "passed": true
+        },
+        {
+          "code": "stop_reason_matches",
+          "passed": true
+        },
+        {
+          "code": "impact_count_matches",
+          "passed": true
+        },
+        {
+          "code": "attempt_count_matches",
+          "passed": true
+        },
+        {
+          "code": "change_grade_matches",
+          "passed": true
+        },
+        {
+          "code": "confirmation_matches",
+          "passed": true
+        },
+        {
+          "code": "proactive_task_routing",
+          "passed": true
+        },
+        {
+          "code": "risk_sources_traceable",
+          "passed": true
+        },
+        {
+          "code": "retry_bound_respected",
+          "passed": true
+        },
+        {
+          "code": "effective_plan_safety",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "weather-repair-impact-remains-v1",
+      "passed": true,
+      "expected_outcome": "unresolved",
+      "actual_outcome": "unresolved",
+      "expected_stop_reason": "retry_limit_reached",
+      "actual_stop_reason": "retry_limit_reached",
+      "expected_impact_count": 1,
+      "actual_impact_count": 1,
+      "expected_attempt_count": 2,
+      "actual_attempt_count": 2,
+      "expected_change_grade": "none",
+      "actual_change_grade": "none",
+      "expected_confirmation": false,
+      "actual_confirmation": false,
+      "task_created_proactively": true,
+      "source_traceable_impact_count": 1,
+      "retry_bound_respected": true,
+      "effective_plan_preserved_for_hitl_or_failure": true,
+      "deterministic_replay": true,
+      "coordinator_model_call_count": 0,
+      "delegated_model_call_count": 2,
+      "error_code": null,
+      "checks": [
+        {
+          "code": "workflow_completed",
+          "passed": true
+        },
+        {
+          "code": "outcome_matches",
+          "passed": true
+        },
+        {
+          "code": "stop_reason_matches",
+          "passed": true
+        },
+        {
+          "code": "impact_count_matches",
+          "passed": true
+        },
+        {
+          "code": "attempt_count_matches",
+          "passed": true
+        },
+        {
+          "code": "change_grade_matches",
+          "passed": true
+        },
+        {
+          "code": "confirmation_matches",
+          "passed": true
+        },
+        {
+          "code": "proactive_task_routing",
+          "passed": true
+        },
+        {
+          "code": "risk_sources_traceable",
+          "passed": true
+        },
+        {
+          "code": "retry_bound_respected",
+          "passed": true
+        },
+        {
+          "code": "effective_plan_safety",
+          "passed": true
+        },
+        {
+          "code": "deterministic_replay",
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "天气风险和重规划执行器来自版本化 fixture, 不代表实时预报准确率或高德可用性。",
+    "Coordinator 自身零模型调用; fixture executor 隔离验证触发、分级和安全边界。",
+    "minor 自动采用仍要求作用域保护、风险消除与 Hard Validator 全部通过。",
+    "major 仅生成 pending_confirmation 方案; API 级暂停、恢复与用户操作将在任务图阶段接线。",
+    "定时 WeatherWatch 刷新频率属于后续任务, 本阶段入口接收最新 Provider 风险快照。"
+  ]
+}

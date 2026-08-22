@@ -1,0 +1,159 @@
+{
+  "$defs": {
+    "WeatherChangeGrade": {
+      "enum": [
+        "none",
+        "minor",
+        "major"
+      ],
+      "title": "WeatherChangeGrade",
+      "type": "string"
+    },
+    "WeatherRepairEvalCase": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "scenario": {
+          "$ref": "#/$defs/WeatherRepairScenario"
+        },
+        "expected": {
+          "$ref": "#/$defs/WeatherRepairExpectation"
+        },
+        "boundary_notes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Boundary Notes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "title",
+        "scenario",
+        "expected",
+        "boundary_notes"
+      ],
+      "title": "WeatherRepairEvalCase",
+      "type": "object"
+    },
+    "WeatherRepairExpectation": {
+      "additionalProperties": false,
+      "properties": {
+        "outcome": {
+          "$ref": "#/$defs/WeatherRepairOutcome"
+        },
+        "stop_reason": {
+          "$ref": "#/$defs/WeatherRepairStopReason"
+        },
+        "impact_count": {
+          "maximum": 4,
+          "minimum": 0,
+          "title": "Impact Count",
+          "type": "integer"
+        },
+        "attempt_count": {
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Attempt Count",
+          "type": "integer"
+        },
+        "change_grade": {
+          "$ref": "#/$defs/WeatherChangeGrade"
+        },
+        "requires_user_confirmation": {
+          "title": "Requires User Confirmation",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "outcome",
+        "stop_reason",
+        "impact_count",
+        "attempt_count",
+        "change_grade",
+        "requires_user_confirmation"
+      ],
+      "title": "WeatherRepairExpectation",
+      "type": "object"
+    },
+    "WeatherRepairOutcome": {
+      "enum": [
+        "no_action",
+        "auto_applied",
+        "waiting_for_user",
+        "unresolved"
+      ],
+      "title": "WeatherRepairOutcome",
+      "type": "string"
+    },
+    "WeatherRepairScenario": {
+      "enum": [
+        "no_risk",
+        "low_severity",
+        "indoor_only",
+        "outside_time",
+        "activity_type_mismatch",
+        "minor_local_replan",
+        "major_cross_day",
+        "scope_violation",
+        "persistent_failure",
+        "impact_remains"
+      ],
+      "title": "WeatherRepairScenario",
+      "type": "string"
+    },
+    "WeatherRepairStopReason": {
+      "enum": [
+        "no_significant_impact",
+        "finalizable",
+        "user_confirmation_required",
+        "retry_limit_reached"
+      ],
+      "title": "WeatherRepairStopReason",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "suite": {
+      "const": "weather-repair-v1",
+      "default": "weather-repair-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "version": {
+      "const": 1,
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "cases": {
+      "items": {
+        "$ref": "#/$defs/WeatherRepairEvalCase"
+      },
+      "maxItems": 10,
+      "minItems": 10,
+      "title": "Cases",
+      "type": "array"
+    }
+  },
+  "required": [
+    "cases"
+  ],
+  "title": "WeatherRepairEvalSuite",
+  "type": "object"
+}
