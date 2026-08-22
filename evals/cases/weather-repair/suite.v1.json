@@ -1,0 +1,76 @@
+{
+  "suite": "weather-repair-v1",
+  "version": 1,
+  "cases": [
+    {
+      "case_id": "weather-repair-no-risk-v1",
+      "title": "没有新天气风险时不创建任务",
+      "scenario": "no_risk",
+      "expected": {"outcome": "no_action", "stop_reason": "no_significant_impact", "impact_count": 0, "attempt_count": 0, "change_grade": "none", "requires_user_confirmation": false},
+      "boundary_notes": ["没有 Provider 风险事实时禁止调用重规划模型。"]
+    },
+    {
+      "case_id": "weather-repair-low-severity-v1",
+      "title": "低等级风险只提醒不重排",
+      "scenario": "low_severity",
+      "expected": {"outcome": "no_action", "stop_reason": "no_significant_impact", "impact_count": 0, "attempt_count": 0, "change_grade": "none", "requires_user_confirmation": false},
+      "boundary_notes": ["V1 仅让 medium、high、extreme 风险进入主动修复。"]
+    },
+    {
+      "case_id": "weather-repair-indoor-only-v1",
+      "title": "户外风险只覆盖室内活动时不误触发",
+      "scenario": "indoor_only",
+      "expected": {"outcome": "no_action", "stop_reason": "no_significant_impact", "impact_count": 0, "attempt_count": 0, "change_grade": "none", "requires_user_confirmation": false},
+      "boundary_notes": ["匹配必须同时满足时间重叠和候选活动环境。"]
+    },
+    {
+      "case_id": "weather-repair-outside-time-v1",
+      "title": "风险时段与活动不重叠时不重排",
+      "scenario": "outside_time",
+      "expected": {"outcome": "no_action", "stop_reason": "no_significant_impact", "impact_count": 0, "attempt_count": 0, "change_grade": "none", "requires_user_confirmation": false},
+      "boundary_notes": ["同一天并不等于受影响，必须比较 aware datetime 区间。"]
+    },
+    {
+      "case_id": "weather-repair-type-mismatch-v1",
+      "title": "风险活动类型不匹配时不重排",
+      "scenario": "activity_type_mismatch",
+      "expected": {"outcome": "no_action", "stop_reason": "no_significant_impact", "impact_count": 0, "attempt_count": 0, "change_grade": "none", "requires_user_confirmation": false},
+      "boundary_notes": ["Coordinator 不用模型猜测自由文本活动类型。"]
+    },
+    {
+      "case_id": "weather-repair-minor-auto-v1",
+      "title": "同日时间调整通过校验后自动采用",
+      "scenario": "minor_local_replan",
+      "expected": {"outcome": "auto_applied", "stop_reason": "finalizable", "impact_count": 1, "attempt_count": 1, "change_grade": "minor", "requires_user_confirmation": false},
+      "boundary_notes": ["只移动受影响活动，未受影响 item、候选集合和 Provider 事实保持不变。"]
+    },
+    {
+      "case_id": "weather-repair-major-hitl-v1",
+      "title": "跨日移动只生成待确认方案",
+      "scenario": "major_cross_day",
+      "expected": {"outcome": "waiting_for_user", "stop_reason": "user_confirmation_required", "impact_count": 1, "attempt_count": 1, "change_grade": "major", "requires_user_confirmation": true},
+      "boundary_notes": ["原计划继续生效，候选方案标记 pending_confirmation 等待 HITL。"]
+    },
+    {
+      "case_id": "weather-repair-scope-guard-v1",
+      "title": "修改无关活动的方案最多拒绝两次",
+      "scenario": "scope_violation",
+      "expected": {"outcome": "unresolved", "stop_reason": "retry_limit_reached", "impact_count": 1, "attempt_count": 2, "change_grade": "major", "requires_user_confirmation": false},
+      "boundary_notes": ["失败方案不污染 effective_plan，也不能扩大成全行程重写。"]
+    },
+    {
+      "case_id": "weather-repair-executor-failure-v1",
+      "title": "重规划执行器持续失败时有界停止",
+      "scenario": "persistent_failure",
+      "expected": {"outcome": "unresolved", "stop_reason": "retry_limit_reached", "impact_count": 1, "attempt_count": 2, "change_grade": "none", "requires_user_confirmation": false},
+      "boundary_notes": ["每个天气修复任务最多两次，不允许无限循环。"]
+    },
+    {
+      "case_id": "weather-repair-impact-remains-v1",
+      "title": "仍暴露在风险中的方案不能通过",
+      "scenario": "impact_remains",
+      "expected": {"outcome": "unresolved", "stop_reason": "retry_limit_reached", "impact_count": 1, "attempt_count": 2, "change_grade": "none", "requires_user_confirmation": false},
+      "boundary_notes": ["Coordinator 会重新运行确定性影响检测，不接受只改说明文字的假修复。"]
+    }
+  ]
+}

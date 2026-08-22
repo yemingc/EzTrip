@@ -66,7 +66,7 @@
     }
   ],
   "boundary_notes": [
-    "降雨阈值当前来自场景 fixture，WeatherRisk 正式阈值将在 Gate 1 后定义。",
-    "Gate 0 不实现 WeatherWatch 调度、真实天气 API 或最终重排算法。"
+    "V1 使用 Provider 归一化后的 severity、时间区间与 affected_activity_types 进行确定性影响匹配。",
+    "Weather Repair Coordinator 已实现主动局部修复契约；定时 WeatherWatch 调度与产品 API 接线仍属于后续任务。"
   ]
 }

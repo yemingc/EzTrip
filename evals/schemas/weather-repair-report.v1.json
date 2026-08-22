@@ -1,0 +1,357 @@
+{
+  "$defs": {
+    "EvaluationCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Code",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "passed"
+      ],
+      "title": "EvaluationCheck",
+      "type": "object"
+    },
+    "WeatherChangeGrade": {
+      "enum": [
+        "none",
+        "minor",
+        "major"
+      ],
+      "title": "WeatherChangeGrade",
+      "type": "string"
+    },
+    "WeatherRepairCaseResult": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "expected_outcome": {
+          "$ref": "#/$defs/WeatherRepairOutcome"
+        },
+        "actual_outcome": {
+          "$ref": "#/$defs/WeatherRepairOutcome"
+        },
+        "expected_stop_reason": {
+          "$ref": "#/$defs/WeatherRepairStopReason"
+        },
+        "actual_stop_reason": {
+          "$ref": "#/$defs/WeatherRepairStopReason"
+        },
+        "expected_impact_count": {
+          "maximum": 4,
+          "minimum": 0,
+          "title": "Expected Impact Count",
+          "type": "integer"
+        },
+        "actual_impact_count": {
+          "maximum": 4,
+          "minimum": 0,
+          "title": "Actual Impact Count",
+          "type": "integer"
+        },
+        "expected_attempt_count": {
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Expected Attempt Count",
+          "type": "integer"
+        },
+        "actual_attempt_count": {
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Actual Attempt Count",
+          "type": "integer"
+        },
+        "expected_change_grade": {
+          "$ref": "#/$defs/WeatherChangeGrade"
+        },
+        "actual_change_grade": {
+          "$ref": "#/$defs/WeatherChangeGrade"
+        },
+        "expected_confirmation": {
+          "title": "Expected Confirmation",
+          "type": "boolean"
+        },
+        "actual_confirmation": {
+          "title": "Actual Confirmation",
+          "type": "boolean"
+        },
+        "task_created_proactively": {
+          "title": "Task Created Proactively",
+          "type": "boolean"
+        },
+        "source_traceable_impact_count": {
+          "maximum": 4,
+          "minimum": 0,
+          "title": "Source Traceable Impact Count",
+          "type": "integer"
+        },
+        "retry_bound_respected": {
+          "title": "Retry Bound Respected",
+          "type": "boolean"
+        },
+        "effective_plan_preserved_for_hitl_or_failure": {
+          "title": "Effective Plan Preserved For Hitl Or Failure",
+          "type": "boolean"
+        },
+        "deterministic_replay": {
+          "title": "Deterministic Replay",
+          "type": "boolean"
+        },
+        "coordinator_model_call_count": {
+          "const": 0,
+          "default": 0,
+          "title": "Coordinator Model Call Count",
+          "type": "integer"
+        },
+        "delegated_model_call_count": {
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Delegated Model Call Count",
+          "type": "integer"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/EvaluationCheck"
+          },
+          "minItems": 1,
+          "title": "Checks",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "passed",
+        "expected_outcome",
+        "actual_outcome",
+        "expected_stop_reason",
+        "actual_stop_reason",
+        "expected_impact_count",
+        "actual_impact_count",
+        "expected_attempt_count",
+        "actual_attempt_count",
+        "expected_change_grade",
+        "actual_change_grade",
+        "expected_confirmation",
+        "actual_confirmation",
+        "task_created_proactively",
+        "source_traceable_impact_count",
+        "retry_bound_respected",
+        "effective_plan_preserved_for_hitl_or_failure",
+        "deterministic_replay",
+        "delegated_model_call_count",
+        "checks"
+      ],
+      "title": "WeatherRepairCaseResult",
+      "type": "object"
+    },
+    "WeatherRepairOutcome": {
+      "enum": [
+        "no_action",
+        "auto_applied",
+        "waiting_for_user",
+        "unresolved"
+      ],
+      "title": "WeatherRepairOutcome",
+      "type": "string"
+    },
+    "WeatherRepairStopReason": {
+      "enum": [
+        "no_significant_impact",
+        "finalizable",
+        "user_confirmation_required",
+        "retry_limit_reached"
+      ],
+      "title": "WeatherRepairStopReason",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "suite": {
+      "const": "weather-repair-v1",
+      "default": "weather-repair-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "coordinator_version": {
+      "const": "weather-repair-v1",
+      "default": "weather-repair-v1",
+      "title": "Coordinator Version",
+      "type": "string"
+    },
+    "execution_mode": {
+      "const": "fixture",
+      "default": "fixture",
+      "title": "Execution Mode",
+      "type": "string"
+    },
+    "dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Dataset Sha256",
+      "type": "string"
+    },
+    "case_count": {
+      "const": 10,
+      "default": 10,
+      "title": "Case Count",
+      "type": "integer"
+    },
+    "passed_case_count": {
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Passed Case Count",
+      "type": "integer"
+    },
+    "case_pass_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Case Pass Rate"
+    },
+    "no_false_positive_case_count": {
+      "maximum": 5,
+      "minimum": 0,
+      "title": "No False Positive Case Count",
+      "type": "integer"
+    },
+    "proactive_task_case_count": {
+      "maximum": 5,
+      "minimum": 0,
+      "title": "Proactive Task Case Count",
+      "type": "integer"
+    },
+    "auto_applied_case_count": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Auto Applied Case Count",
+      "type": "integer"
+    },
+    "hitl_case_count": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Hitl Case Count",
+      "type": "integer"
+    },
+    "bounded_retry_case_count": {
+      "maximum": 3,
+      "minimum": 0,
+      "title": "Bounded Retry Case Count",
+      "type": "integer"
+    },
+    "source_traceability_rate": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+          "type": "string"
+        }
+      ],
+      "title": "Source Traceability Rate"
+    },
+    "deterministic_replay_case_count": {
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Deterministic Replay Case Count",
+      "type": "integer"
+    },
+    "coordinator_model_call_count": {
+      "const": 0,
+      "default": 0,
+      "title": "Coordinator Model Call Count",
+      "type": "integer"
+    },
+    "delegated_model_call_count": {
+      "minimum": 0,
+      "title": "Delegated Model Call Count",
+      "type": "integer"
+    },
+    "results": {
+      "items": {
+        "$ref": "#/$defs/WeatherRepairCaseResult"
+      },
+      "maxItems": 10,
+      "minItems": 10,
+      "title": "Results",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Limitations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "dataset_sha256",
+    "passed_case_count",
+    "case_pass_rate",
+    "no_false_positive_case_count",
+    "proactive_task_case_count",
+    "auto_applied_case_count",
+    "hitl_case_count",
+    "bounded_retry_case_count",
+    "source_traceability_rate",
+    "deterministic_replay_case_count",
+    "delegated_model_call_count",
+    "results",
+    "limitations"
+  ],
+  "title": "WeatherRepairBaselineReport",
+  "type": "object"
+}
