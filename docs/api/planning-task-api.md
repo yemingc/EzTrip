@@ -1,8 +1,9 @@
 # Planning Task API V1
 
 EZ-401 exposes the existing SQLite-checkpointed Gate 2 workflow through an asynchronous FastAPI
-boundary. The API accepts an already structured `TripRequest`; Chinese free-text extraction and the
-newer specialist/Plan/Repair/Weather orchestration are not silently implied by this endpoint.
+boundary; EZ-403A adds an idempotent human-review decision boundary and resumes the same LangGraph
+checkpoint. The API accepts an already structured `TripRequest`; Chinese free-text extraction and
+the newer specialist/Plan/Repair/Weather orchestration are not silently implied by this endpoint.
 
 ## Endpoints
 
@@ -11,6 +12,7 @@ newer specialist/Plan/Repair/Weather orchestration are not silently implied by t
 | `POST` | `/api/planning-tasks` | Create a task and return `202 queued` |
 | `GET` | `/api/planning-tasks/{task_id}` | Read the current typed snapshot |
 | `GET` | `/api/planning-tasks/{task_id}/events` | Replay and follow the SSE event log |
+| `POST` | `/api/planning-tasks/{task_id}/review-decisions` | Submit one idempotent review decision and return `202 running` |
 
 The committed JSON Schema bundle is
 [`evals/schemas/planning-task-api.v1.json`](../../evals/schemas/planning-task-api.v1.json).
@@ -84,8 +86,57 @@ graph_node_completed (prepare_human_review, state=awaiting_human_review)
 task_awaiting_input
 ```
 
-The stream stops at `awaiting_input` because the approval/resume HTTP endpoint belongs to EZ-403.
-Heartbeat comments (`: heartbeat`) keep an idle connection alive but are not planning progress.
+The first stream stops at `awaiting_input`. Heartbeat comments (`: heartbeat`) keep an idle
+connection alive but are not planning progress.
+
+## Human-review resume
+
+Read `result.pending_review.review_id` from the awaiting-input snapshot, generate a stable
+`decision_id` on the client, and submit one of the actions allowed by that pending review:
+
+```powershell
+$decision = @{
+  decision_id = "decision-local-001"
+  review_id = "<review_id from the task snapshot>"
+  action = "approve_draft"
+  reviewer_id = "local-user"
+} | ConvertTo-Json
+
+$acceptedDecision = Invoke-RestMethod `
+  -Method Post `
+  -Uri ("http://localhost:8000/api/planning-tasks/" + $accepted.task_id + "/review-decisions") `
+  -ContentType application/json `
+  -Body ([Text.Encoding]::UTF8.GetBytes($decision))
+
+curl.exe -N ("http://localhost:8000" + $acceptedDecision.events_url + "?after=5")
+```
+
+The four protocol actions are `approve_draft`, `acknowledge_conflict`, `request_revision`, and
+`cancel`. The current pending review determines which actions are allowed. `request_revision`
+requires a non-empty `comment` of at most 500 characters.
+
+An accepted decision produces the following continuation events without replaying Provider or
+Planner nodes:
+
+```text
+task_review_submitted
+graph_node_completed (human_review, state=review_decided)
+graph_node_completed (apply_review_decision, terminal review state)
+task_succeeded
+```
+
+The client must reuse the same `decision_id` when retrying an ambiguous network result. An exact
+replay returns `idempotent_replay=true` and does not start another resume worker. Reusing the same
+ID for different content returns `409 review-decision-idempotency-conflict`; a second distinct
+decision returns `409 review-already-decided`. Wrong task state, review ID, or disallowed action
+also return stable typed `409` errors.
+
+Every generated draft is captured as `plan_versions[0]` (`v1`) with constraint, tool snapshot,
+model, prompt, and changed-date lineage. All four current review actions preserve that plan, so the
+terminal `review_outcome.plan_diff` explicitly records `v1 → v1`, `plan_changed=false`, and zero
+changed dates. In particular, `request_revision` records `revision_requested` and the reviewer
+comment but does not claim that a revised itinerary exists. Structured change requests, selective
+replanning, and a real `v2` belong to EZ-403B.
 
 ## Reconnect and failure rules
 
@@ -102,7 +153,8 @@ Heartbeat comments (`: heartbeat`) keep an idle connection alive but are not pla
 
 ## Current durability boundary
 
-LangGraph planning state is persisted per task in ignored local SQLite checkpoint files. Task
-metadata and the SSE event log are currently stored in process memory, so reconnect replay works
-within one running API process but not after a server restart. Durable task/event persistence,
-multi-worker coordination, cancellation, and API-level HITL resume remain later product work.
+LangGraph planning state is persisted per task in ignored local SQLite checkpoint files, and the
+review endpoint resumes that checkpoint. Task metadata, accepted-decision indexes, and the SSE
+event log are currently stored in process memory, so API reconstruction and idempotency do not
+survive a server restart. Durable task/event/decision persistence, multi-worker coordination,
+worker cancellation, selective replanning, and a production outbox remain later product work.

@@ -9,6 +9,7 @@ from app.agents.single_planner import (
 )
 from app.planning.minimal_graph import PlanningGraphProtocolError
 from app.planning.stateful_contracts import (
+    HumanReviewResume,
     PlanningThreadStatus,
     StatefulPlanningProgress,
     StatefulPlanningSnapshot,
@@ -22,11 +23,17 @@ from app.tasks.contracts import (
     PlanningTaskEvent,
     PlanningTaskFailure,
     PlanningTaskFailureCategory,
+    PlanningTaskReviewDecisionAccepted,
+    PlanningTaskReviewDecisionRequest,
     PlanningTaskSnapshot,
     PlanningTaskStatus,
     PlanningTaskSubmission,
 )
-from app.tasks.store import InMemoryPlanningTaskStore, PlanningTaskNotFoundError
+from app.tasks.store import (
+    InMemoryPlanningTaskStore,
+    PlanningTaskNotFoundError,
+    PlanningTaskReviewConflictError,
+)
 
 PlanningProgressEmitter = Callable[[StatefulPlanningProgress], Awaitable[None]]
 
@@ -39,6 +46,13 @@ class PlanningTaskExecutor(Protocol):
     async def execute(
         self,
         submission: PlanningTaskSubmission,
+        emit_progress: PlanningProgressEmitter,
+    ) -> StatefulPlanningSnapshot: ...
+
+    async def resume(
+        self,
+        task_id: str,
+        resume: HumanReviewResume,
         emit_progress: PlanningProgressEmitter,
     ) -> StatefulPlanningSnapshot: ...
 
@@ -79,6 +93,29 @@ class PlanningTaskService:
 
     async def get(self, task_id: str) -> PlanningTaskSnapshot:
         return await self._store.get(task_id)
+
+    async def submit_review(
+        self,
+        task_id: str,
+        decision: PlanningTaskReviewDecisionRequest,
+    ) -> PlanningTaskReviewDecisionAccepted:
+        idempotent_replay = await self._store.submit_review(task_id, decision)
+        if not idempotent_replay:
+            worker = asyncio.create_task(
+                self._resume(task_id, decision),
+                name=f"{task_id}-review-{decision.decision_id}",
+            )
+            self._workers.add(worker)
+            worker.add_done_callback(self._workers.discard)
+        return PlanningTaskReviewDecisionAccepted(
+            decision_id=decision.decision_id,
+            task_id=task_id,
+            review_id=decision.review_id,
+            action=decision.action,
+            idempotent_replay=idempotent_replay,
+            task_url=f"/api/planning-tasks/{task_id}",
+            events_url=f"/api/planning-tasks/{task_id}/events",
+        )
 
     async def events_after(
         self,
@@ -169,6 +206,39 @@ class PlanningTaskService:
                 failure=self._safe_failure(error),
             )
 
+    async def _resume(
+        self,
+        task_id: str,
+        decision: PlanningTaskReviewDecisionRequest,
+    ) -> None:
+        async def emit(progress: StatefulPlanningProgress) -> None:
+            await self._store.record_node(
+                task_id,
+                node=progress.node,
+                state_status=progress.state_status,
+                message=progress.event.detail,
+            )
+
+        resume = HumanReviewResume(
+            review_id=decision.review_id,
+            action=decision.action,
+            reviewer_id=decision.reviewer_id,
+            comment=decision.comment,
+        )
+        try:
+            async with asyncio.timeout(self._timeout_seconds):
+                result = await self._executor.resume(task_id, resume, emit)
+            await self._store.succeed(
+                task_id,
+                result=result,
+                review_decision=decision,
+            )
+        except Exception as error:
+            await self._store.fail(
+                task_id,
+                failure=self._safe_failure(error),
+            )
+
     @staticmethod
     def _safe_failure(error: Exception) -> PlanningTaskFailure:
         if isinstance(error, TimeoutError):
@@ -223,5 +293,6 @@ __all__ = [
     "PlanningTaskConfigurationError",
     "PlanningTaskExecutor",
     "PlanningTaskNotFoundError",
+    "PlanningTaskReviewConflictError",
     "PlanningTaskService",
 ]

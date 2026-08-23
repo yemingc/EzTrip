@@ -10,9 +10,16 @@ from app.core.config import Settings
 from app.domain.candidates import CandidatePOI
 from app.domain.context import PlannerContext
 from app.domain.sources import DataMode
-from app.planning.stateful_contracts import StatefulPlanningSnapshot
+from app.domain.travel_data import RouteLeg, WeatherRisk
+from app.planning.stateful_contracts import HumanReviewResume, StatefulPlanningSnapshot
 from app.planning.stateful_graph import open_sqlite_planning_runtime
-from app.providers import load_fixture_amap_provider, open_live_amap_provider
+from app.providers import (
+    POISearchRequest,
+    RouteRequest,
+    WeatherRiskRequest,
+    load_fixture_amap_provider,
+    open_live_amap_provider,
+)
 from app.tasks.contracts import PlanningTaskSubmission
 from app.tasks.service import PlanningProgressEmitter, PlanningTaskConfigurationError
 
@@ -45,6 +52,40 @@ class FixtureTaskPlannerProposalModel:
             proposal=PlannerProposalBatch(items=proposals),
             model="fixture-task-planner-v1",
             latency_ms=0,
+        )
+
+
+class ResumeOnlyProvider:
+    """Fails if checkpoint resume unexpectedly replays an expensive provider node."""
+
+    async def search_pois(self, request: POISearchRequest) -> tuple[CandidatePOI, ...]:
+        raise PlanningTaskConfigurationError(
+            f"checkpoint resume unexpectedly replayed POI search for {request.keywords}"
+        )
+
+    async def get_weather_risks(
+        self,
+        request: WeatherRiskRequest,
+    ) -> tuple[WeatherRisk, ...]:
+        raise PlanningTaskConfigurationError(
+            f"checkpoint resume unexpectedly replayed weather for {request.city_adcode}"
+        )
+
+    async def get_route(self, request: RouteRequest) -> RouteLeg:
+        raise PlanningTaskConfigurationError(
+            f"checkpoint resume unexpectedly replayed route for {request.city_adcode}"
+        )
+
+
+class ResumeOnlyPlannerModel:
+    def propose(
+        self,
+        context: PlannerContext,
+        candidates: tuple[CandidatePOI, ...],
+    ) -> PlannerModelResponse:
+        del context, candidates
+        raise PlanningTaskConfigurationError(
+            "checkpoint resume unexpectedly replayed the planner model"
         )
 
 
@@ -94,5 +135,25 @@ class StatefulGraphPlanningTaskExecutor:
                 submission.request,
                 submission.cost_items,
                 data_mode=DataMode.LIVE,
+                on_progress=emit_progress,
+            )
+
+    async def resume(
+        self,
+        task_id: str,
+        resume: HumanReviewResume,
+        emit_progress: PlanningProgressEmitter,
+    ) -> StatefulPlanningSnapshot:
+        checkpoint_path = Path(self._settings.planning_checkpoint_dir) / f"{task_id}.sqlite"
+        if not checkpoint_path.exists():
+            raise PlanningTaskConfigurationError("planning checkpoint file does not exist")
+        async with open_sqlite_planning_runtime(
+            checkpoint_path,
+            ResumeOnlyProvider(),
+            ResumeOnlyPlannerModel(),
+        ) as runtime:
+            return await runtime.resume_with_progress(
+                task_id,
+                resume,
                 on_progress=emit_progress,
             )

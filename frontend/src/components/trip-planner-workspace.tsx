@@ -8,6 +8,8 @@ import {
   createPlanningTask,
   getPlanningTask,
   planningEventsUrl,
+  submitPlanningTaskReview,
+  type HumanReviewAction,
   type PlannerFormValues,
   type PlanningTaskEvent,
   type PlanningTaskEventKind,
@@ -22,6 +24,7 @@ const eventKinds: PlanningTaskEventKind[] = [
   "task_started",
   "graph_node_completed",
   "task_awaiting_input",
+  "task_review_submitted",
   "task_succeeded",
   "task_failed",
 ];
@@ -31,6 +34,7 @@ const eventLabels: Record<PlanningTaskEventKind, string> = {
   task_started: "工作流启动",
   graph_node_completed: "图节点已提交",
   task_awaiting_input: "等待人工审核",
+  task_review_submitted: "审核决定已接收",
   task_succeeded: "规划已完成",
   task_failed: "任务失败",
 };
@@ -145,9 +149,17 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
   const [taskId, setTaskId] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<PlanningTaskSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [reviewError, setReviewError] = useState<string | null>(null);
   const sourceRef = useRef<EventSource | null>(null);
   const terminalRef = useRef(false);
   const recoveryRef = useRef(false);
+  const pendingReviewRef = useRef<{
+    decisionId: string;
+    reviewId: string;
+    action: HumanReviewAction;
+    reviewerId: string;
+    comment?: string;
+  } | null>(null);
 
   useEffect(() => {
     return () => sourceRef.current?.close();
@@ -177,9 +189,9 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
     }
   }
 
-  function connectToEvents(currentTaskId: string) {
+  function connectToEvents(currentTaskId: string, afterSequence = 0) {
     setConnection("connecting");
-    const source = new EventSource(planningEventsUrl(currentTaskId));
+    const source = new EventSource(planningEventsUrl(currentTaskId, afterSequence));
     sourceRef.current = source;
 
     source.onopen = () => setConnection("open");
@@ -251,6 +263,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
     setSnapshot(null);
     setTaskId(null);
     setError(null);
+    setReviewError(null);
     setPhase("submitting");
     setConnection("idle");
 
@@ -270,6 +283,52 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
     }
   }
 
+  async function submitReview(action: HumanReviewAction, comment?: string) {
+    const review = snapshot?.result?.state.review_request;
+    if (!taskId || !snapshot || !review) {
+      setReviewError("当前没有可提交的审核请求。");
+      return;
+    }
+
+    sourceRef.current?.close();
+    terminalRef.current = false;
+    recoveryRef.current = false;
+    setReviewError(null);
+    setPhase("streaming");
+    setConnection("connecting");
+
+    const normalizedComment = comment?.trim() || undefined;
+    const existing = pendingReviewRef.current;
+    const decision =
+      existing &&
+      existing.reviewId === review.review_id &&
+      existing.action === action &&
+      existing.comment === normalizedComment
+        ? existing
+        : {
+            decisionId: `review-decision-${crypto.randomUUID().replaceAll("-", "")}`,
+            reviewId: review.review_id,
+            action,
+            reviewerId: `web-reviewer-${crypto.randomUUID().replaceAll("-", "")}`,
+            comment: normalizedComment,
+          };
+    pendingReviewRef.current = decision;
+
+    try {
+      await submitPlanningTaskReview(taskId, decision);
+      pendingReviewRef.current = null;
+      connectToEvents(taskId, snapshot.event_count);
+    } catch (reviewSubmitError) {
+      setReviewError(
+        reviewSubmitError instanceof Error
+          ? reviewSubmitError.message
+          : "审核决定提交失败，请重试。",
+      );
+      setPhase("complete");
+      setConnection("closed");
+    }
+  }
+
   function reset() {
     sourceRef.current?.close();
     terminalRef.current = false;
@@ -280,6 +339,8 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
     setTaskId(null);
     setSnapshot(null);
     setError(null);
+    setReviewError(null);
+    pendingReviewRef.current = null;
   }
 
   const isBusy = ["submitting", "streaming", "loading_result"].includes(phase);
@@ -421,7 +482,14 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
         />
       </section>
 
-      {snapshot ? <PlanningResults snapshot={snapshot} /> : null}
+      {snapshot ? (
+        <PlanningResults
+          onReview={submitReview}
+          reviewBusy={phase === "streaming" || phase === "loading_result"}
+          reviewError={reviewError}
+          snapshot={snapshot}
+        />
+      ) : null}
     </>
   );
 }

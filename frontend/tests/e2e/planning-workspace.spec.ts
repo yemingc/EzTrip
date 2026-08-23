@@ -18,8 +18,15 @@ test("submits a real fixture planning task and renders its evidence", async ({ p
   await expect(results).toContainText("Fixture 数据");
   await expect(results).toContainText("当前产品 API 工作流尚未注入天气风险");
 
-  await expect(page.getByRole("button", { name: "批准草案" })).toBeDisabled();
-  await expect(page.getByRole("button", { name: "请求修改" })).toBeDisabled();
+  const approve = page.getByRole("button", { name: "批准草案" });
+  await expect(approve).toBeEnabled();
+  await approve.click();
+  await expect(trace).toContainText("审核决定已接收");
+  await expect(trace).toContainText("规划已完成");
+  await expect(results).toContainText("审核已完成");
+  await expect(results).toContainText("已批准草案");
+  await expect(results).toContainText("v1 → v1");
+  await expect(results).toContainText("计划未修改 · 0 个受影响日期");
 
   await page.screenshot({
     path: "test-results/eztrip-planning-workspace.png",
@@ -38,6 +45,28 @@ test("does not present missing cost facts as a zero-cost trip", async ({ page })
   await expect(results).toContainText("费用事实缺失，不等于 0 元");
   await expect(results).toContainText("待补：交通、餐饮、门票、活动");
   await expect(results).toContainText("存在硬冲突");
+  await expect(page.getByRole("button", { name: "批准草案" })).toHaveCount(0);
+
+  const acknowledge = page.getByRole("button", { name: "确认已知冲突" });
+  await expect(acknowledge).toBeEnabled();
+  await acknowledge.click();
+  await expect(results).toContainText("审核已完成");
+  await expect(results).toContainText("已确认冲突");
+});
+
+test("records a revision request without pretending a new plan was generated", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("submit-planning-task").click();
+  const results = page.getByTestId("planning-results");
+  await expect(results).toBeVisible({ timeout: 20_000 });
+
+  await page.getByRole("button", { name: "记录修改请求" }).click();
+  await page.getByLabel("修改说明").fill("希望把第二天安排得更轻松。");
+  await page.getByRole("button", { name: "提交修改请求" }).click();
+
+  await expect(results).toContainText("已记录修改请求");
+  await expect(results).toContainText("本增量尚未生成新的计划版本");
+  await expect(results).toContainText("v1 → v1");
 });
 
 test("keeps the planning flow usable on a mobile viewport", async ({ page }) => {

@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from enum import StrEnum
 from typing import Literal
 
@@ -6,9 +6,11 @@ from pydantic import AwareDatetime, Field, model_validator
 
 from app.domain.base import DomainModel, Identifier, NonEmptyText
 from app.domain.money import CostItem
+from app.domain.planning import PlanVersion
 from app.domain.request import TripRequest
 from app.domain.sources import DataMode
 from app.planning.stateful_contracts import (
+    HumanReviewAction,
     PlanningThreadStatus,
     StatefulPlanningNodeName,
     StatefulPlanningSnapshot,
@@ -30,6 +32,7 @@ class PlanningTaskEventKind(StrEnum):
     TASK_STARTED = "task_started"
     GRAPH_NODE_COMPLETED = "graph_node_completed"
     TASK_AWAITING_INPUT = "task_awaiting_input"
+    TASK_REVIEW_SUBMITTED = "task_review_submitted"
     TASK_SUCCEEDED = "task_succeeded"
     TASK_FAILED = "task_failed"
 
@@ -73,6 +76,7 @@ class PlanningTaskEvent(DomainModel):
     node: StatefulPlanningNodeName | None = None
     state_status: PlanningThreadStatus | None = None
     review_id: Identifier | None = None
+    review_action: HumanReviewAction | None = None
     error_code: Identifier | None = None
 
     @model_validator(mode="after")
@@ -82,11 +86,56 @@ class PlanningTaskEvent(DomainModel):
             raise ValueError("graph node events must contain node and state_status only together")
         if not is_node_event and (self.node is not None or self.state_status is not None):
             raise ValueError("non-node events cannot contain graph node fields")
-        if (self.kind == PlanningTaskEventKind.TASK_AWAITING_INPUT) != (self.review_id is not None):
-            raise ValueError("awaiting-input events must contain review_id")
+        is_review_event = self.kind in {
+            PlanningTaskEventKind.TASK_AWAITING_INPUT,
+            PlanningTaskEventKind.TASK_REVIEW_SUBMITTED,
+        }
+        if is_review_event != (self.review_id is not None):
+            raise ValueError("review events must contain review_id")
+        is_review_submission = self.kind == PlanningTaskEventKind.TASK_REVIEW_SUBMITTED
+        if is_review_submission != (self.review_action is not None):
+            raise ValueError("review-submitted events must contain review_action")
         if (self.kind == PlanningTaskEventKind.TASK_FAILED) != (self.error_code is not None):
             raise ValueError("failed events must contain error_code")
         return self
+
+
+class PlanningTaskPlanDiff(DomainModel):
+    schema_version: Literal["1.0"] = "1.0"
+    from_version_id: Identifier
+    to_version_id: Identifier
+    plan_changed: bool
+    changed_dates: tuple[date, ...] = ()
+    added_item_ids: tuple[Identifier, ...] = ()
+    removed_item_ids: tuple[Identifier, ...] = ()
+    rescheduled_item_ids: tuple[Identifier, ...] = ()
+    summary: tuple[NonEmptyText, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_diff(self) -> "PlanningTaskPlanDiff":
+        structural_changes = (
+            self.changed_dates,
+            self.added_item_ids,
+            self.removed_item_ids,
+            self.rescheduled_item_ids,
+        )
+        if self.plan_changed != any(structural_changes):
+            raise ValueError("plan_changed must match structural diff fields")
+        if not self.plan_changed and self.from_version_id != self.to_version_id:
+            raise ValueError("unchanged plans must keep the same version")
+        return self
+
+
+class PlanningTaskReviewOutcome(DomainModel):
+    schema_version: Literal["1.0"] = "1.0"
+    decision_id: Identifier
+    review_id: Identifier
+    action: HumanReviewAction
+    reviewer_id: Identifier
+    comment: str | None = None
+    decided_at: AwareDatetime
+    resulting_state_status: PlanningThreadStatus
+    plan_diff: PlanningTaskPlanDiff
 
 
 class PlanningTaskSnapshot(DomainModel):
@@ -101,6 +150,8 @@ class PlanningTaskSnapshot(DomainModel):
     event_count: int = Field(ge=1)
     result: StatefulPlanningSnapshot | None = None
     failure: PlanningTaskFailure | None = None
+    plan_versions: tuple[PlanVersion, ...] = ()
+    review_outcome: PlanningTaskReviewOutcome | None = None
 
     @model_validator(mode="after")
     def validate_terminal_payload(self) -> "PlanningTaskSnapshot":
@@ -116,6 +167,22 @@ class PlanningTaskSnapshot(DomainModel):
             raise ValueError("failed tasks must contain failure details")
         if self.result is not None and self.result.thread_id != self.task_id:
             raise ValueError("task result thread_id must match task_id")
+        version_numbers = tuple(item.version_number for item in self.plan_versions)
+        if version_numbers != tuple(range(1, len(self.plan_versions) + 1)):
+            raise ValueError("plan versions must be contiguous and ordered")
+        if self.result is not None and not self.plan_versions:
+            raise ValueError("task results require at least one plan version")
+        if self.review_outcome is not None:
+            if self.status != PlanningTaskStatus.SUCCEEDED or self.result is None:
+                raise ValueError("review outcome requires a succeeded task result")
+            if self.result.state.review_decision is None:
+                raise ValueError("review outcome requires a persisted graph decision")
+            known_versions = {item.version_id for item in self.plan_versions}
+            if {
+                self.review_outcome.plan_diff.from_version_id,
+                self.review_outcome.plan_diff.to_version_id,
+            } - known_versions:
+                raise ValueError("review outcome must reference known plan versions")
         return self
 
 
@@ -124,6 +191,33 @@ class PlanningTaskAccepted(DomainModel):
     task_id: Identifier
     request_id: Identifier
     status: Literal[PlanningTaskStatus.QUEUED] = PlanningTaskStatus.QUEUED
+    task_url: NonEmptyText
+    events_url: NonEmptyText
+
+
+class PlanningTaskReviewDecisionRequest(DomainModel):
+    schema_version: Literal["1.0"] = "1.0"
+    decision_id: Identifier
+    review_id: Identifier
+    action: HumanReviewAction
+    reviewer_id: Identifier
+    comment: str | None = Field(default=None, min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def validate_revision_comment(self) -> "PlanningTaskReviewDecisionRequest":
+        if self.action == HumanReviewAction.REQUEST_REVISION and self.comment is None:
+            raise ValueError("request_revision requires a comment")
+        return self
+
+
+class PlanningTaskReviewDecisionAccepted(DomainModel):
+    schema_version: Literal["1.0"] = "1.0"
+    decision_id: Identifier
+    task_id: Identifier
+    review_id: Identifier
+    action: HumanReviewAction
+    status: Literal[PlanningTaskStatus.RUNNING] = PlanningTaskStatus.RUNNING
+    idempotent_replay: bool
     task_url: NonEmptyText
     events_url: NonEmptyText
 
