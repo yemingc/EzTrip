@@ -4,7 +4,7 @@
 
 当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、开放式景点/餐饮 Explore Agent、住宿区域筛选 Stay Agent、确定性预算/基础计划 Validator、北京三日 Gate 2 最小纵向切片、基于 SQLite checkpoint 的可恢复主编排与原生 HITL、Explore/Stay/主动天气三分支并行编排、有界路线矩阵和确定性预算材料层、把这些专业信息包合成为同构完整 `TripPlan` 草案的 schema-constrained Plan Agent、阻止不可靠草案定稿的 Hard Validators、消费 typed issue 的有界 Repair Router，以及 Weather Provider 风险主动触发的局部修复协调器。模型路径都有真实 DeepSeek/LangSmith 隔离评测；纵向切片、恢复、fan-out、材料层、Plan Agent、Hard Validators、Repair Router 与 Weather Repair 都有 fixture 可重放证据。
 
-首个产品调用增量已提供 FastAPI 异步规划任务、任务快照和来自真实 LangGraph 节点提交的可回放 SSE，并把现有 SQLite-checkpoint Gate 2 工作流暴露到 HTTP 边界。当前 API 还没有把较新的 specialist/Plan/Repair/Weather 组件接成同一条产品任务 Graph；任务元数据和 SSE 日志仍是进程内状态，API 级 HITL 恢复、前端审核和定时 WeatherWatch 属于后续任务。协议和可运行请求见 [`docs/api/planning-task-api.md`](docs/api/planning-task-api.md)。
+产品调用层已提供 FastAPI 异步规划任务、任务快照和来自真实 LangGraph 节点提交的可回放 SSE，并由 Next.js 工作台完成“提交结构化约束 → 显示真实事件 → 展示行程、预算校验、坐标与来源 → 停在人工审核”的浏览器闭环。Playwright 使用真实 fixture 后端覆盖正常规划、费用事实缺失和移动端三条路径。当前 API 还没有把较新的 specialist/Plan/Repair/Weather 组件接成同一条产品任务 Graph；自然语言抽取、API 级 HITL 恢复、真实地图底图和定时 WeatherWatch 属于后续任务。协议见 [`docs/api/planning-task-api.md`](docs/api/planning-task-api.md)，前端边界见 [`frontend/README.md`](frontend/README.md)。
 
 ## 技术基线
 
@@ -74,7 +74,11 @@ Set-Location frontend
 pnpm lint
 pnpm typecheck
 pnpm build
+pnpm exec playwright install chromium
+pnpm test:e2e
 ```
+
+`test:e2e` 会同时启动 fixture backend 与 frontend，不调用 DeepSeek 或实时高德，也不需要 API Key。
 
 ## Gate 0 smoke scenarios
 
