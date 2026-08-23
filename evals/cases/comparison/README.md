@@ -1,6 +1,6 @@
 # System comparison V1
 
-这 30 条 case 冻结 EzTrip 后续消融评测的输入与公平性协议，不是已经完成的结果报告。
+这 30 条 case 冻结 EzTrip 消融评测的输入与公平性协议。EZ-501B 已完成离线三组 runner，机器可读结果位于 [`../../reports/system-comparison-fixture.v1.json`](../../reports/system-comparison-fixture.v1.json)。
 
 三组对照必须使用：
 
@@ -12,4 +12,6 @@
 
 历史 `single-planner-v1` 只消费单个候选并输出部分 `DayPlan`，不能作为这里的单 Agent arm，否则输出范围和工具事实不一致，比较结论无效。
 
-数据集是开发集回归，不是未触碰 holdout。20 条 standard 覆盖正常链路及可修复的路线、营业时间、跨城和来源问题；10 条 hard 覆盖不可修复血缘、硬预算事实缺口、HITL、有界重试、Provider 超时和能力边界。fixture 只证明协议可重放，不代表真实城市规划成功率。
+数据集是开发集回归，不是未触碰 holdout。20 条 standard 覆盖正常链路及可修复的路线、营业时间、跨城和来源问题；10 条 hard 覆盖不可修复血缘、硬预算事实缺口、HITL、有界重试、Provider 超时和能力边界。
+
+当前 fixture 结果是 Single 4/28、无 Hard Gate Product 4/28、完整 Product 20/28；后两组的配对差值为 16 个改善、0 个恶化。它只测量相同草案策略下 Hard Validator + bounded Repair 的控制路径恢复能力。Single 与无 Gate Product 相同，因此不能从这份报告声称 Specialist Agent 带来模型质量提升；报告也没有发起 DeepSeek、高德或 LangSmith live 调用。

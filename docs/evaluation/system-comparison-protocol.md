@@ -36,22 +36,27 @@ EZ-501A 冻结 30 条 system-level development regression case，用于后续回
 
 Suite 的 SHA-256 同时覆盖 30 条 case、引用的 Plan Agent source cases 和其下游 Explore/Stay Provider fixtures；修改引用事实也会改变 comparison dataset hash。
 
-## 后续报告指标
+## Fixture control-path replay 结果
 
-runner 完成后按 arm 聚合：
+EZ-501B 已实现三组同构 runner。它读取相同的冻结工具快照，由单 Agent 显式查看全部住宿候选并选择锚点，三个 arm 生成完整 `TripPlan` 后统一交给 `hard-trip-plan-validator-v1`。报告固定写入 [`evals/reports/system-comparison-fixture.v1.json`](../../evals/reports/system-comparison-fixture.v1.json)。
 
-- 共享 eligible cases 的 hard-constraint finalization rate；
-- candidate grounding、source traceability、route lineage；
-- repaired / waiting / unresolved / blocked 数量和平均修复次数；
-- 模型调用、Provider 调用、token、p50/p95 latency；
-- 每个 case 的工具快照一致性与 deterministic replay。
+| arm | 可评估 case | 可定稿 | finalization rate | 模型调用 | Provider 调用 |
+|---|---:|---:|---:|---:|---:|
+| `single_agent_tools` | 28 | 4 | 14.29% | 28 | 435 |
+| `product_graph_no_hard_gate` | 28 | 4 | 14.29% | 144 | 435 |
+| `product_graph_bounded_repair` | 28 | 20 | 71.43% | 186 | 638 |
 
-本阶段只冻结协议、数据集、schema 和引用完整性测试，不声称已完成三组 runner，不发布多 Agent 提升值，也不产生 DeepSeek 或高德调用。
+配对结果中，Single Agent 到无 Hard Gate Product Graph 是 0 个改善、0 个恶化、28 个不变；无 Hard Gate 到完整 Product Graph 是 16 个改善、0 个恶化、12 个不变，即 `+0.5714`。完整链路保持冻结库存：4 个无需修复、16 个 repaired、1 个 waiting-for-user、7 个 unresolved、2 个 blocked-before-plan，30/30 与预期一致。
+
+这是一份 `fixture_control_path_replay`，只允许声称：在这批开发集故障注入上，生产 Hard Validator 与有界 Repair 恢复了 16 条原本不可定稿的草案。它不允许声称 Specialist Agent 提升了模型规划质量，也不代表真实用户成功率。Single 与无 Gate Product arm 在 fixture 中使用同一确定性排程策略，因此二者相同是预期结果；住宿路线矩阵也只覆盖最终锚点，不构成酒店排序评测。
+
+报告没有调用 DeepSeek、高德或 LangSmith。Single arm 的 fixture token 记录完整，总计 6720；Product fixture 未完整记录所有 Specialist token，延迟也不是 live wall-clock，因此对应 token 总量和 p50/p95 均明确留空，而不是拿不完整数字比较。
 
 ## 验证
 
 ```powershell
 Set-Location backend
 uv run python -m scripts.export_comparison_eval_schemas
-uv run pytest tests/test_comparison_evaluation_contract.py --no-cov
+uv run python -m scripts.run_system_comparison_eval
+uv run pytest tests/test_comparison_evaluation_contract.py tests/test_system_comparison_evaluation.py --no-cov
 ```

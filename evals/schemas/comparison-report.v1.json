@@ -1,0 +1,694 @@
+{
+  "$defs": {
+    "ComparisonArm": {
+      "enum": [
+        "single_agent_tools",
+        "product_graph_no_hard_gate",
+        "product_graph_bounded_repair"
+      ],
+      "title": "ComparisonArm",
+      "type": "string"
+    },
+    "ComparisonArmCaseResult": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "arm": {
+          "$ref": "#/$defs/ComparisonArm"
+        },
+        "tier": {
+          "$ref": "#/$defs/SeedTier"
+        },
+        "scenario": {
+          "$ref": "#/$defs/ComparisonScenario"
+        },
+        "protocol_passed": {
+          "title": "Protocol Passed",
+          "type": "boolean"
+        },
+        "frozen_expectation_match": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Frozen Expectation Match"
+        },
+        "outcome": {
+          "$ref": "#/$defs/ComparisonOutcome"
+        },
+        "tool_snapshot_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Tool Snapshot Sha256",
+          "type": "string"
+        },
+        "fault_fixture_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Fault Fixture Sha256",
+          "type": "string"
+        },
+        "selected_stay_candidate_id": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Selected Stay Candidate Id"
+        },
+        "plan_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Plan Sha256"
+        },
+        "initial_error_codes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Initial Error Codes",
+          "type": "array"
+        },
+        "final_error_codes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Final Error Codes",
+          "type": "array"
+        },
+        "final_can_finalize": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Final Can Finalize"
+        },
+        "repair_actions": {
+          "items": {
+            "$ref": "#/$defs/RepairAction"
+          },
+          "title": "Repair Actions",
+          "type": "array"
+        },
+        "repair_stop_reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RepairStopReason"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scheduled_candidate_count": {
+          "minimum": 0,
+          "title": "Scheduled Candidate Count",
+          "type": "integer"
+        },
+        "grounded_candidate_count": {
+          "minimum": 0,
+          "title": "Grounded Candidate Count",
+          "type": "integer"
+        },
+        "traceable_candidate_count": {
+          "minimum": 0,
+          "title": "Traceable Candidate Count",
+          "type": "integer"
+        },
+        "route_backed_candidate_count": {
+          "minimum": 0,
+          "title": "Route Backed Candidate Count",
+          "type": "integer"
+        },
+        "model_call_count": {
+          "minimum": 0,
+          "title": "Model Call Count",
+          "type": "integer"
+        },
+        "provider_call_count": {
+          "minimum": 0,
+          "title": "Provider Call Count",
+          "type": "integer"
+        },
+        "token_usage_complete": {
+          "title": "Token Usage Complete",
+          "type": "boolean"
+        },
+        "total_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total Tokens"
+        },
+        "latency_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Latency Ms"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/EvaluationCheck"
+          },
+          "minItems": 1,
+          "title": "Checks",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "arm",
+        "tier",
+        "scenario",
+        "protocol_passed",
+        "frozen_expectation_match",
+        "outcome",
+        "tool_snapshot_sha256",
+        "fault_fixture_sha256",
+        "selected_stay_candidate_id",
+        "plan_sha256",
+        "initial_error_codes",
+        "final_error_codes",
+        "final_can_finalize",
+        "repair_actions",
+        "repair_stop_reason",
+        "scheduled_candidate_count",
+        "grounded_candidate_count",
+        "traceable_candidate_count",
+        "route_backed_candidate_count",
+        "model_call_count",
+        "provider_call_count",
+        "token_usage_complete",
+        "checks"
+      ],
+      "title": "ComparisonArmCaseResult",
+      "type": "object"
+    },
+    "ComparisonArmSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "arm": {
+          "$ref": "#/$defs/ComparisonArm"
+        },
+        "case_count": {
+          "const": 30,
+          "default": 30,
+          "title": "Case Count",
+          "type": "integer"
+        },
+        "protocol_passed_case_count": {
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Protocol Passed Case Count",
+          "type": "integer"
+        },
+        "eligible_case_count": {
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Eligible Case Count",
+          "type": "integer"
+        },
+        "blocked_case_count": {
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Blocked Case Count",
+          "type": "integer"
+        },
+        "finalizable_case_count": {
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Finalizable Case Count",
+          "type": "integer"
+        },
+        "finalization_rate": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+              "type": "string"
+            }
+          ],
+          "title": "Finalization Rate"
+        },
+        "finalizable_without_repair_case_count": {
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Finalizable Without Repair Case Count",
+          "type": "integer"
+        },
+        "repaired_case_count": {
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Repaired Case Count",
+          "type": "integer"
+        },
+        "waiting_for_user_case_count": {
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Waiting For User Case Count",
+          "type": "integer"
+        },
+        "unresolved_case_count": {
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Unresolved Case Count",
+          "type": "integer"
+        },
+        "scheduled_candidate_count": {
+          "minimum": 0,
+          "title": "Scheduled Candidate Count",
+          "type": "integer"
+        },
+        "grounding_rate": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+              "type": "string"
+            }
+          ],
+          "title": "Grounding Rate"
+        },
+        "source_traceability_rate": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+              "type": "string"
+            }
+          ],
+          "title": "Source Traceability Rate"
+        },
+        "route_lineage_rate": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+              "type": "string"
+            }
+          ],
+          "title": "Route Lineage Rate"
+        },
+        "model_call_count": {
+          "minimum": 0,
+          "title": "Model Call Count",
+          "type": "integer"
+        },
+        "provider_call_count": {
+          "minimum": 0,
+          "title": "Provider Call Count",
+          "type": "integer"
+        },
+        "token_complete_case_count": {
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Token Complete Case Count",
+          "type": "integer"
+        },
+        "total_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total Tokens"
+        },
+        "p50_latency_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "P50 Latency Ms"
+        },
+        "p95_latency_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "P95 Latency Ms"
+        },
+        "results": {
+          "items": {
+            "$ref": "#/$defs/ComparisonArmCaseResult"
+          },
+          "maxItems": 30,
+          "minItems": 30,
+          "title": "Results",
+          "type": "array"
+        }
+      },
+      "required": [
+        "arm",
+        "protocol_passed_case_count",
+        "eligible_case_count",
+        "blocked_case_count",
+        "finalizable_case_count",
+        "finalization_rate",
+        "finalizable_without_repair_case_count",
+        "repaired_case_count",
+        "waiting_for_user_case_count",
+        "unresolved_case_count",
+        "scheduled_candidate_count",
+        "grounding_rate",
+        "source_traceability_rate",
+        "route_lineage_rate",
+        "model_call_count",
+        "provider_call_count",
+        "token_complete_case_count",
+        "results"
+      ],
+      "title": "ComparisonArmSummary",
+      "type": "object"
+    },
+    "ComparisonOutcome": {
+      "enum": [
+        "finalizable_without_repair",
+        "repaired",
+        "waiting_for_user",
+        "unresolved",
+        "blocked_before_plan"
+      ],
+      "title": "ComparisonOutcome",
+      "type": "string"
+    },
+    "ComparisonPairedDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "from_arm": {
+          "$ref": "#/$defs/ComparisonArm"
+        },
+        "to_arm": {
+          "$ref": "#/$defs/ComparisonArm"
+        },
+        "shared_eligible_case_count": {
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Shared Eligible Case Count",
+          "type": "integer"
+        },
+        "improved_case_count": {
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Improved Case Count",
+          "type": "integer"
+        },
+        "worsened_case_count": {
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Worsened Case Count",
+          "type": "integer"
+        },
+        "unchanged_case_count": {
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Unchanged Case Count",
+          "type": "integer"
+        },
+        "finalization_rate_delta": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": -1.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+              "type": "string"
+            }
+          ],
+          "title": "Finalization Rate Delta"
+        }
+      },
+      "required": [
+        "from_arm",
+        "to_arm",
+        "shared_eligible_case_count",
+        "improved_case_count",
+        "worsened_case_count",
+        "unchanged_case_count",
+        "finalization_rate_delta"
+      ],
+      "title": "ComparisonPairedDelta",
+      "type": "object"
+    },
+    "ComparisonScenario": {
+      "enum": [
+        "clean",
+        "missing_route",
+        "tight_transfer",
+        "outside_opening_window",
+        "missing_opening_evidence",
+        "poi_cross_city",
+        "stay_cross_city",
+        "route_source_mismatch",
+        "candidate_source_mismatch",
+        "hard_budget_incomplete",
+        "budget_floor_exceeded",
+        "scheduled_avoid",
+        "missing_must_visit",
+        "route_provider_timeout",
+        "unsupported_city",
+        "opening_window_no_fit"
+      ],
+      "title": "ComparisonScenario",
+      "type": "string"
+    },
+    "EvaluationCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Code",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "passed"
+      ],
+      "title": "EvaluationCheck",
+      "type": "object"
+    },
+    "RepairAction": {
+      "enum": [
+        "none",
+        "rerun_constraint",
+        "rerun_explore",
+        "rerun_stay",
+        "rerun_route",
+        "replan_day",
+        "recalculate_budget",
+        "ask_user"
+      ],
+      "title": "RepairAction",
+      "type": "string"
+    },
+    "RepairStopReason": {
+      "enum": [
+        "finalizable",
+        "user_confirmation_required",
+        "unrepairable_issue",
+        "retry_limit_reached"
+      ],
+      "title": "RepairStopReason",
+      "type": "string"
+    },
+    "SeedTier": {
+      "enum": [
+        "standard",
+        "hard"
+      ],
+      "title": "SeedTier",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "suite": {
+      "const": "system-comparison-v1",
+      "default": "system-comparison-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "runner_version": {
+      "const": "system-comparison-runner-v1",
+      "default": "system-comparison-runner-v1",
+      "title": "Runner Version",
+      "type": "string"
+    },
+    "run_kind": {
+      "const": "fixture_control_path_replay",
+      "default": "fixture_control_path_replay",
+      "title": "Run Kind",
+      "type": "string"
+    },
+    "model": {
+      "const": "fixture-comparison-policy-v1",
+      "default": "fixture-comparison-policy-v1",
+      "title": "Model",
+      "type": "string"
+    },
+    "evaluator_version": {
+      "const": "hard-trip-plan-validator-v1",
+      "default": "hard-trip-plan-validator-v1",
+      "title": "Evaluator Version",
+      "type": "string"
+    },
+    "dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Dataset Sha256",
+      "type": "string"
+    },
+    "case_count": {
+      "const": 30,
+      "default": 30,
+      "title": "Case Count",
+      "type": "integer"
+    },
+    "live_calls_performed": {
+      "const": false,
+      "default": false,
+      "title": "Live Calls Performed",
+      "type": "boolean"
+    },
+    "control_path_claim_allowed": {
+      "const": true,
+      "default": true,
+      "title": "Control Path Claim Allowed",
+      "type": "boolean"
+    },
+    "model_quality_claim_allowed": {
+      "const": false,
+      "default": false,
+      "title": "Model Quality Claim Allowed",
+      "type": "boolean"
+    },
+    "full_expectation_match_count": {
+      "maximum": 30,
+      "minimum": 0,
+      "title": "Full Expectation Match Count",
+      "type": "integer"
+    },
+    "arms": {
+      "items": {
+        "$ref": "#/$defs/ComparisonArmSummary"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "title": "Arms",
+      "type": "array"
+    },
+    "paired_deltas": {
+      "items": {
+        "$ref": "#/$defs/ComparisonPairedDelta"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "title": "Paired Deltas",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Limitations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "dataset_sha256",
+    "full_expectation_match_count",
+    "arms",
+    "paired_deltas",
+    "limitations"
+  ],
+  "title": "SystemComparisonReport",
+  "type": "object"
+}

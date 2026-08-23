@@ -4,7 +4,7 @@ Gate 0 FastAPI service plus the first offline Gate 2 vertical slice, recoverable
 
 The product-facing planning API now runs Product Graph V2: parallel Explore/Stay/proactive-Weather specialists feed deterministic route/budget materials, a schema-constrained Plan Agent, the full Hard Validator, a bounded responsibility-node Repair Router, checkpoint-backed HITL, and structured PlanVersion revision. Product repair can selectively rerun Explore, Stay, Route, Budget, or Plan while preserving unaffected artifacts and reporting delegated call counts. Task metadata and SSE logs remain process-local, and the separate Weather Repair Coordinator is not yet connected to this product Graph. EzTrip is an on-demand planner, so scheduled WeatherWatch is intentionally out of V1 scope. See [the planning task API protocol](../docs/api/planning-task-api.md).
 
-The 30-case system-comparison inventory is frozen under `evals/cases/comparison`. It defines fair shared inputs, output contract, and post-run evaluator for a full single-Agent arm, Product Graph without the hard gate, and Product Graph with bounded repair. This increment is a protocol and schema only; it does not claim comparative gains or perform live calls.
+The 30-case system-comparison inventory is frozen under `evals/cases/comparison`, with a deterministic report committed at `evals/reports/system-comparison-fixture.v1.json`. The full single-Agent arm and Product Graph without the hard gate each finalize 4/28 eligible fixtures; Product Graph with Hard Validator and bounded repair finalizes 20/28. The paired +16 recoveries measure only the validator/repair control path over designed development faults. They do not establish Specialist-model quality or a real-user success rate, and the replay performs no DeepSeek, AMap, or LangSmith calls.
 
 ```powershell
 uv sync --all-groups
@@ -18,6 +18,14 @@ uv run pytest
 uv run ruff check .
 uv run ruff format --check .
 uv run mypy app scripts
+```
+
+Run the deterministic three-arm system comparison:
+
+```powershell
+uv run python -m scripts.export_comparison_eval_schemas
+uv run python -m scripts.run_system_comparison_eval
+uv run pytest tests/test_comparison_evaluation_contract.py tests/test_system_comparison_evaluation.py --no-cov
 ```
 
 Regenerate the committed domain JSON Schema bundle after changing a contract:
