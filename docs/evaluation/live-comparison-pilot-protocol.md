@@ -73,4 +73,8 @@ uv run python -m scripts.plan_live_system_comparison
 
 该命令只加载本地 suite、source fixtures 与 `.env` 配置状态，输出 dataset hash、模型名称、调用预算和依赖是否就绪。它不构造 API client，不调用 DeepSeek、高德或 LangSmith，也不会输出 key 内容。
 
-EZ-502B 才会实现真实 runner。runner 必须要求显式 `--live`，运行前再次打印 dataset hash、6 trials、54 次硬上限和 0 次高德调用，并要求调用方明确确认；没有显式 live 参数时只能执行 fake/contract 测试。
+## 已执行的 EZ-502B runner
+
+EZ-502B 已实现真实 runner。CLI 同时要求显式 `--live` 和 `--confirm-max-model-calls 54`；缺少任一参数时会在加载 Settings 或构造外部 client 前退出。运行中逐调用检查物理调用与 completion reservation，并通过原子 journal 保存进度。fake/contract tests 明确输出 `execution_mode=fixture_contract`，不能伪装成 live 报告。
+
+2026-08-23 的首次执行完成 42/42 次基础模型调用且 0 失败，6 个 trial 均有 LangSmith trace，高德调用为 0。三个 arm 在这三个 clean development cases 上都是 6/6 finalizable，没有触发 Repair，也没有观察到 finalization lift。Product 两次重复计划完全一致的案例为 3/3，Single 为 2/3，但 Product 使用更多调用、tokens 和累计模型延迟。详细数据与结论边界见 [`live-comparison-pilot-result.md`](live-comparison-pilot-result.md)。

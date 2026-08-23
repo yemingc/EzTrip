@@ -8,6 +8,10 @@ from app.evaluation.comparison_run_contracts import (
     SystemComparisonReport,
 )
 from app.evaluation.live_comparison_contracts import LiveComparisonPilotSuite
+from app.evaluation.live_comparison_run_contracts import (
+    LiveComparisonPilotReport,
+    LiveComparisonRunJournal,
+)
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 SUITE_SCHEMA_PATH = REPOSITORY_ROOT / "evals" / "schemas" / "comparison-suite.v1.json"
@@ -19,6 +23,12 @@ REPORT_SCHEMA_PATH = REPOSITORY_ROOT / "evals" / "schemas" / "comparison-report.
 LIVE_PILOT_SUITE_SCHEMA_PATH = (
     REPOSITORY_ROOT / "evals" / "schemas" / "live-comparison-pilot-suite.v1.json"
 )
+LIVE_PILOT_REPORT_SCHEMA_PATH = (
+    REPOSITORY_ROOT / "evals" / "schemas" / "live-comparison-pilot-report.v1.json"
+)
+LIVE_PILOT_JOURNAL_SCHEMA_PATH = (
+    REPOSITORY_ROOT / "evals" / "schemas" / "live-comparison-run-journal.v1.json"
+)
 
 
 def main() -> None:
@@ -28,6 +38,8 @@ def main() -> None:
         (RUN_OUTPUT_SCHEMA_PATH, ComparisonRunOutput),
         (REPORT_SCHEMA_PATH, SystemComparisonReport),
         (LIVE_PILOT_SUITE_SCHEMA_PATH, LiveComparisonPilotSuite),
+        (LIVE_PILOT_REPORT_SCHEMA_PATH, LiveComparisonPilotReport),
+        (LIVE_PILOT_JOURNAL_SCHEMA_PATH, LiveComparisonRunJournal),
     )
     for path, contract in schemas:
         path.parent.mkdir(parents=True, exist_ok=True)
