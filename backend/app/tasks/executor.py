@@ -1,95 +1,124 @@
 from pathlib import Path
+from typing import Protocol
 
-from app.agents.contracts import (
-    PlannerModelResponse,
-    PlannerPlacementProposal,
-    PlannerProposalBatch,
-)
-from app.agents.single_planner import DeepSeekPlannerProposalModel
+from app.agents.plan_agent import run_live_plan_agent
+from app.agents.plan_agent_contracts import PlanAgentRunResult
 from app.core.config import Settings
-from app.domain.candidates import CandidatePOI
-from app.domain.context import PlannerContext
+from app.domain.opening_hours import OpeningHoursEvidenceBundle
+from app.domain.planning import TripPlan
+from app.domain.request import TripRequest
 from app.domain.sources import DataMode
-from app.domain.travel_data import RouteLeg, WeatherRisk
-from app.planning.stateful_contracts import HumanReviewResume, StatefulPlanningSnapshot
-from app.planning.stateful_graph import open_sqlite_planning_runtime
-from app.providers import (
-    POISearchRequest,
-    RouteRequest,
-    WeatherRiskRequest,
-    load_fixture_amap_provider,
-    open_live_amap_provider,
-)
+from app.planning.material_builder import build_planning_material_bundle
+from app.planning.material_contracts import PlanningMaterialBundle
+from app.planning.product_contracts import ProductPlanningSnapshot
+from app.planning.product_graph import ProductPlanningProtocolError, open_sqlite_product_runtime
+from app.planning.specialist_contracts import SpecialistFanoutResult
+from app.planning.specialist_fanout import run_live_specialist_fanout
+from app.planning.stateful_contracts import HumanReviewResume
+from app.providers import open_live_amap_provider
+from app.providers.ports import RouteProvider, SpecialistProvider
 from app.tasks.contracts import PlanningTaskSubmission
+from app.tasks.product_fixture import FixtureProductPlanningPipeline
 from app.tasks.service import PlanningProgressEmitter, PlanningTaskConfigurationError
 
 
-class FixtureTaskPlannerProposalModel:
-    """Deterministic scheduler for the allow-listed offline AMap fixture only."""
+class LiveProductProvider(SpecialistProvider, RouteProvider, Protocol):
+    pass
 
-    _slots = ("09:00", "14:00", "18:00")
 
-    def propose(
+class LiveProductPlanningPipeline:
+    def __init__(self, settings: Settings, provider: LiveProductProvider) -> None:
+        self._settings = settings
+        self._provider = provider
+
+    async def run_specialists(
         self,
-        context: PlannerContext,
-        candidates: tuple[CandidatePOI, ...],
-    ) -> PlannerModelResponse:
-        day_count = len(context.days)
-        if len(candidates) < day_count or len(candidates) > day_count * len(self._slots):
-            raise PlanningTaskConfigurationError(
-                "fixture planning requires one to three candidates per trip day"
-            )
-        proposals = tuple(
-            PlannerPlacementProposal(
-                candidate_id=candidate.candidate_id,
-                day_number=(index % day_count) + 1,
-                start_time=self._slots[index // day_count],
-                reason="离线 fixture 使用稳定轮转排程, 仅用于协议与产品流程验证。",
-            )
-            for index, candidate in enumerate(candidates)
-        )
-        return PlannerModelResponse(
-            proposal=PlannerProposalBatch(items=proposals),
-            model="fixture-task-planner-v1",
-            latency_ms=0,
+        request: TripRequest,
+        *,
+        data_mode: DataMode,
+    ) -> SpecialistFanoutResult:
+        return await run_live_specialist_fanout(
+            request,
+            self._provider,
+            self._settings,
+            data_mode=data_mode,
         )
 
-
-class ResumeOnlyProvider:
-    """Fails if checkpoint resume unexpectedly replays an expensive provider node."""
-
-    async def search_pois(self, request: POISearchRequest) -> tuple[CandidatePOI, ...]:
-        raise PlanningTaskConfigurationError(
-            f"checkpoint resume unexpectedly replayed POI search for {request.keywords}"
-        )
-
-    async def get_weather_risks(
+    async def build_materials(
         self,
-        request: WeatherRiskRequest,
-    ) -> tuple[WeatherRisk, ...]:
-        raise PlanningTaskConfigurationError(
-            f"checkpoint resume unexpectedly replayed weather for {request.city_adcode}"
-        )
+        specialist_result: SpecialistFanoutResult,
+    ) -> PlanningMaterialBundle:
+        return await build_planning_material_bundle(specialist_result, self._provider)
 
-    async def get_route(self, request: RouteRequest) -> RouteLeg:
-        raise PlanningTaskConfigurationError(
-            f"checkpoint resume unexpectedly replayed route for {request.city_adcode}"
-        )
-
-
-class ResumeOnlyPlannerModel:
-    def propose(
+    def run_plan(
         self,
-        context: PlannerContext,
-        candidates: tuple[CandidatePOI, ...],
-    ) -> PlannerModelResponse:
-        del context, candidates
-        raise PlanningTaskConfigurationError(
-            "checkpoint resume unexpectedly replayed the planner model"
+        request: TripRequest,
+        materials: PlanningMaterialBundle,
+    ) -> PlanAgentRunResult:
+        return run_live_plan_agent(request, materials, self._settings)
+
+    def build_opening_hours(
+        self,
+        request: TripRequest,
+        plan: TripPlan,
+        *,
+        data_mode: DataMode,
+    ) -> OpeningHoursEvidenceBundle:
+        del plan
+        # AMap V1 does not expose stable typed opening-hours evidence. The empty
+        # bundle makes Hard Validator surface that uncertainty instead of inventing it.
+        return OpeningHoursEvidenceBundle(
+            request_id=request.request_id,
+            data_mode=data_mode,
+            items=(),
         )
 
 
-class StatefulGraphPlanningTaskExecutor:
+class ResumeOnlyProductPipeline:
+    """Fails if checkpoint resume unexpectedly replays a paid or external stage."""
+
+    @staticmethod
+    def _unexpected() -> ProductPlanningProtocolError:
+        return ProductPlanningProtocolError(
+            "checkpoint resume unexpectedly replayed a product planning stage"
+        )
+
+    async def run_specialists(
+        self,
+        request: TripRequest,
+        *,
+        data_mode: DataMode,
+    ) -> SpecialistFanoutResult:
+        del request, data_mode
+        raise self._unexpected()
+
+    async def build_materials(
+        self,
+        specialist_result: SpecialistFanoutResult,
+    ) -> PlanningMaterialBundle:
+        del specialist_result
+        raise self._unexpected()
+
+    def run_plan(
+        self,
+        request: TripRequest,
+        materials: PlanningMaterialBundle,
+    ) -> PlanAgentRunResult:
+        del request, materials
+        raise self._unexpected()
+
+    def build_opening_hours(
+        self,
+        request: TripRequest,
+        plan: TripPlan,
+        *,
+        data_mode: DataMode,
+    ) -> OpeningHoursEvidenceBundle:
+        del request, plan, data_mode
+        raise self._unexpected()
+
+
+class ProductGraphPlanningTaskExecutor:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
 
@@ -97,18 +126,13 @@ class StatefulGraphPlanningTaskExecutor:
         self,
         submission: PlanningTaskSubmission,
         emit_progress: PlanningProgressEmitter,
-    ) -> StatefulPlanningSnapshot:
+    ) -> ProductPlanningSnapshot:
         checkpoint_path = (
             Path(self._settings.planning_checkpoint_dir) / f"{submission.task_id}.sqlite"
         )
         if submission.data_mode == DataMode.FIXTURE:
-            provider = load_fixture_amap_provider()
-            model = FixtureTaskPlannerProposalModel()
-            async with open_sqlite_planning_runtime(
-                checkpoint_path,
-                provider,
-                model,
-            ) as runtime:
+            fixture_pipeline = FixtureProductPlanningPipeline(submission.request)
+            async with open_sqlite_product_runtime(checkpoint_path, fixture_pipeline) as runtime:
                 return await runtime.start_with_progress(
                     submission.task_id,
                     submission.request,
@@ -121,39 +145,41 @@ class StatefulGraphPlanningTaskExecutor:
             raise PlanningTaskConfigurationError(
                 "live task execution requires EZTRIP_PLANNING_LIVE_ENABLED=true"
             )
-        live_model = DeepSeekPlannerProposalModel(self._settings)
-        async with (
-            open_live_amap_provider(self._settings) as provider,
-            open_sqlite_planning_runtime(
-                checkpoint_path,
-                provider,
-                live_model,
-            ) as runtime,
-        ):
-            return await runtime.start_with_progress(
-                submission.task_id,
-                submission.request,
-                submission.cost_items,
-                data_mode=DataMode.LIVE,
-                on_progress=emit_progress,
-            )
+        async with open_live_amap_provider(self._settings) as provider:
+            live_pipeline = LiveProductPlanningPipeline(self._settings, provider)
+            async with open_sqlite_product_runtime(checkpoint_path, live_pipeline) as runtime:
+                return await runtime.start_with_progress(
+                    submission.task_id,
+                    submission.request,
+                    submission.cost_items,
+                    data_mode=DataMode.LIVE,
+                    on_progress=emit_progress,
+                )
 
     async def resume(
         self,
         task_id: str,
         resume: HumanReviewResume,
         emit_progress: PlanningProgressEmitter,
-    ) -> StatefulPlanningSnapshot:
+    ) -> ProductPlanningSnapshot:
         checkpoint_path = Path(self._settings.planning_checkpoint_dir) / f"{task_id}.sqlite"
         if not checkpoint_path.exists():
             raise PlanningTaskConfigurationError("planning checkpoint file does not exist")
-        async with open_sqlite_planning_runtime(
+        async with open_sqlite_product_runtime(
             checkpoint_path,
-            ResumeOnlyProvider(),
-            ResumeOnlyPlannerModel(),
+            ResumeOnlyProductPipeline(),
         ) as runtime:
             return await runtime.resume_with_progress(
                 task_id,
                 resume,
                 on_progress=emit_progress,
             )
+
+
+# Compatibility import for callers created before Product Graph V2.
+StatefulGraphPlanningTaskExecutor = ProductGraphPlanningTaskExecutor
+
+__all__ = [
+    "ProductGraphPlanningTaskExecutor",
+    "StatefulGraphPlanningTaskExecutor",
+]

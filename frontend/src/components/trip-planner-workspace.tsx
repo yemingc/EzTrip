@@ -44,6 +44,10 @@ const eventLabels: Record<PlanningTaskEventKind, string> = {
 
 const nodeLabels: Record<string, string> = {
   run_vertical_slice: "搜索、规划与校验",
+  run_specialists: "景点、住宿与天气并行查询",
+  build_materials: "合并路线与预算材料",
+  run_plan_agent: "生成多 Agent 行程草案",
+  validate_hard_plan: "执行硬约束校验",
   prepare_human_review: "生成审核请求",
   human_review: "人工审核",
   apply_review_decision: "应用审核决定",
@@ -145,7 +149,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
     originCity: "上海",
     startDate: defaultStartDate,
     adults: 2,
-    budgetLimit: "",
+    budgetLimit: "3000",
   });
   const [phase, setPhase] = useState<WorkspacePhase>("idle");
   const [connection, setConnection] = useState<ConnectionState>("idle");
@@ -459,7 +463,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
               </select>
             </label>
             <label>
-              <span className="field-label">整趟预算（可选）</span>
+              <span className="field-label">整趟预算目标</span>
               <div className="relative">
                 <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400">¥</span>
                 <input
@@ -467,7 +471,8 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
                   disabled={isBusy}
                   min="1"
                   onChange={(event) => updateValue("budgetLimit", event.target.value)}
-                  placeholder="留空则不校验预算"
+                  placeholder="例如：3000"
+                  required
                   step="1"
                   type="number"
                   value={values.budgetLimit}

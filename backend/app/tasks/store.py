@@ -1,10 +1,14 @@
 import asyncio
 
+from pydantic import TypeAdapter
+
 from app.domain.planning import PlanVersion
+from app.planning.product_contracts import ProductPlanningNodeName, ProductPlanningSnapshot
 from app.planning.stateful_contracts import (
     HumanReviewAction,
     PlanningThreadStatus,
     StatefulPlanningNodeName,
+    StatefulPlanningSnapshot,
 )
 from app.tasks.contracts import (
     PlanningTaskEvent,
@@ -22,6 +26,9 @@ from app.tasks.plan_versions import (
     build_review_outcome,
     build_revised_plan_version,
 )
+
+PlanningResultSnapshot = StatefulPlanningSnapshot | ProductPlanningSnapshot
+PLANNING_RESULT_ADAPTER: TypeAdapter[PlanningResultSnapshot] = TypeAdapter(PlanningResultSnapshot)
 
 
 class PlanningTaskNotFoundError(KeyError):
@@ -133,7 +140,7 @@ class InMemoryPlanningTaskStore:
         self,
         task_id: str,
         *,
-        node: StatefulPlanningNodeName,
+        node: StatefulPlanningNodeName | ProductPlanningNodeName,
         state_status: PlanningThreadStatus,
         message: str,
     ) -> PlanningTaskSnapshot:
@@ -245,9 +252,7 @@ class InMemoryPlanningTaskStore:
         result: object,
         review_id: str,
     ) -> PlanningTaskSnapshot:
-        from app.planning.stateful_contracts import StatefulPlanningSnapshot
-
-        snapshot = StatefulPlanningSnapshot.model_validate(result)
+        snapshot = PLANNING_RESULT_ADAPTER.validate_python(result)
         plan_version = build_initial_plan_version(snapshot, created_at=utc_now())
         return await self._append(
             task_id,
@@ -267,9 +272,7 @@ class InMemoryPlanningTaskStore:
         result: object,
         review_decision: PlanningTaskReviewDecisionRequest | None = None,
     ) -> PlanningTaskSnapshot:
-        from app.planning.stateful_contracts import StatefulPlanningSnapshot
-
-        snapshot = StatefulPlanningSnapshot.model_validate(result)
+        snapshot = PLANNING_RESULT_ADAPTER.validate_python(result)
         current = await self.get(task_id)
         review_outcome: PlanningTaskReviewOutcome | None = None
         plan_versions = current.plan_versions
@@ -325,7 +328,7 @@ class InMemoryPlanningTaskStore:
         status: PlanningTaskStatus,
         message: str,
         allowed_from: set[PlanningTaskStatus],
-        node: StatefulPlanningNodeName | None = None,
+        node: StatefulPlanningNodeName | ProductPlanningNodeName | None = None,
         state_status: PlanningThreadStatus | None = None,
         review_id: str | None = None,
         review_action: HumanReviewAction | None = None,
@@ -363,7 +366,7 @@ class InMemoryPlanningTaskStore:
         status: PlanningTaskStatus,
         message: str,
         allowed_from: set[PlanningTaskStatus],
-        node: StatefulPlanningNodeName | None = None,
+        node: StatefulPlanningNodeName | ProductPlanningNodeName | None = None,
         state_status: PlanningThreadStatus | None = None,
         review_id: str | None = None,
         review_action: HumanReviewAction | None = None,

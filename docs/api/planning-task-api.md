@@ -1,9 +1,9 @@
 # Planning Task API V1
 
-EZ-401 exposes the existing SQLite-checkpointed Gate 2 workflow through an asynchronous FastAPI
-boundary; EZ-403A adds an idempotent human-review decision boundary and resumes the same LangGraph
-checkpoint; EZ-403B adds a bounded structured revision that creates PlanVersion v2. The API accepts an already structured `TripRequest`; Chinese free-text extraction and
-the newer specialist/Plan/Repair/Weather orchestration are not silently implied by this endpoint.
+EZ-401 established the asynchronous FastAPI boundary, EZ-403A/403B added checkpoint HITL and a
+bounded PlanVersion v2 revision, and EZ-405 moves the task executor to Product Graph V2. The API
+accepts an already structured `TripRequest`; Chinese free-text extraction and Repair Router are not
+silently implied by this endpoint.
 
 ## Endpoints
 
@@ -25,8 +25,9 @@ Start the API from `backend/`:
 uv run uvicorn app.main:app --reload
 ```
 
-The default fixture contains allow-listed Beijing captures for the Palace Museum and Temple of
-Heaven. The following two-day request therefore runs without API keys or network access:
+The default product fixture contains explicitly synthetic, source-labelled Beijing POI, stay,
+route, opening-hours, and first-day rain data. The following two-day request therefore runs without
+API keys or network access:
 
 ```powershell
 $body = @'
@@ -37,13 +38,18 @@ $body = @'
     "destination_city": "北京市",
     "start_date": "2026-10-02",
     "end_date": "2026-10-03",
-    "party": {"adults": 2},
+    "party": {"adults": 2, "rooms": 1},
+    "budget": {
+      "total_limit": "3000",
+      "included_categories": ["transport", "food", "admission", "activity"],
+      "hard_limit": false
+    },
     "constraints": {
       "items": [
         {
           "constraint_id": "must-visit-forbidden-city",
           "kind": "must_visit",
-          "value": "故宫",
+          "value": "故宫博物院",
           "strength": "hard",
           "priority": 5,
           "source": "user_explicit",
@@ -81,10 +87,17 @@ The normal event order is:
 ```text
 task_created
 task_started
-graph_node_completed (run_vertical_slice, state=plan_ready)
+graph_node_completed (run_specialists, state=planning)
+graph_node_completed (build_materials, state=planning)
+graph_node_completed (run_plan_agent, state=planning)
+graph_node_completed (validate_hard_plan, state=plan_ready)
 graph_node_completed (prepare_human_review, state=awaiting_human_review)
 task_awaiting_input
 ```
+
+`run_vertical_slice` belongs to the legacy checkpoint baseline and is no longer emitted by the
+default product task executor. Product snapshots expose `specialists`, `materials`, `plan_agent`,
+`plan`, and the `hard-trip-plan-validator-v1` report with preserved source/model/prompt lineage.
 
 The first stream stops at `awaiting_input`. Heartbeat comments (`: heartbeat`) keep an idle
 connection alive but are not planning progress.
@@ -108,7 +121,7 @@ $acceptedDecision = Invoke-RestMethod `
   -ContentType application/json `
   -Body ([Text.Encoding]::UTF8.GetBytes($decision))
 
-curl.exe -N ("http://localhost:8000" + $acceptedDecision.events_url + "?after=5")
+curl.exe -N ("http://localhost:8000" + $acceptedDecision.events_url + "?after=8")
 ```
 
 The four protocol actions are `approve_draft`, `acknowledge_conflict`, `request_revision`, and
@@ -177,12 +190,14 @@ protected. For example:
 The server rejects stale base versions with `409 revision-base-version-mismatch` and incomplete or
 drifted scope with `409 revision-scope-mismatch`. The checkpoint revision node then shifts exactly
 the target-day items, rejects cross-date timestamps, preserves all other days and plan facts,
-re-runs `deterministic-plan-validator-v1`, and records `v1 → v2` with changed dates and rescheduled
-item IDs. It makes zero Provider and model calls.
+re-runs `hard-trip-plan-validator-v1` against persisted materials and opening-hours evidence, and
+records `v1 → v2` with changed dates and rescheduled item IDs. It makes zero Provider and model
+calls.
 
 This is not an open-ended natural-language replan. It does not add/remove POIs or recalculate
-routes/opening hours, and the full specialist/Plan/Repair/Hard Validator graph is not yet the
-product task executor. The returned v2 remains a draft that has not been reviewed again.
+routes/opening hours. Explore, Stay, Weather, Route/Budget, Plan and Hard Validator are in the
+product task graph; Repair Router is not. The returned v2 remains a draft that has not been
+reviewed again.
 
 ## Reconnect and failure rules
 

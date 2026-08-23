@@ -15,7 +15,7 @@ from app.tasks.contracts import (
     PlanningTaskSubmission,
 )
 from app.tasks.executor import (
-    FixtureTaskPlannerProposalModel,
+    ProductGraphPlanningTaskExecutor,
     StatefulGraphPlanningTaskExecutor,
 )
 from app.tasks.service import (
@@ -29,7 +29,6 @@ from app.tasks.store import InMemoryPlanningTaskStore, PlanningTaskTransitionErr
 
 __all__ = [
     "PLANNING_TASK_WORKFLOW_VERSION",
-    "FixtureTaskPlannerProposalModel",
     "InMemoryPlanningTaskStore",
     "PlanningTaskAccepted",
     "PlanningTaskConfigurationError",
@@ -50,5 +49,6 @@ __all__ = [
     "PlanningTaskStatus",
     "PlanningTaskSubmission",
     "PlanningTaskTransitionError",
+    "ProductGraphPlanningTaskExecutor",
     "StatefulGraphPlanningTaskExecutor",
 ]

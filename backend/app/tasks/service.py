@@ -3,12 +3,20 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Protocol
 from uuid import uuid4
 
+from app.agents.plan_agent import PlanAgentConfigurationError, PlanAgentProtocolError
 from app.agents.single_planner import (
     SinglePlannerConfigurationError,
     SinglePlannerProtocolError,
 )
+from app.planning.material_builder import PlanningMaterialProtocolError
 from app.planning.minimal_graph import PlanningGraphProtocolError
 from app.planning.plan_revision import PlanRevisionProtocolError
+from app.planning.product_contracts import ProductPlanningProgress, ProductPlanningSnapshot
+from app.planning.product_graph import ProductPlanningProtocolError
+from app.planning.specialist_fanout import (
+    SpecialistFanoutConfigurationError,
+    SpecialistFanoutProtocolError,
+)
 from app.planning.stateful_contracts import (
     HumanReviewResume,
     PlanningThreadStatus,
@@ -36,7 +44,9 @@ from app.tasks.store import (
     PlanningTaskReviewConflictError,
 )
 
-PlanningProgressEmitter = Callable[[StatefulPlanningProgress], Awaitable[None]]
+PlanningResultSnapshot = StatefulPlanningSnapshot | ProductPlanningSnapshot
+PlanningProgress = StatefulPlanningProgress | ProductPlanningProgress
+PlanningProgressEmitter = Callable[[PlanningProgress], Awaitable[None]]
 
 
 class PlanningTaskConfigurationError(RuntimeError):
@@ -48,14 +58,14 @@ class PlanningTaskExecutor(Protocol):
         self,
         submission: PlanningTaskSubmission,
         emit_progress: PlanningProgressEmitter,
-    ) -> StatefulPlanningSnapshot: ...
+    ) -> PlanningResultSnapshot: ...
 
     async def resume(
         self,
         task_id: str,
         resume: HumanReviewResume,
         emit_progress: PlanningProgressEmitter,
-    ) -> StatefulPlanningSnapshot: ...
+    ) -> PlanningResultSnapshot: ...
 
 
 class PlanningTaskService:
@@ -177,7 +187,7 @@ class PlanningTaskService:
     async def _run(self, submission: PlanningTaskSubmission) -> None:
         await self._store.start(submission.task_id)
 
-        async def emit(progress: StatefulPlanningProgress) -> None:
+        async def emit(progress: PlanningProgress) -> None:
             await self._store.record_node(
                 submission.task_id,
                 node=progress.node,
@@ -191,7 +201,7 @@ class PlanningTaskService:
             if result.state.status == PlanningThreadStatus.AWAITING_HUMAN_REVIEW:
                 review = result.state.review_request
                 if review is None:
-                    raise StatefulPlanningProtocolError(
+                    raise ProductPlanningProtocolError(
                         "awaiting review snapshot contains no review request"
                     )
                 await self._store.await_input(
@@ -212,7 +222,7 @@ class PlanningTaskService:
         task_id: str,
         decision: PlanningTaskReviewDecisionRequest,
     ) -> None:
-        async def emit(progress: StatefulPlanningProgress) -> None:
+        async def emit(progress: PlanningProgress) -> None:
             await self._store.record_node(
                 task_id,
                 node=progress.node,
@@ -260,7 +270,12 @@ class PlanningTaskService:
             )
         if isinstance(
             error,
-            (PlanningTaskConfigurationError, SinglePlannerConfigurationError),
+            (
+                PlanningTaskConfigurationError,
+                SinglePlannerConfigurationError,
+                PlanAgentConfigurationError,
+                SpecialistFanoutConfigurationError,
+            ),
         ):
             return PlanningTaskFailure(
                 error_code="planning-configuration-error",
@@ -272,8 +287,12 @@ class PlanningTaskService:
             error,
             (
                 PlanningGraphProtocolError,
+                PlanningMaterialProtocolError,
                 PlanRevisionProtocolError,
+                PlanAgentProtocolError,
+                ProductPlanningProtocolError,
                 SinglePlannerProtocolError,
+                SpecialistFanoutProtocolError,
                 StatefulPlanningProtocolError,
                 VerticalSliceProtocolError,
             ),
