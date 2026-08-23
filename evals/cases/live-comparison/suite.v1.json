@@ -1,0 +1,94 @@
+{
+  "suite": "live-system-comparison-pilot-v1",
+  "version": 1,
+  "dataset_role": "repeated_development_pilot",
+  "provider_mode": "frozen_fixture_catalogs",
+  "model_provider": "deepseek",
+  "model_name": "deepseek-v4-pro",
+  "temperature": 0,
+  "repetitions_per_case": 2,
+  "arms": [
+    "single_agent_tools",
+    "product_graph_no_hard_gate",
+    "product_graph_bounded_repair"
+  ],
+  "fairness": {
+    "same_structured_request": true,
+    "same_frozen_provider_catalogs": true,
+    "same_model_name": true,
+    "temperature_zero": true,
+    "same_output_trip_plan_contract": true,
+    "same_post_run_evaluator": true,
+    "product_initial_draft_shared_between_product_arms": true,
+    "sequential_trial_execution": true,
+    "provider_refresh_during_run": false,
+    "amap_calls_allowed": false,
+    "langsmith_tracing_required": true,
+    "development_pilot_not_holdout": true,
+    "generalization_claim_allowed": false
+  },
+  "call_budget": {
+    "case_count": 3,
+    "repetitions_per_case": 2,
+    "trial_count": 6,
+    "single_selection_calls_per_trial": 1,
+    "single_plan_calls_per_trial": 1,
+    "product_explore_calls_per_trial": 2,
+    "product_stay_calls_per_trial": 2,
+    "product_plan_calls_per_trial": 1,
+    "base_model_calls_per_trial": 7,
+    "repair_model_call_allowance_per_trial": 2,
+    "max_model_calls": 54,
+    "single_selection_max_completion_tokens": 900,
+    "single_plan_max_completion_tokens": 900,
+    "product_explore_query_max_completion_tokens": 900,
+    "product_explore_selection_max_completion_tokens": 1200,
+    "product_stay_query_max_completion_tokens": 900,
+    "product_stay_selection_max_completion_tokens": 1200,
+    "product_plan_max_completion_tokens": 900,
+    "repair_call_max_completion_tokens": 1200,
+    "base_completion_tokens_per_trial": 6900,
+    "repair_completion_token_allowance_per_trial": 2400,
+    "max_completion_tokens": 55800,
+    "max_parallel_live_trials": 1
+  },
+  "cases": [
+    {
+      "case_id": "live-comparison-beijing-history-v1",
+      "title": "北京历史文化与轻步行三日",
+      "source_plan_case_id": "plan-agent-beijing-history-v1",
+      "profile": "beijing_history",
+      "traveler_profile": "adults",
+      "boundary_notes": [
+        "既有开发案例用于重复 point-in-time pilot，不冒充未触碰 holdout。"
+      ]
+    },
+    {
+      "case_id": "live-comparison-shanghai-view-food-v1",
+      "title": "上海城市风光与本地美食两日",
+      "source_plan_case_id": "plan-agent-shanghai-view-food-v1",
+      "profile": "shanghai_view_food",
+      "traveler_profile": "couple",
+      "boundary_notes": [
+        "人工相关性标签来自既有 Explore/Stay 开发集，只支持案例内比较。"
+      ]
+    },
+    {
+      "case_id": "live-comparison-chengdu-family-v1",
+      "title": "成都亲子与熊猫基地三日",
+      "source_plan_case_id": "plan-agent-chengdu-family-v1",
+      "profile": "chengdu_family",
+      "traveler_profile": "family_with_child",
+      "boundary_notes": [
+        "必须到访约束由统一 Hard Validator 评分，不由某个 arm 自行判定成功。"
+      ]
+    }
+  ],
+  "limitations": [
+    "三个案例均来自既有提示词开发集，因此是 repeated development pilot，不是 blind holdout。",
+    "运行时复用冻结 Provider catalogs 和路线 fixture，以隔离模型与编排差异；高德调用固定为零。",
+    "temperature=0 仍不保证服务端完全确定，因此每个案例重复两次并保留逐 trial 结果。",
+    "无 Hard Gate 与完整 Repair 必须共享同一 Product 初始草案，避免用两次随机生成制造伪差值。",
+    "54 次是 DeepSeek 模型调用硬上限，不是承诺一定消耗到上限；达到上限必须停止。"
+  ]
+}

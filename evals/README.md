@@ -20,6 +20,8 @@ Product Graph V2 另有产品 executor 单测与 API/浏览器回归，验证 Ex
 
 EZ-501A 在 `cases/comparison/` 冻结 20 standard + 10 hard 的三组 system comparison 协议；EZ-501B 在 `reports/system-comparison-fixture.v1.json` 提交了确定性 control-path replay。三个 arm 共享结构化请求、Provider fixture、完整 `TripPlan` 契约和 post-run evaluator。结果为 Single 4/28、无 Hard Gate Product 4/28、完整 Product 20/28；`+57.14` 个百分点只说明 Hard Validator + bounded Repair 在设计故障上的恢复能力，不是多 Agent 模型质量或真实成功率。旧 `single-planner-v1` 因输入和输出范围不同，仍不能冒充公平单 Agent 对照。
 
+EZ-502A 在 `cases/live-comparison/` 冻结了后续真实模型 pilot 的 3 个代表案例、每条 2 次重复、公平性不变量与 54 次模型调用/55,800 completion tokens 硬上限。两个 Product arms 必须共享同一个初始草案；运行中复用冻结 Provider catalogs，高德调用为 0。该 suite 来自既有开发集，明确标记为 `repeated_development_pilot`，不是 blind holdout。当前只提交协议、Schema、零调用 preflight 与测试，没有 live 对比结果。
+
 验证命令：
 
 ```powershell
@@ -30,5 +32,6 @@ uv run pytest tests/test_specialist_fanout.py tests/test_specialist_fanout_eval.
 uv run pytest tests/test_hard_validator.py tests/test_hard_validator_evaluation.py --no-cov
 uv run pytest tests/test_repair_router.py tests/test_repair_router_evaluation.py --no-cov
 uv run python -m scripts.run_system_comparison_eval
+uv run python -m scripts.plan_live_system_comparison
 uv run pytest tests/test_comparison_evaluation_contract.py tests/test_system_comparison_evaluation.py --no-cov
 ```
