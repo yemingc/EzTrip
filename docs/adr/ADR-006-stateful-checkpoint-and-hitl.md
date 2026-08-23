@@ -14,7 +14,7 @@ Gate 2 已能从结构化请求生成 provider-grounded 三日草案并做确定
 1. `run_vertical_slice` 原子执行现有 Gate 2 纵向切片；
 2. `prepare_human_review` 根据确定性 Validator 结果生成允许动作；
 3. `human_review` 使用 LangGraph 原生 `interrupt()` 暂停，并只接受带 `review_id`、动作和 reviewer 的 `Command(resume=...)`；
-4. `apply_review_decision` 把人审动作映射到终态，不修改原计划内容。
+4. `apply_review_decision` 把批准、确认冲突和取消映射到终态，不修改原计划内容；结构化 `request_revision` 继续进入受限 revision node。
 
 本地和 CI 使用 `AsyncSqliteSaver`，以同一个 `thread_id` 在关闭并重新构建 graph/runtime 后读取检查点。检查点只持久化 JSON-compatible 数据，节点入口再恢复为 Pydantic 强类型模型。内部候选搜索图和 Single Planner 图显式使用 `checkpointer=False`，因此只有主编排图拥有持久化边界；恢复不会落在半个内部子图中。
 
@@ -38,6 +38,12 @@ Gate 2 已能从结构化请求生成 provider-grounded 三日草案并做确定
 - `thread_id` 已存在时拒绝重新开始，错误 review ID 或不允许动作不会消费中断；
 - SQLite 文件含完整结构化请求、候选、计划和人审记录，本地开发也应视为用户数据；
 - SQLite 不等同于生产级并发、加密、备份或高可用方案。
+
+## 2026-08-23 扩展：结构化局部修改
+
+EZ-403B 为 `request_revision` 增加 `PlanRevisionRequest`：客户端必须提交 base version/plan、目标日期、目标 item、受保护 item、延后分钟数和显式确认。服务端在接受决定前验证 optimistic concurrency 与完整 scope；恢复后新增 `apply_plan_revision` 节点，只允许把目标日所有现有活动整体延后 30–180 分钟。
+
+该节点复用原 Provider 候选和 Planner 结果，模型与 Provider 调用固定为 0；其他日期、候选集合、费用、天气和来源必须逐项保持。修改后重新执行当前产品 `deterministic-plan-validator-v1`，生成 `PlanVersion v2` 与 `v1 → v2` diff。v2 保持 draft 且标明尚未再次审核。开放式自然语言修改、候选增删、路线/营业时间重新计算和完整 Hard Validator/Repair Router 接线不属于这个窄执行器。
 
 ## 重新评估条件
 

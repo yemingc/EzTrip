@@ -17,7 +17,11 @@ from app.tasks.contracts import (
     PlanningTaskSubmission,
     utc_now,
 )
-from app.tasks.plan_versions import build_initial_plan_version, build_review_outcome
+from app.tasks.plan_versions import (
+    build_initial_plan_version,
+    build_review_outcome,
+    build_revised_plan_version,
+)
 
 
 class PlanningTaskNotFoundError(KeyError):
@@ -184,6 +188,41 @@ class InMemoryPlanningTaskStore:
                     "review-action-not-allowed",
                     f"当前审核不允许动作 {decision.action.value}。",
                 )
+            if decision.action == HumanReviewAction.REQUEST_REVISION:
+                revision = decision.revision_request
+                if revision is None or not previous.plan_versions:
+                    raise PlanningTaskReviewConflictError(
+                        "revision-request-missing",
+                        "修改决定缺少结构化 revision request 或基准版本。",
+                    )
+                current_version = previous.plan_versions[-1]
+                if (
+                    revision.base_version_id != current_version.version_id
+                    or revision.base_plan_id != current_version.plan.plan_id
+                ):
+                    raise PlanningTaskReviewConflictError(
+                        "revision-base-version-mismatch",
+                        "修改请求的基准版本不是当前计划版本。",
+                    )
+                target_days = tuple(
+                    day for day in current_version.plan.days if day.date == revision.target_date
+                )
+                expected_target = tuple(item.item_id for day in target_days for item in day.items)
+                expected_protected = tuple(
+                    item.item_id
+                    for day in current_version.plan.days
+                    if day.date != revision.target_date
+                    for item in day.items
+                )
+                if (
+                    len(target_days) != 1
+                    or revision.target_item_ids != expected_target
+                    or revision.protected_item_ids != expected_protected
+                ):
+                    raise PlanningTaskReviewConflictError(
+                        "revision-scope-mismatch",
+                        "修改请求的目标或保护项目与当前计划不一致。",
+                    )
 
             self._append_locked(
                 task_id,
@@ -233,13 +272,23 @@ class InMemoryPlanningTaskStore:
         snapshot = StatefulPlanningSnapshot.model_validate(result)
         current = await self.get(task_id)
         review_outcome: PlanningTaskReviewOutcome | None = None
+        plan_versions = current.plan_versions
         if review_decision is not None:
-            if not current.plan_versions:
+            if not plan_versions:
                 raise PlanningTaskTransitionError("review completion requires a plan version")
+            if review_decision.action == HumanReviewAction.REQUEST_REVISION:
+                plan_versions = (
+                    *plan_versions,
+                    build_revised_plan_version(
+                        snapshot,
+                        plan_versions[-1],
+                        created_at=utc_now(),
+                    ),
+                )
             review_outcome = build_review_outcome(
                 snapshot,
                 review_decision,
-                current.plan_versions[-1],
+                plan_versions,
             )
         return await self._append(
             task_id,
@@ -248,6 +297,7 @@ class InMemoryPlanningTaskStore:
             message="规划工作流已完成。",
             allowed_from={PlanningTaskStatus.RUNNING},
             result=snapshot,
+            plan_versions=plan_versions,
             review_outcome=review_outcome,
         )
 

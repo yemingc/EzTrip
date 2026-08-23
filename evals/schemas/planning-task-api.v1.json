@@ -621,6 +621,7 @@
             "approved_draft",
             "conflict_acknowledged",
             "revision_requested",
+            "revision_applied",
             "cancelled"
           ],
           "title": "PlanningThreadStatus",
@@ -631,7 +632,8 @@
             "run_vertical_slice",
             "prepare_human_review",
             "human_review",
-            "apply_review_decision"
+            "apply_review_decision",
+            "apply_plan_revision"
           ],
           "title": "StatefulPlanningNodeName",
           "type": "string"
@@ -1589,6 +1591,17 @@
               "default": null,
               "title": "Comment"
             },
+            "revision_request": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/PlanRevisionRequest"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
             "decided_at": {
               "format": "date-time",
               "title": "Decided At",
@@ -2056,6 +2069,230 @@
             "lodging_nights"
           ],
           "title": "PartyPlanningContext",
+          "type": "object"
+        },
+        "PlanRevisionDiff": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "from_plan_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "From Plan Id",
+              "type": "string"
+            },
+            "to_plan_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "To Plan Id",
+              "type": "string"
+            },
+            "changed_dates": {
+              "items": {
+                "format": "date",
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Changed Dates",
+              "type": "array"
+            },
+            "rescheduled_item_ids": {
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Rescheduled Item Ids",
+              "type": "array"
+            },
+            "added_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Added Item Ids",
+              "type": "array"
+            },
+            "removed_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Removed Item Ids",
+              "type": "array"
+            }
+          },
+          "required": [
+            "from_plan_id",
+            "to_plan_id",
+            "changed_dates",
+            "rescheduled_item_ids"
+          ],
+          "title": "PlanRevisionDiff",
+          "type": "object"
+        },
+        "PlanRevisionRequest": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "revision_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Revision Id",
+              "type": "string"
+            },
+            "base_version_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Base Version Id",
+              "type": "string"
+            },
+            "base_plan_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Base Plan Id",
+              "type": "string"
+            },
+            "target_date": {
+              "format": "date",
+              "title": "Target Date",
+              "type": "string"
+            },
+            "operation": {
+              "const": "shift_day_later",
+              "title": "Operation",
+              "type": "string"
+            },
+            "shift_minutes": {
+              "maximum": 180,
+              "minimum": 30,
+              "multipleOf": 30,
+              "title": "Shift Minutes",
+              "type": "integer"
+            },
+            "target_item_ids": {
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Target Item Ids",
+              "type": "array"
+            },
+            "protected_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Protected Item Ids",
+              "type": "array"
+            },
+            "confirmed": {
+              "const": true,
+              "title": "Confirmed",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "revision_id",
+            "base_version_id",
+            "base_plan_id",
+            "target_date",
+            "operation",
+            "shift_minutes",
+            "target_item_ids",
+            "confirmed"
+          ],
+          "title": "PlanRevisionRequest",
+          "type": "object"
+        },
+        "PlanRevisionResult": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "executor_version": {
+              "const": "deterministic-local-revision-v1",
+              "default": "deterministic-local-revision-v1",
+              "title": "Executor Version",
+              "type": "string"
+            },
+            "request": {
+              "$ref": "#/$defs/PlanRevisionRequest"
+            },
+            "revised_plan": {
+              "$ref": "#/$defs/TripPlan"
+            },
+            "validation": {
+              "$ref": "#/$defs/PlanValidationReport"
+            },
+            "diff": {
+              "$ref": "#/$defs/PlanRevisionDiff"
+            },
+            "reused_provider_results": {
+              "const": true,
+              "default": true,
+              "title": "Reused Provider Results",
+              "type": "boolean"
+            },
+            "reused_planner_result": {
+              "const": true,
+              "default": true,
+              "title": "Reused Planner Result",
+              "type": "boolean"
+            },
+            "model_call_count": {
+              "const": 0,
+              "default": 0,
+              "title": "Model Call Count",
+              "type": "integer"
+            },
+            "provider_call_count": {
+              "const": 0,
+              "default": 0,
+              "title": "Provider Call Count",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "request",
+            "revised_plan",
+            "validation",
+            "diff"
+          ],
+          "title": "PlanRevisionResult",
           "type": "object"
         },
         "PlanStatus": {
@@ -2895,6 +3132,7 @@
             "approved_draft",
             "conflict_acknowledged",
             "revision_requested",
+            "revision_applied",
             "cancelled"
           ],
           "title": "PlanningThreadStatus",
@@ -3319,6 +3557,17 @@
               ],
               "default": null
             },
+            "revision_result": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/PlanRevisionResult"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
             "events": {
               "default": [],
               "items": {
@@ -3365,7 +3614,8 @@
             "run_vertical_slice",
             "prepare_human_review",
             "human_review",
-            "apply_review_decision"
+            "apply_review_decision",
+            "apply_plan_revision"
           ],
           "title": "StatefulPlanningNodeName",
           "type": "string"
@@ -3375,6 +3625,7 @@
             "planned",
             "review_required",
             "resumed",
+            "revised",
             "completed"
           ],
           "title": "StatefulPlanningNodeOutcome",
@@ -4022,6 +4273,94 @@
           ],
           "title": "HumanReviewAction",
           "type": "string"
+        },
+        "PlanRevisionRequest": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "revision_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Revision Id",
+              "type": "string"
+            },
+            "base_version_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Base Version Id",
+              "type": "string"
+            },
+            "base_plan_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Base Plan Id",
+              "type": "string"
+            },
+            "target_date": {
+              "format": "date",
+              "title": "Target Date",
+              "type": "string"
+            },
+            "operation": {
+              "const": "shift_day_later",
+              "title": "Operation",
+              "type": "string"
+            },
+            "shift_minutes": {
+              "maximum": 180,
+              "minimum": 30,
+              "multipleOf": 30,
+              "title": "Shift Minutes",
+              "type": "integer"
+            },
+            "target_item_ids": {
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Target Item Ids",
+              "type": "array"
+            },
+            "protected_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Protected Item Ids",
+              "type": "array"
+            },
+            "confirmed": {
+              "const": true,
+              "title": "Confirmed",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "revision_id",
+            "base_version_id",
+            "base_plan_id",
+            "target_date",
+            "operation",
+            "shift_minutes",
+            "target_item_ids",
+            "confirmed"
+          ],
+          "title": "PlanRevisionRequest",
+          "type": "object"
         }
       },
       "additionalProperties": false,
@@ -4069,6 +4408,17 @@
           ],
           "default": null,
           "title": "Comment"
+        },
+        "revision_request": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlanRevisionRequest"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -4355,6 +4705,7 @@
             "approved_draft",
             "conflict_acknowledged",
             "revision_requested",
+            "revision_applied",
             "cancelled"
           ],
           "title": "PlanningThreadStatus",
@@ -4427,6 +4778,1368 @@
         "plan_diff"
       ],
       "title": "PlanningTaskReviewOutcome",
+      "type": "object"
+    },
+    "PlanRevisionRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "revision_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Revision Id",
+          "type": "string"
+        },
+        "base_version_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Base Version Id",
+          "type": "string"
+        },
+        "base_plan_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Base Plan Id",
+          "type": "string"
+        },
+        "target_date": {
+          "format": "date",
+          "title": "Target Date",
+          "type": "string"
+        },
+        "operation": {
+          "const": "shift_day_later",
+          "title": "Operation",
+          "type": "string"
+        },
+        "shift_minutes": {
+          "maximum": 180,
+          "minimum": 30,
+          "multipleOf": 30,
+          "title": "Shift Minutes",
+          "type": "integer"
+        },
+        "target_item_ids": {
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Target Item Ids",
+          "type": "array"
+        },
+        "protected_item_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Protected Item Ids",
+          "type": "array"
+        },
+        "confirmed": {
+          "const": true,
+          "title": "Confirmed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "revision_id",
+        "base_version_id",
+        "base_plan_id",
+        "target_date",
+        "operation",
+        "shift_minutes",
+        "target_item_ids",
+        "confirmed"
+      ],
+      "title": "PlanRevisionRequest",
+      "type": "object"
+    },
+    "PlanRevisionDiff": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "from_plan_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "From Plan Id",
+          "type": "string"
+        },
+        "to_plan_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "To Plan Id",
+          "type": "string"
+        },
+        "changed_dates": {
+          "items": {
+            "format": "date",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Changed Dates",
+          "type": "array"
+        },
+        "rescheduled_item_ids": {
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Rescheduled Item Ids",
+          "type": "array"
+        },
+        "added_item_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Added Item Ids",
+          "type": "array"
+        },
+        "removed_item_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Removed Item Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "from_plan_id",
+        "to_plan_id",
+        "changed_dates",
+        "rescheduled_item_ids"
+      ],
+      "title": "PlanRevisionDiff",
+      "type": "object"
+    },
+    "PlanRevisionResult": {
+      "$defs": {
+        "ActivityKind": {
+          "enum": [
+            "attraction",
+            "meal",
+            "stay",
+            "transit",
+            "free_time"
+          ],
+          "title": "ActivityKind",
+          "type": "string"
+        },
+        "BudgetAssessmentStatus": {
+          "enum": [
+            "not_requested",
+            "within_limit",
+            "possible_overrun",
+            "exceeded",
+            "incomplete"
+          ],
+          "title": "BudgetAssessmentStatus",
+          "type": "string"
+        },
+        "BudgetCategory": {
+          "enum": [
+            "lodging",
+            "transport",
+            "food",
+            "admission",
+            "activity",
+            "other"
+          ],
+          "title": "BudgetCategory",
+          "type": "string"
+        },
+        "BudgetValidationSummary": {
+          "additionalProperties": false,
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/BudgetAssessmentStatus"
+            },
+            "currency": {
+              "const": "CNY",
+              "default": "CNY",
+              "title": "Currency",
+              "type": "string"
+            },
+            "total_limit": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Total Limit"
+            },
+            "included_categories": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/BudgetCategory"
+              },
+              "title": "Included Categories",
+              "type": "array"
+            },
+            "missing_categories": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/BudgetCategory"
+              },
+              "title": "Missing Categories",
+              "type": "array"
+            },
+            "considered_cost_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Considered Cost Item Ids",
+              "type": "array"
+            },
+            "excluded_cost_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Excluded Cost Item Ids",
+              "type": "array"
+            },
+            "total_minimum": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Total Minimum"
+            },
+            "total_maximum": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Total Maximum"
+            },
+            "minimum_gap": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Minimum Gap"
+            },
+            "maximum_gap": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Maximum Gap"
+            }
+          },
+          "required": [
+            "status",
+            "total_minimum",
+            "total_maximum",
+            "minimum_gap",
+            "maximum_gap"
+          ],
+          "title": "BudgetValidationSummary",
+          "type": "object"
+        },
+        "CostItem": {
+          "additionalProperties": false,
+          "properties": {
+            "cost_item_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Cost Item Id",
+              "type": "string"
+            },
+            "category": {
+              "$ref": "#/$defs/BudgetCategory"
+            },
+            "description": {
+              "minLength": 1,
+              "title": "Description",
+              "type": "string"
+            },
+            "quantity": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Quantity"
+            },
+            "unit_price": {
+              "$ref": "#/$defs/MoneyRange"
+            },
+            "source": {
+              "$ref": "#/$defs/SourceReference"
+            },
+            "is_estimate": {
+              "title": "Is Estimate",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "cost_item_id",
+            "category",
+            "description",
+            "quantity",
+            "unit_price",
+            "source",
+            "is_estimate"
+          ],
+          "title": "CostItem",
+          "type": "object"
+        },
+        "DataMode": {
+          "enum": [
+            "live",
+            "fixture",
+            "user_input",
+            "estimate"
+          ],
+          "title": "DataMode",
+          "type": "string"
+        },
+        "DayPlan": {
+          "additionalProperties": false,
+          "properties": {
+            "date": {
+              "format": "date",
+              "title": "Date",
+              "type": "string"
+            },
+            "items": {
+              "items": {
+                "$ref": "#/$defs/ItineraryItem"
+              },
+              "minItems": 1,
+              "title": "Items",
+              "type": "array"
+            },
+            "weather_risk_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Weather Risk Ids",
+              "type": "array"
+            }
+          },
+          "required": [
+            "date",
+            "items"
+          ],
+          "title": "DayPlan",
+          "type": "object"
+        },
+        "GeoPoint": {
+          "additionalProperties": false,
+          "properties": {
+            "latitude": {
+              "maximum": 90,
+              "minimum": -90,
+              "title": "Latitude",
+              "type": "number"
+            },
+            "longitude": {
+              "maximum": 180,
+              "minimum": -180,
+              "title": "Longitude",
+              "type": "number"
+            }
+          },
+          "required": [
+            "latitude",
+            "longitude"
+          ],
+          "title": "GeoPoint",
+          "type": "object"
+        },
+        "IssueSeverity": {
+          "enum": [
+            "warning",
+            "error"
+          ],
+          "title": "IssueSeverity",
+          "type": "string"
+        },
+        "ItineraryItem": {
+          "additionalProperties": false,
+          "properties": {
+            "item_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Item Id",
+              "type": "string"
+            },
+            "kind": {
+              "$ref": "#/$defs/ActivityKind"
+            },
+            "title": {
+              "minLength": 1,
+              "title": "Title",
+              "type": "string"
+            },
+            "start_at": {
+              "format": "date-time",
+              "title": "Start At",
+              "type": "string"
+            },
+            "end_at": {
+              "format": "date-time",
+              "title": "End At",
+              "type": "string"
+            },
+            "candidate_id": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Candidate Id"
+            },
+            "source": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/SourceReference"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "route_from_previous": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/RouteLeg"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "cost_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Cost Item Ids",
+              "type": "array"
+            },
+            "notes": {
+              "default": [],
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "Notes",
+              "type": "array"
+            }
+          },
+          "required": [
+            "item_id",
+            "kind",
+            "title",
+            "start_at",
+            "end_at"
+          ],
+          "title": "ItineraryItem",
+          "type": "object"
+        },
+        "MoneyRange": {
+          "additionalProperties": false,
+          "properties": {
+            "minimum": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Minimum"
+            },
+            "maximum": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Maximum"
+            },
+            "currency": {
+              "const": "CNY",
+              "default": "CNY",
+              "title": "Currency",
+              "type": "string"
+            }
+          },
+          "required": [
+            "minimum",
+            "maximum"
+          ],
+          "title": "MoneyRange",
+          "type": "object"
+        },
+        "PlanRevisionDiff": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "from_plan_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "From Plan Id",
+              "type": "string"
+            },
+            "to_plan_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "To Plan Id",
+              "type": "string"
+            },
+            "changed_dates": {
+              "items": {
+                "format": "date",
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Changed Dates",
+              "type": "array"
+            },
+            "rescheduled_item_ids": {
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Rescheduled Item Ids",
+              "type": "array"
+            },
+            "added_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Added Item Ids",
+              "type": "array"
+            },
+            "removed_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Removed Item Ids",
+              "type": "array"
+            }
+          },
+          "required": [
+            "from_plan_id",
+            "to_plan_id",
+            "changed_dates",
+            "rescheduled_item_ids"
+          ],
+          "title": "PlanRevisionDiff",
+          "type": "object"
+        },
+        "PlanRevisionRequest": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "revision_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Revision Id",
+              "type": "string"
+            },
+            "base_version_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Base Version Id",
+              "type": "string"
+            },
+            "base_plan_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Base Plan Id",
+              "type": "string"
+            },
+            "target_date": {
+              "format": "date",
+              "title": "Target Date",
+              "type": "string"
+            },
+            "operation": {
+              "const": "shift_day_later",
+              "title": "Operation",
+              "type": "string"
+            },
+            "shift_minutes": {
+              "maximum": 180,
+              "minimum": 30,
+              "multipleOf": 30,
+              "title": "Shift Minutes",
+              "type": "integer"
+            },
+            "target_item_ids": {
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Target Item Ids",
+              "type": "array"
+            },
+            "protected_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Protected Item Ids",
+              "type": "array"
+            },
+            "confirmed": {
+              "const": true,
+              "title": "Confirmed",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "revision_id",
+            "base_version_id",
+            "base_plan_id",
+            "target_date",
+            "operation",
+            "shift_minutes",
+            "target_item_ids",
+            "confirmed"
+          ],
+          "title": "PlanRevisionRequest",
+          "type": "object"
+        },
+        "PlanStatus": {
+          "enum": [
+            "draft",
+            "pending_confirmation",
+            "final",
+            "conflicted"
+          ],
+          "title": "PlanStatus",
+          "type": "string"
+        },
+        "PlanValidationReport": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "validator_version": {
+              "default": "deterministic-plan-validator-v1",
+              "enum": [
+                "deterministic-plan-validator-v1",
+                "hard-trip-plan-validator-v1"
+              ],
+              "title": "Validator Version",
+              "type": "string"
+            },
+            "request_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Request Id",
+              "type": "string"
+            },
+            "plan_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Plan Id",
+              "type": "string"
+            },
+            "status": {
+              "$ref": "#/$defs/PlanValidationStatus"
+            },
+            "can_finalize": {
+              "title": "Can Finalize",
+              "type": "boolean"
+            },
+            "budget": {
+              "$ref": "#/$defs/BudgetValidationSummary"
+            },
+            "issues": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/ValidationIssue"
+              },
+              "title": "Issues",
+              "type": "array"
+            },
+            "passed_rule_codes": {
+              "default": [],
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "Passed Rule Codes",
+              "type": "array"
+            }
+          },
+          "required": [
+            "request_id",
+            "plan_id",
+            "status",
+            "can_finalize",
+            "budget"
+          ],
+          "title": "PlanValidationReport",
+          "type": "object"
+        },
+        "PlanValidationStatus": {
+          "enum": [
+            "passed",
+            "warning",
+            "conflicted"
+          ],
+          "title": "PlanValidationStatus",
+          "type": "string"
+        },
+        "RepairAction": {
+          "enum": [
+            "none",
+            "rerun_constraint",
+            "rerun_explore",
+            "rerun_stay",
+            "rerun_route",
+            "replan_day",
+            "recalculate_budget",
+            "ask_user"
+          ],
+          "title": "RepairAction",
+          "type": "string"
+        },
+        "ResponsibleNode": {
+          "enum": [
+            "constraint",
+            "explore",
+            "stay",
+            "weather",
+            "route",
+            "plan",
+            "budget",
+            "validator"
+          ],
+          "title": "ResponsibleNode",
+          "type": "string"
+        },
+        "RiskSeverity": {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "extreme"
+          ],
+          "title": "RiskSeverity",
+          "type": "string"
+        },
+        "RouteEndpoint": {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "minLength": 1,
+              "title": "Name",
+              "type": "string"
+            },
+            "candidate_id": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Candidate Id"
+            },
+            "location": {
+              "$ref": "#/$defs/GeoPoint"
+            }
+          },
+          "required": [
+            "name",
+            "location"
+          ],
+          "title": "RouteEndpoint",
+          "type": "object"
+        },
+        "RouteLeg": {
+          "additionalProperties": false,
+          "properties": {
+            "route_leg_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Route Leg Id",
+              "type": "string"
+            },
+            "origin": {
+              "$ref": "#/$defs/RouteEndpoint"
+            },
+            "destination": {
+              "$ref": "#/$defs/RouteEndpoint"
+            },
+            "mode": {
+              "$ref": "#/$defs/RouteMode"
+            },
+            "distance_meters": {
+              "minimum": 0,
+              "title": "Distance Meters",
+              "type": "integer"
+            },
+            "duration_minutes": {
+              "exclusiveMinimum": 0,
+              "maximum": 1440,
+              "title": "Duration Minutes",
+              "type": "integer"
+            },
+            "source": {
+              "$ref": "#/$defs/SourceReference"
+            }
+          },
+          "required": [
+            "route_leg_id",
+            "origin",
+            "destination",
+            "mode",
+            "distance_meters",
+            "duration_minutes",
+            "source"
+          ],
+          "title": "RouteLeg",
+          "type": "object"
+        },
+        "RouteMode": {
+          "enum": [
+            "walking",
+            "transit",
+            "driving",
+            "cycling"
+          ],
+          "title": "RouteMode",
+          "type": "string"
+        },
+        "SourceReference": {
+          "additionalProperties": false,
+          "description": "Traceable origin for provider data or an explicit estimate.",
+          "properties": {
+            "provider": {
+              "minLength": 1,
+              "title": "Provider",
+              "type": "string"
+            },
+            "provider_id": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Provider Id"
+            },
+            "data_mode": {
+              "$ref": "#/$defs/DataMode"
+            },
+            "retrieved_at": {
+              "format": "date-time",
+              "title": "Retrieved At",
+              "type": "string"
+            },
+            "raw_response_sha256": {
+              "anyOf": [
+                {
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Raw Response Sha256"
+            }
+          },
+          "required": [
+            "provider",
+            "data_mode",
+            "retrieved_at"
+          ],
+          "title": "SourceReference",
+          "type": "object"
+        },
+        "TripPlan": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "plan_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Plan Id",
+              "type": "string"
+            },
+            "request_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Request Id",
+              "type": "string"
+            },
+            "status": {
+              "$ref": "#/$defs/PlanStatus"
+            },
+            "destination_city": {
+              "minLength": 1,
+              "title": "Destination City",
+              "type": "string"
+            },
+            "start_date": {
+              "format": "date",
+              "title": "Start Date",
+              "type": "string"
+            },
+            "end_date": {
+              "format": "date",
+              "title": "End Date",
+              "type": "string"
+            },
+            "days": {
+              "items": {
+                "$ref": "#/$defs/DayPlan"
+              },
+              "maxItems": 5,
+              "minItems": 2,
+              "title": "Days",
+              "type": "array"
+            },
+            "cost_items": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/CostItem"
+              },
+              "title": "Cost Items",
+              "type": "array"
+            },
+            "weather_risks": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/WeatherRisk"
+              },
+              "title": "Weather Risks",
+              "type": "array"
+            }
+          },
+          "required": [
+            "plan_id",
+            "request_id",
+            "status",
+            "destination_city",
+            "start_date",
+            "end_date",
+            "days"
+          ],
+          "title": "TripPlan",
+          "type": "object"
+        },
+        "ValidationEvidence": {
+          "additionalProperties": false,
+          "properties": {
+            "field_path": {
+              "minLength": 1,
+              "title": "Field Path",
+              "type": "string"
+            },
+            "description": {
+              "minLength": 1,
+              "title": "Description",
+              "type": "string"
+            },
+            "observed_value": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Observed Value"
+            }
+          },
+          "required": [
+            "field_path",
+            "description"
+          ],
+          "title": "ValidationEvidence",
+          "type": "object"
+        },
+        "ValidationIssue": {
+          "additionalProperties": false,
+          "properties": {
+            "issue_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Issue Id",
+              "type": "string"
+            },
+            "rule_code": {
+              "minLength": 1,
+              "title": "Rule Code",
+              "type": "string"
+            },
+            "severity": {
+              "$ref": "#/$defs/IssueSeverity"
+            },
+            "message": {
+              "minLength": 1,
+              "title": "Message",
+              "type": "string"
+            },
+            "evidence": {
+              "items": {
+                "$ref": "#/$defs/ValidationEvidence"
+              },
+              "title": "Evidence",
+              "type": "array"
+            },
+            "responsible_node": {
+              "$ref": "#/$defs/ResponsibleNode"
+            },
+            "repairable": {
+              "title": "Repairable",
+              "type": "boolean"
+            },
+            "repair_action": {
+              "$ref": "#/$defs/RepairAction"
+            },
+            "requires_user_confirmation": {
+              "default": false,
+              "title": "Requires User Confirmation",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "issue_id",
+            "rule_code",
+            "severity",
+            "message",
+            "evidence",
+            "responsible_node",
+            "repairable",
+            "repair_action"
+          ],
+          "title": "ValidationIssue",
+          "type": "object"
+        },
+        "WeatherRisk": {
+          "additionalProperties": false,
+          "properties": {
+            "risk_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Risk Id",
+              "type": "string"
+            },
+            "city": {
+              "minLength": 1,
+              "title": "City",
+              "type": "string"
+            },
+            "starts_at": {
+              "format": "date-time",
+              "title": "Starts At",
+              "type": "string"
+            },
+            "ends_at": {
+              "format": "date-time",
+              "title": "Ends At",
+              "type": "string"
+            },
+            "risk_type": {
+              "$ref": "#/$defs/WeatherRiskType"
+            },
+            "severity": {
+              "$ref": "#/$defs/RiskSeverity"
+            },
+            "metrics": {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "propertyNames": {
+                "minLength": 1
+              },
+              "title": "Metrics",
+              "type": "object"
+            },
+            "threshold_description": {
+              "minLength": 1,
+              "title": "Threshold Description",
+              "type": "string"
+            },
+            "affected_activity_types": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Affected Activity Types",
+              "type": "array"
+            },
+            "advisory": {
+              "minLength": 1,
+              "title": "Advisory",
+              "type": "string"
+            },
+            "source": {
+              "$ref": "#/$defs/SourceReference"
+            }
+          },
+          "required": [
+            "risk_id",
+            "city",
+            "starts_at",
+            "ends_at",
+            "risk_type",
+            "severity",
+            "threshold_description",
+            "affected_activity_types",
+            "advisory",
+            "source"
+          ],
+          "title": "WeatherRisk",
+          "type": "object"
+        },
+        "WeatherRiskType": {
+          "enum": [
+            "rain",
+            "heat",
+            "wind",
+            "snow",
+            "cold",
+            "air_quality"
+          ],
+          "title": "WeatherRiskType",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "executor_version": {
+          "const": "deterministic-local-revision-v1",
+          "default": "deterministic-local-revision-v1",
+          "title": "Executor Version",
+          "type": "string"
+        },
+        "request": {
+          "$ref": "#/$defs/PlanRevisionRequest"
+        },
+        "revised_plan": {
+          "$ref": "#/$defs/TripPlan"
+        },
+        "validation": {
+          "$ref": "#/$defs/PlanValidationReport"
+        },
+        "diff": {
+          "$ref": "#/$defs/PlanRevisionDiff"
+        },
+        "reused_provider_results": {
+          "const": true,
+          "default": true,
+          "title": "Reused Provider Results",
+          "type": "boolean"
+        },
+        "reused_planner_result": {
+          "const": true,
+          "default": true,
+          "title": "Reused Planner Result",
+          "type": "boolean"
+        },
+        "model_call_count": {
+          "const": 0,
+          "default": 0,
+          "title": "Model Call Count",
+          "type": "integer"
+        },
+        "provider_call_count": {
+          "const": 0,
+          "default": 0,
+          "title": "Provider Call Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "request",
+        "revised_plan",
+        "validation",
+        "diff"
+      ],
+      "title": "PlanRevisionResult",
       "type": "object"
     }
   }

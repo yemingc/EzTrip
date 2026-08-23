@@ -98,6 +98,7 @@
         "approved_draft",
         "conflict_acknowledged",
         "revision_requested",
+        "revision_applied",
         "cancelled"
       ],
       "title": "PlanningThreadStatus",

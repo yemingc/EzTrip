@@ -98,6 +98,7 @@ export interface WeatherRisk {
 
 export interface TripPlan {
   plan_id: string;
+  request_id: string;
   status: "draft" | "pending_confirmation" | "final" | "conflicted";
   destination_city: string;
   start_date: string;
@@ -169,6 +170,38 @@ export interface VerticalSliceResult {
   validation: PlanValidation;
 }
 
+export interface PlanRevisionRequest {
+  schema_version: "1.0";
+  revision_id: string;
+  base_version_id: string;
+  base_plan_id: string;
+  target_date: string;
+  operation: "shift_day_later";
+  shift_minutes: number;
+  target_item_ids: string[];
+  protected_item_ids: string[];
+  confirmed: true;
+}
+
+export interface PlanRevisionResult {
+  executor_version: "deterministic-local-revision-v1";
+  request: PlanRevisionRequest;
+  revised_plan: TripPlan;
+  validation: PlanValidation;
+  diff: {
+    from_plan_id: string;
+    to_plan_id: string;
+    changed_dates: string[];
+    rescheduled_item_ids: string[];
+    added_item_ids: string[];
+    removed_item_ids: string[];
+  };
+  reused_provider_results: true;
+  reused_planner_result: true;
+  model_call_count: 0;
+  provider_call_count: 0;
+}
+
 export interface PlanningTaskSnapshot {
   workflow_version: string;
   task_id: string;
@@ -185,6 +218,7 @@ export interface PlanningTaskSnapshot {
       status: string;
       vertical_slice: VerticalSliceResult;
       review_request: HumanReviewRequest | null;
+      revision_result: PlanRevisionResult | null;
     };
   } | null;
   failure: {
@@ -271,6 +305,11 @@ export interface PlanningTaskReviewDecisionAccepted {
   idempotent_replay: boolean;
   task_url: string;
   events_url: string;
+}
+
+export interface PlanRevisionSelection {
+  targetDate: string;
+  shiftMinutes: number;
 }
 
 export interface PlannerFormValues {
@@ -401,6 +440,7 @@ export async function submitPlanningTaskReview(
     action: HumanReviewAction;
     reviewerId: string;
     comment?: string;
+    revisionRequest?: PlanRevisionRequest;
   },
 ): Promise<PlanningTaskReviewDecisionAccepted> {
   const response = await fetch(
@@ -415,10 +455,39 @@ export async function submitPlanningTaskReview(
         action: input.action,
         reviewer_id: input.reviewerId,
         comment: input.comment?.trim() || null,
+        revision_request: input.revisionRequest ?? null,
       }),
     },
   );
   return parseJsonResponse<PlanningTaskReviewDecisionAccepted>(response);
+}
+
+export function buildPlanRevisionRequest(
+  snapshot: PlanningTaskSnapshot,
+  selection: PlanRevisionSelection,
+): PlanRevisionRequest {
+  const version = snapshot.plan_versions.at(-1);
+  if (!version) {
+    throw new Error("当前任务没有可修改的计划版本。");
+  }
+  const targetDay = version.plan.days.find((day) => day.date === selection.targetDate);
+  if (!targetDay) {
+    throw new Error("修改日期不属于当前计划。");
+  }
+  return {
+    schema_version: "1.0",
+    revision_id: `revision-${crypto.randomUUID().replaceAll("-", "")}`,
+    base_version_id: version.version_id,
+    base_plan_id: version.plan.plan_id,
+    target_date: targetDay.date,
+    operation: "shift_day_later",
+    shift_minutes: selection.shiftMinutes,
+    target_item_ids: targetDay.items.map((item) => item.item_id),
+    protected_item_ids: version.plan.days
+      .filter((day) => day.date !== targetDay.date)
+      .flatMap((day) => day.items.map((item) => item.item_id)),
+    confirmed: true,
+  };
 }
 
 export function planningEventsUrl(taskId: string, afterSequence = 0): string {

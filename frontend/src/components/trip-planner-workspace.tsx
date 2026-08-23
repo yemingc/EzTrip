@@ -5,11 +5,14 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { PlanningResults } from "@/components/planning-results";
 import {
   apiBaseUrl,
+  buildPlanRevisionRequest,
   createPlanningTask,
   getPlanningTask,
   planningEventsUrl,
   submitPlanningTaskReview,
   type HumanReviewAction,
+  type PlanRevisionRequest,
+  type PlanRevisionSelection,
   type PlannerFormValues,
   type PlanningTaskEvent,
   type PlanningTaskEventKind,
@@ -44,6 +47,7 @@ const nodeLabels: Record<string, string> = {
   prepare_human_review: "生成审核请求",
   human_review: "人工审核",
   apply_review_decision: "应用审核决定",
+  apply_plan_revision: "应用局部修改",
 };
 
 function connectionLabel(state: ConnectionState) {
@@ -159,6 +163,8 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
     action: HumanReviewAction;
     reviewerId: string;
     comment?: string;
+    revisionKey?: string;
+    revisionRequest?: PlanRevisionRequest;
   } | null>(null);
 
   useEffect(() => {
@@ -283,27 +289,34 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
     }
   }
 
-  async function submitReview(action: HumanReviewAction, comment?: string) {
+  async function submitReview(
+    action: HumanReviewAction,
+    comment?: string,
+    revisionSelection?: PlanRevisionSelection,
+  ) {
     const review = snapshot?.result?.state.review_request;
     if (!taskId || !snapshot || !review) {
       setReviewError("当前没有可提交的审核请求。");
       return;
     }
 
-    sourceRef.current?.close();
-    terminalRef.current = false;
-    recoveryRef.current = false;
-    setReviewError(null);
-    setPhase("streaming");
-    setConnection("connecting");
-
     const normalizedComment = comment?.trim() || undefined;
+    const revisionKey = revisionSelection
+      ? `${revisionSelection.targetDate}:${revisionSelection.shiftMinutes}`
+      : undefined;
+    if (action === "request_revision" && !revisionSelection) {
+      setReviewError("请选择修改日期和延后幅度。");
+      return;
+    }
     const existing = pendingReviewRef.current;
-    const decision =
+    let decision: NonNullable<typeof pendingReviewRef.current>;
+    try {
+      decision =
       existing &&
       existing.reviewId === review.review_id &&
       existing.action === action &&
-      existing.comment === normalizedComment
+      existing.comment === normalizedComment &&
+      existing.revisionKey === revisionKey
         ? existing
         : {
             decisionId: `review-decision-${crypto.randomUUID().replaceAll("-", "")}`,
@@ -311,8 +324,26 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
             action,
             reviewerId: `web-reviewer-${crypto.randomUUID().replaceAll("-", "")}`,
             comment: normalizedComment,
+            revisionKey,
+            revisionRequest:
+              action === "request_revision" && revisionSelection
+                ? buildPlanRevisionRequest(snapshot, revisionSelection)
+                : undefined,
           };
+    } catch (revisionError) {
+      setReviewError(
+        revisionError instanceof Error ? revisionError.message : "无法构造结构化修改请求。",
+      );
+      return;
+    }
     pendingReviewRef.current = decision;
+
+    sourceRef.current?.close();
+    terminalRef.current = false;
+    recoveryRef.current = false;
+    setReviewError(null);
+    setPhase("streaming");
+    setConnection("connecting");
 
     try {
       await submitPlanningTaskReview(taskId, decision);

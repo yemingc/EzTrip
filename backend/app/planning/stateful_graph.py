@@ -16,6 +16,7 @@ from app.agents.single_planner import PlannerProposalModel
 from app.domain.money import CostItem
 from app.domain.request import TripRequest
 from app.domain.sources import DataMode
+from app.planning.plan_revision import apply_plan_revision
 from app.planning.stateful_contracts import (
     CheckpointHistoryEntry,
     Clock,
@@ -242,7 +243,11 @@ def build_stateful_planning_graph(
         event = StatefulPlanningEvent(
             node=StatefulPlanningNodeName.APPLY_REVIEW_DECISION,
             outcome=StatefulPlanningNodeOutcome.COMPLETED,
-            detail="人审决定已映射为终态, 原 TripPlan 保持 draft 且未被静默修改。",
+            detail=(
+                "人审决定已映射为工作流状态; 修改请求将继续进入受限 revision node。"
+                if state.review_decision.action == HumanReviewAction.REQUEST_REVISION
+                else "人审决定已映射为终态, 原 TripPlan 保持 draft 且未被静默修改。"
+            ),
         )
         return {
             "state": _state_update(
@@ -253,6 +258,46 @@ def build_stateful_planning_graph(
                 )
             )
         }
+
+    def apply_plan_revision_node(
+        graph_state: StatefulPlanningGraphState,
+    ) -> dict[str, Any]:
+        state = _require_state(graph_state)
+        if (
+            state.status != PlanningThreadStatus.REVISION_REQUESTED
+            or state.review_decision is None
+            or state.review_decision.revision_request is None
+            or state.vertical_slice is None
+        ):
+            raise StatefulPlanningProtocolError(
+                "revision node requires a structured revision decision"
+            )
+        result = apply_plan_revision(
+            state.request,
+            state.vertical_slice.plan,
+            state.review_decision.revision_request,
+        )
+        event = StatefulPlanningEvent(
+            node=StatefulPlanningNodeName.APPLY_PLAN_REVISION,
+            outcome=StatefulPlanningNodeOutcome.REVISED,
+            detail=("结构化修改已限定在目标日期, 复用 Provider/Planner 结果并重新执行确定性校验。"),
+        )
+        return {
+            "state": _state_update(
+                _evolve_state(
+                    state,
+                    status=PlanningThreadStatus.REVISION_APPLIED,
+                    revision_result=result,
+                    events=(*state.events, event),
+                )
+            )
+        }
+
+    def route_after_review_decision(graph_state: StatefulPlanningGraphState) -> str:
+        state = _require_state(graph_state)
+        if state.status == PlanningThreadStatus.REVISION_REQUESTED:
+            return StatefulPlanningNodeName.APPLY_PLAN_REVISION.value
+        return END
 
     workflow = StateGraph(StatefulPlanningGraphState)
     # LangGraph's overloaded add_node type cannot infer this single-field state,
@@ -273,6 +318,10 @@ def build_stateful_planning_graph(
         StatefulPlanningNodeName.APPLY_REVIEW_DECISION.value,
         cast(Any, apply_review_decision_node),
     )
+    workflow.add_node(
+        StatefulPlanningNodeName.APPLY_PLAN_REVISION.value,
+        cast(Any, apply_plan_revision_node),
+    )
     workflow.add_edge(START, StatefulPlanningNodeName.RUN_VERTICAL_SLICE.value)
     workflow.add_edge(
         StatefulPlanningNodeName.RUN_VERTICAL_SLICE.value,
@@ -286,7 +335,17 @@ def build_stateful_planning_graph(
         StatefulPlanningNodeName.HUMAN_REVIEW.value,
         StatefulPlanningNodeName.APPLY_REVIEW_DECISION.value,
     )
-    workflow.add_edge(StatefulPlanningNodeName.APPLY_REVIEW_DECISION.value, END)
+    workflow.add_conditional_edges(
+        StatefulPlanningNodeName.APPLY_REVIEW_DECISION.value,
+        route_after_review_decision,
+        {
+            StatefulPlanningNodeName.APPLY_PLAN_REVISION.value: (
+                StatefulPlanningNodeName.APPLY_PLAN_REVISION.value
+            ),
+            END: END,
+        },
+    )
+    workflow.add_edge(StatefulPlanningNodeName.APPLY_PLAN_REVISION.value, END)
     return workflow.compile(checkpointer=checkpointer, name=STATEFUL_PLANNING_GRAPH_NAME)
 
 

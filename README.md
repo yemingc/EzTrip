@@ -4,7 +4,7 @@
 
 当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、开放式景点/餐饮 Explore Agent、住宿区域筛选 Stay Agent、确定性预算/基础计划 Validator、北京三日 Gate 2 最小纵向切片、基于 SQLite checkpoint 的可恢复主编排与原生 HITL、Explore/Stay/主动天气三分支并行编排、有界路线矩阵和确定性预算材料层、把这些专业信息包合成为同构完整 `TripPlan` 草案的 schema-constrained Plan Agent、阻止不可靠草案定稿的 Hard Validators、消费 typed issue 的有界 Repair Router，以及 Weather Provider 风险主动触发的局部修复协调器。模型路径都有真实 DeepSeek/LangSmith 隔离评测；纵向切片、恢复、fan-out、材料层、Plan Agent、Hard Validators、Repair Router 与 Weather Repair 都有 fixture 可重放证据。
 
-产品调用层已提供 FastAPI 异步规划任务、任务快照、来自真实 LangGraph 节点提交的可回放 SSE，以及四类人工审核决定的 checkpoint resume。Next.js 工作台完成“提交结构化约束 → 显示真实事件 → 展示行程、预算校验、坐标与来源 → 人工批准/确认冲突/请求修改/取消 → 展示审核结果与计划版本”的浏览器闭环。Playwright 使用真实 fixture 后端覆盖正常批准、费用事实缺失、修改请求和移动端四条路径。当前 API 还没有把较新的 specialist/Plan/Repair/Weather 组件接成同一条产品任务 Graph；`request_revision` 只可靠记录修改请求，尚未生成 v2 或执行局部重算；自然语言抽取、真实地图底图和定时 WeatherWatch 也属于后续任务。协议见 [`docs/api/planning-task-api.md`](docs/api/planning-task-api.md)，前端边界见 [`frontend/README.md`](frontend/README.md)。
+产品调用层已提供 FastAPI 异步规划任务、任务快照、来自真实 LangGraph 节点提交的可回放 SSE，以及四类人工审核决定的 checkpoint resume。Next.js 工作台完成“提交结构化约束 → 显示真实事件 → 展示行程、预算校验、坐标与来源 → 人工批准/确认冲突/结构化局部修改/取消 → 展示审核结果与计划版本”的浏览器闭环。`request_revision` 现在要求用户明确选择目标日期和延后幅度，同时提交目标/保护 item 集合与基准版本；同一 checkpoint 内的确定性 revision node 复用 Provider/Planner 结果、重新校验并生成真正的 v2。Playwright 使用真实 fixture 后端覆盖正常批准、费用事实缺失、v2 局部修改和移动端四条路径。当前 API 仍没有把较新的 specialist/Plan/Repair/Weather 组件接成同一条产品任务 Graph；v2 只覆盖目标日整体延后，不等同于开放式自然语言重规划或完整 Hard Validator/Repair Router 接线。协议见 [`docs/api/planning-task-api.md`](docs/api/planning-task-api.md)，前端边界见 [`frontend/README.md`](frontend/README.md)。
 
 ## 技术基线
 
@@ -231,7 +231,7 @@ uv run pytest tests/test_vertical_slice.py --no-cov
 
 ## 可恢复主编排与 HITL
 
-[`docs/planning/stateful-checkpoint-hitl.md`](docs/planning/stateful-checkpoint-hitl.md) 在 Gate 2 外增加 `run_vertical_slice → prepare_human_review → interrupt → apply_review_decision` 主图。LangGraph 原生 `interrupt` 和 `Command(resume=...)` 配合 SQLite checkpoint，使 graph/runtime 关闭并重建后仍能从相同 `thread_id` 继续；内部候选搜索和 Planner 子图不会继承检查点，因此恢复不会重复调用 provider 或模型。
+[`docs/planning/stateful-checkpoint-hitl.md`](docs/planning/stateful-checkpoint-hitl.md) 在 Gate 2 外增加 `run_vertical_slice → prepare_human_review → interrupt → apply_review_decision` 主图；结构化修改决定会继续进入 `apply_plan_revision`。LangGraph 原生 `interrupt` 和 `Command(resume=...)` 配合 SQLite checkpoint，使 graph/runtime 关闭并重建后仍能从相同 `thread_id` 继续；内部候选搜索和 Planner 子图不会继承检查点，因此恢复与局部时间调整都不会重复调用 provider 或模型。
 
 ```powershell
 Set-Location backend
@@ -239,7 +239,7 @@ uv run python -m scripts.run_checkpoint_hitl_eval
 uv run pytest tests/test_stateful_planning.py --no-cov
 ```
 
-提交报告为 2/2 cases、20/20 checks、2/2 runtime reconstructions，恢复阶段 provider/model 调用均为 0。正常案例只能批准为 `approved_draft`；预算硬冲突不允许批准，只能显式确认冲突、请求修改或取消。该恢复协议现已通过 review-decision API 和产品工作台开放，带 decision ID 幂等、恢复阶段 SSE、PlanVersion v1 与 review outcome；当前审核不修改行程，因此明确记录 v1→v1 零变更。SQLite 仍只是 Graph checkpoint 的本地恢复证据，不是生产级多进程并发、高可用或加密方案；API task/event/decision 元数据尚未持久化。
+原始 checkpoint 报告为 2/2 cases、20/20 checks、2/2 runtime reconstructions，恢复阶段 provider/model 调用均为 0。正常批准和冲突确认仍明确记录 v1→v1 零变更；结构化修改则校验 base version、目标/保护 scope，只改变一个目标日期并生成 v2。当前 revision executor 只运行 `deterministic-plan-validator-v1`，不会声称拥有尚未接线的路线、营业时间或完整 Hard Validator 证据。SQLite 仍只是 Graph checkpoint 的本地恢复证据，不是生产级多进程并发、高可用或加密方案；API task/event/decision 元数据尚未持久化。
 
 ## Specialist 并行 fan-out
 

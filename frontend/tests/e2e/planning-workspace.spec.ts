@@ -54,19 +54,28 @@ test("does not present missing cost facts as a zero-cost trip", async ({ page })
   await expect(results).toContainText("已确认冲突");
 });
 
-test("records a revision request without pretending a new plan was generated", async ({ page }) => {
+test("applies a structured day-scoped revision and renders plan version v2", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("submit-planning-task").click();
   const results = page.getByTestId("planning-results");
   await expect(results).toBeVisible({ timeout: 20_000 });
 
-  await page.getByRole("button", { name: "记录修改请求" }).click();
-  await page.getByLabel("修改说明").fill("希望把第二天安排得更轻松。");
-  await page.getByRole("button", { name: "提交修改请求" }).click();
+  await page.getByRole("button", { name: "局部修改" }).click();
+  await page.getByLabel("活动延后时间").selectOption("120");
+  await page.getByLabel("修改说明").fill("第二天想晚一点出发。");
+  await page.getByRole("button", { name: "生成局部修改草案" }).click();
 
-  await expect(results).toContainText("已记录修改请求");
-  await expect(results).toContainText("本增量尚未生成新的计划版本");
-  await expect(results).toContainText("v1 → v1");
+  await expect(page.getByTestId("event-trace")).toContainText("应用局部修改");
+  await expect(results).toContainText("已生成修改草案");
+  await expect(results).toContainText("v2 修改草案 · 尚未再次审核");
+  await expect(results).toContainText("v1 → v2");
+  await expect(results).toContainText("计划已修改 · 1 个受影响日期");
+  await expect(results).toContainText("11:00 — 13:00");
+
+  await page.screenshot({
+    path: "test-results/eztrip-structured-revision-v2.png",
+    fullPage: true,
+  });
 });
 
 test("keeps the planning flow usable on a mobile viewport", async ({ page }) => {

@@ -2,7 +2,7 @@
 
 EZ-401 exposes the existing SQLite-checkpointed Gate 2 workflow through an asynchronous FastAPI
 boundary; EZ-403A adds an idempotent human-review decision boundary and resumes the same LangGraph
-checkpoint. The API accepts an already structured `TripRequest`; Chinese free-text extraction and
+checkpoint; EZ-403B adds a bounded structured revision that creates PlanVersion v2. The API accepts an already structured `TripRequest`; Chinese free-text extraction and
 the newer specialist/Plan/Repair/Weather orchestration are not silently implied by this endpoint.
 
 ## Endpoints
@@ -91,7 +91,7 @@ connection alive but are not planning progress.
 
 ## Human-review resume
 
-Read `result.pending_review.review_id` from the awaiting-input snapshot, generate a stable
+Read `result.state.review_request.review_id` from the awaiting-input snapshot, generate a stable
 `decision_id` on the client, and submit one of the actions allowed by that pending review:
 
 ```powershell
@@ -113,7 +113,8 @@ curl.exe -N ("http://localhost:8000" + $acceptedDecision.events_url + "?after=5"
 
 The four protocol actions are `approve_draft`, `acknowledge_conflict`, `request_revision`, and
 `cancel`. The current pending review determines which actions are allowed. `request_revision`
-requires a non-empty `comment` of at most 500 characters.
+requires a non-empty `comment` of at most 500 characters and a confirmed structured
+`revision_request`.
 
 An accepted decision produces the following continuation events without replaying Provider or
 Planner nodes:
@@ -125,6 +126,16 @@ graph_node_completed (apply_review_decision, terminal review state)
 task_succeeded
 ```
 
+`request_revision` has one additional committed node and event:
+
+```text
+task_review_submitted
+graph_node_completed (human_review, state=review_decided)
+graph_node_completed (apply_review_decision, state=revision_requested)
+graph_node_completed (apply_plan_revision, state=revision_applied)
+task_succeeded
+```
+
 The client must reuse the same `decision_id` when retrying an ambiguous network result. An exact
 replay returns `idempotent_replay=true` and does not start another resume worker. Reusing the same
 ID for different content returns `409 review-decision-idempotency-conflict`; a second distinct
@@ -132,11 +143,46 @@ decision returns `409 review-already-decided`. Wrong task state, review ID, or d
 also return stable typed `409` errors.
 
 Every generated draft is captured as `plan_versions[0]` (`v1`) with constraint, tool snapshot,
-model, prompt, and changed-date lineage. All four current review actions preserve that plan, so the
-terminal `review_outcome.plan_diff` explicitly records `v1 → v1`, `plan_changed=false`, and zero
-changed dates. In particular, `request_revision` records `revision_requested` and the reviewer
-comment but does not claim that a revised itinerary exists. Structured change requests, selective
-replanning, and a real `v2` belong to EZ-403B.
+model, prompt, and changed-date lineage. Approve, acknowledge, and cancel preserve that plan, so
+the terminal `review_outcome.plan_diff` records `v1 → v1`, `plan_changed=false`, and zero changed
+dates.
+
+### Structured revision request
+
+The current bounded operation is `shift_day_later`. The client must build its scope from the latest
+`PlanVersion`: all item IDs on the selected date are targets, and every item on all other dates is
+protected. For example:
+
+```json
+{
+  "decision_id": "decision-local-revision-001",
+  "review_id": "human-review-...",
+  "action": "request_revision",
+  "reviewer_id": "local-user",
+  "comment": "第二天想晚一点出发。",
+  "revision_request": {
+    "revision_id": "revision-local-001",
+    "base_version_id": "plan-version-...",
+    "base_plan_id": "trip-plan-...",
+    "target_date": "2026-10-03",
+    "operation": "shift_day_later",
+    "shift_minutes": 120,
+    "target_item_ids": ["itinerary-item-day-two"],
+    "protected_item_ids": ["itinerary-item-day-one"],
+    "confirmed": true
+  }
+}
+```
+
+The server rejects stale base versions with `409 revision-base-version-mismatch` and incomplete or
+drifted scope with `409 revision-scope-mismatch`. The checkpoint revision node then shifts exactly
+the target-day items, rejects cross-date timestamps, preserves all other days and plan facts,
+re-runs `deterministic-plan-validator-v1`, and records `v1 → v2` with changed dates and rescheduled
+item IDs. It makes zero Provider and model calls.
+
+This is not an open-ended natural-language replan. It does not add/remove POIs or recalculate
+routes/opening hours, and the full specialist/Plan/Repair/Hard Validator graph is not yet the
+product task executor. The returned v2 remains a draft that has not been reviewed again.
 
 ## Reconnect and failure rules
 
@@ -157,4 +203,4 @@ LangGraph planning state is persisted per task in ignored local SQLite checkpoin
 review endpoint resumes that checkpoint. Task metadata, accepted-decision indexes, and the SSE
 event log are currently stored in process memory, so API reconstruction and idempotency do not
 survive a server restart. Durable task/event/decision persistence, multi-worker coordination,
-worker cancellation, selective replanning, and a production outbox remain later product work.
+worker cancellation, broader selective replanning, and a production outbox remain later product work.

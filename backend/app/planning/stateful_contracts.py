@@ -10,6 +10,7 @@ from app.domain.money import CostItem
 from app.domain.request import TripRequest
 from app.domain.sources import DataMode
 from app.domain.validation import PlanValidationStatus
+from app.planning.revision_contracts import PlanRevisionRequest, PlanRevisionResult
 from app.planning.vertical_slice import VerticalSliceResult
 
 
@@ -33,6 +34,7 @@ class PlanningThreadStatus(StrEnum):
     APPROVED_DRAFT = "approved_draft"
     CONFLICT_ACKNOWLEDGED = "conflict_acknowledged"
     REVISION_REQUESTED = "revision_requested"
+    REVISION_APPLIED = "revision_applied"
     CANCELLED = "cancelled"
 
 
@@ -41,12 +43,14 @@ class StatefulPlanningNodeName(StrEnum):
     PREPARE_HUMAN_REVIEW = "prepare_human_review"
     HUMAN_REVIEW = "human_review"
     APPLY_REVIEW_DECISION = "apply_review_decision"
+    APPLY_PLAN_REVISION = "apply_plan_revision"
 
 
 class StatefulPlanningNodeOutcome(StrEnum):
     PLANNED = "planned"
     REVIEW_REQUIRED = "review_required"
     RESUMED = "resumed"
+    REVISED = "revised"
     COMPLETED = "completed"
 
 
@@ -115,6 +119,16 @@ class HumanReviewResume(DomainModel):
     action: HumanReviewAction
     reviewer_id: Identifier
     comment: NonEmptyText | None = None
+    revision_request: PlanRevisionRequest | None = None
+
+    @model_validator(mode="after")
+    def validate_revision_payload(self) -> "HumanReviewResume":
+        is_revision = self.action == HumanReviewAction.REQUEST_REVISION
+        if is_revision != (self.revision_request is not None):
+            raise ValueError("request_revision requires exactly one structured revision request")
+        if is_revision and self.comment is None:
+            raise ValueError("request_revision requires a reviewer comment")
+        return self
 
 
 class HumanReviewDecision(HumanReviewResume):
@@ -132,12 +146,21 @@ class StatefulPlanningData(DomainModel):
     vertical_slice: VerticalSliceResult | None = None
     review_request: HumanReviewRequest | None = None
     review_decision: HumanReviewDecision | None = None
+    revision_result: PlanRevisionResult | None = None
     events: tuple[StatefulPlanningEvent, ...] = ()
 
     @model_validator(mode="after")
     def validate_state_machine(self) -> "StatefulPlanningData":
         if self.status == PlanningThreadStatus.PLANNING:
-            if any((self.vertical_slice, self.review_request, self.review_decision, self.events)):
+            if any(
+                (
+                    self.vertical_slice,
+                    self.review_request,
+                    self.review_decision,
+                    self.revision_result,
+                    self.events,
+                )
+            ):
                 raise ValueError("planning state cannot contain downstream results")
             return self
 
@@ -151,7 +174,11 @@ class StatefulPlanningData(DomainModel):
             raise ValueError("state cost_items must match the assembled plan")
 
         if self.status == PlanningThreadStatus.PLAN_READY:
-            if self.review_request is not None or self.review_decision is not None:
+            if (
+                self.review_request is not None
+                or self.review_decision is not None
+                or self.revision_result is not None
+            ):
                 raise ValueError("plan_ready state cannot contain review data")
             if tuple(event.node for event in self.events) != (
                 StatefulPlanningNodeName.RUN_VERTICAL_SLICE,
@@ -182,7 +209,11 @@ class StatefulPlanningData(DomainModel):
             raise ValueError("stateful planning events must preserve node order")
 
         if self.status == PlanningThreadStatus.AWAITING_HUMAN_REVIEW:
-            if self.review_decision is not None or event_nodes != expected_prefix:
+            if (
+                self.review_decision is not None
+                or self.revision_result is not None
+                or event_nodes != expected_prefix
+            ):
                 raise ValueError("awaiting review state cannot contain a decision")
             return self
 
@@ -198,22 +229,51 @@ class StatefulPlanningData(DomainModel):
                 *expected_prefix,
                 StatefulPlanningNodeName.HUMAN_REVIEW,
             )
-            if event_nodes != expected_decided_nodes:
+            if self.revision_result is not None or event_nodes != expected_decided_nodes:
                 raise ValueError("review_decided state must follow the review node")
             return self
-        expected_nodes = (
+        decision_nodes = (
             *expected_prefix,
             StatefulPlanningNodeName.HUMAN_REVIEW,
             StatefulPlanningNodeName.APPLY_REVIEW_DECISION,
         )
-        if event_nodes != expected_nodes:
+        if self.status == PlanningThreadStatus.REVISION_REQUESTED:
+            if (
+                decision.action != HumanReviewAction.REQUEST_REVISION
+                or decision.revision_request is None
+                or self.revision_result is not None
+                or event_nodes != decision_nodes
+            ):
+                raise ValueError("revision_requested state must preserve its structured decision")
+            return self
+        if self.status == PlanningThreadStatus.REVISION_APPLIED:
+            expected_revision_nodes = (
+                *decision_nodes,
+                StatefulPlanningNodeName.APPLY_PLAN_REVISION,
+            )
+            if (
+                decision.action != HumanReviewAction.REQUEST_REVISION
+                or decision.revision_request is None
+                or self.revision_result is None
+                or event_nodes != expected_revision_nodes
+            ):
+                raise ValueError("revision_applied state must follow the revision node")
+            if (
+                self.revision_result.request != decision.revision_request
+                or self.revision_result.revised_plan.request_id != self.request.request_id
+                or self.revision_result.diff.from_plan_id != self.vertical_slice.plan.plan_id
+            ):
+                raise ValueError("revision result must preserve decision and plan lineage")
+            return self
+        if self.revision_result is not None or event_nodes != decision_nodes:
             raise ValueError("terminal planning events must preserve node order")
         expected_status = {
             HumanReviewAction.APPROVE_DRAFT: PlanningThreadStatus.APPROVED_DRAFT,
             HumanReviewAction.ACKNOWLEDGE_CONFLICT: (PlanningThreadStatus.CONFLICT_ACKNOWLEDGED),
-            HumanReviewAction.REQUEST_REVISION: PlanningThreadStatus.REVISION_REQUESTED,
             HumanReviewAction.CANCEL: PlanningThreadStatus.CANCELLED,
-        }[decision.action]
+        }.get(decision.action)
+        if expected_status is None:
+            raise ValueError("request_revision must continue to the revision node")
         if self.status != expected_status:
             raise ValueError("terminal status must follow the human decision")
         return self
