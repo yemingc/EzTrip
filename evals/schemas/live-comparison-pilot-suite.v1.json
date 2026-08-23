@@ -1,0 +1,404 @@
+{
+  "$defs": {
+    "ComparisonArm": {
+      "enum": [
+        "single_agent_tools",
+        "product_graph_no_hard_gate",
+        "product_graph_bounded_repair"
+      ],
+      "title": "ComparisonArm",
+      "type": "string"
+    },
+    "LiveComparisonCallBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "case_count": {
+          "const": 3,
+          "default": 3,
+          "title": "Case Count",
+          "type": "integer"
+        },
+        "repetitions_per_case": {
+          "const": 2,
+          "default": 2,
+          "title": "Repetitions Per Case",
+          "type": "integer"
+        },
+        "trial_count": {
+          "const": 6,
+          "default": 6,
+          "title": "Trial Count",
+          "type": "integer"
+        },
+        "single_selection_calls_per_trial": {
+          "const": 1,
+          "default": 1,
+          "title": "Single Selection Calls Per Trial",
+          "type": "integer"
+        },
+        "single_plan_calls_per_trial": {
+          "const": 1,
+          "default": 1,
+          "title": "Single Plan Calls Per Trial",
+          "type": "integer"
+        },
+        "product_explore_calls_per_trial": {
+          "const": 2,
+          "default": 2,
+          "title": "Product Explore Calls Per Trial",
+          "type": "integer"
+        },
+        "product_stay_calls_per_trial": {
+          "const": 2,
+          "default": 2,
+          "title": "Product Stay Calls Per Trial",
+          "type": "integer"
+        },
+        "product_plan_calls_per_trial": {
+          "const": 1,
+          "default": 1,
+          "title": "Product Plan Calls Per Trial",
+          "type": "integer"
+        },
+        "base_model_calls_per_trial": {
+          "const": 7,
+          "default": 7,
+          "title": "Base Model Calls Per Trial",
+          "type": "integer"
+        },
+        "repair_model_call_allowance_per_trial": {
+          "const": 2,
+          "default": 2,
+          "title": "Repair Model Call Allowance Per Trial",
+          "type": "integer"
+        },
+        "max_model_calls": {
+          "const": 54,
+          "default": 54,
+          "title": "Max Model Calls",
+          "type": "integer"
+        },
+        "single_selection_max_completion_tokens": {
+          "const": 900,
+          "default": 900,
+          "title": "Single Selection Max Completion Tokens",
+          "type": "integer"
+        },
+        "single_plan_max_completion_tokens": {
+          "const": 900,
+          "default": 900,
+          "title": "Single Plan Max Completion Tokens",
+          "type": "integer"
+        },
+        "product_explore_query_max_completion_tokens": {
+          "const": 900,
+          "default": 900,
+          "title": "Product Explore Query Max Completion Tokens",
+          "type": "integer"
+        },
+        "product_explore_selection_max_completion_tokens": {
+          "const": 1200,
+          "default": 1200,
+          "title": "Product Explore Selection Max Completion Tokens",
+          "type": "integer"
+        },
+        "product_stay_query_max_completion_tokens": {
+          "const": 900,
+          "default": 900,
+          "title": "Product Stay Query Max Completion Tokens",
+          "type": "integer"
+        },
+        "product_stay_selection_max_completion_tokens": {
+          "const": 1200,
+          "default": 1200,
+          "title": "Product Stay Selection Max Completion Tokens",
+          "type": "integer"
+        },
+        "product_plan_max_completion_tokens": {
+          "const": 900,
+          "default": 900,
+          "title": "Product Plan Max Completion Tokens",
+          "type": "integer"
+        },
+        "repair_call_max_completion_tokens": {
+          "const": 1200,
+          "default": 1200,
+          "title": "Repair Call Max Completion Tokens",
+          "type": "integer"
+        },
+        "base_completion_tokens_per_trial": {
+          "const": 6900,
+          "default": 6900,
+          "title": "Base Completion Tokens Per Trial",
+          "type": "integer"
+        },
+        "repair_completion_token_allowance_per_trial": {
+          "const": 2400,
+          "default": 2400,
+          "title": "Repair Completion Token Allowance Per Trial",
+          "type": "integer"
+        },
+        "max_completion_tokens": {
+          "const": 55800,
+          "default": 55800,
+          "title": "Max Completion Tokens",
+          "type": "integer"
+        },
+        "max_parallel_live_trials": {
+          "const": 1,
+          "default": 1,
+          "title": "Max Parallel Live Trials",
+          "type": "integer"
+        }
+      },
+      "title": "LiveComparisonCallBudget",
+      "type": "object"
+    },
+    "LiveComparisonFairnessContract": {
+      "additionalProperties": false,
+      "properties": {
+        "same_structured_request": {
+          "const": true,
+          "title": "Same Structured Request",
+          "type": "boolean"
+        },
+        "same_frozen_provider_catalogs": {
+          "const": true,
+          "title": "Same Frozen Provider Catalogs",
+          "type": "boolean"
+        },
+        "same_model_name": {
+          "const": true,
+          "title": "Same Model Name",
+          "type": "boolean"
+        },
+        "temperature_zero": {
+          "const": true,
+          "title": "Temperature Zero",
+          "type": "boolean"
+        },
+        "same_output_trip_plan_contract": {
+          "const": true,
+          "title": "Same Output Trip Plan Contract",
+          "type": "boolean"
+        },
+        "same_post_run_evaluator": {
+          "const": true,
+          "title": "Same Post Run Evaluator",
+          "type": "boolean"
+        },
+        "product_initial_draft_shared_between_product_arms": {
+          "const": true,
+          "title": "Product Initial Draft Shared Between Product Arms",
+          "type": "boolean"
+        },
+        "sequential_trial_execution": {
+          "const": true,
+          "title": "Sequential Trial Execution",
+          "type": "boolean"
+        },
+        "provider_refresh_during_run": {
+          "const": false,
+          "title": "Provider Refresh During Run",
+          "type": "boolean"
+        },
+        "amap_calls_allowed": {
+          "const": false,
+          "title": "Amap Calls Allowed",
+          "type": "boolean"
+        },
+        "langsmith_tracing_required": {
+          "const": true,
+          "title": "Langsmith Tracing Required",
+          "type": "boolean"
+        },
+        "development_pilot_not_holdout": {
+          "const": true,
+          "title": "Development Pilot Not Holdout",
+          "type": "boolean"
+        },
+        "generalization_claim_allowed": {
+          "const": false,
+          "title": "Generalization Claim Allowed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "same_structured_request",
+        "same_frozen_provider_catalogs",
+        "same_model_name",
+        "temperature_zero",
+        "same_output_trip_plan_contract",
+        "same_post_run_evaluator",
+        "product_initial_draft_shared_between_product_arms",
+        "sequential_trial_execution",
+        "provider_refresh_during_run",
+        "amap_calls_allowed",
+        "langsmith_tracing_required",
+        "development_pilot_not_holdout",
+        "generalization_claim_allowed"
+      ],
+      "title": "LiveComparisonFairnessContract",
+      "type": "object"
+    },
+    "LiveComparisonPilotCase": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "source_plan_case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Source Plan Case Id",
+          "type": "string"
+        },
+        "profile": {
+          "$ref": "#/$defs/LiveComparisonPilotProfile"
+        },
+        "traveler_profile": {
+          "$ref": "#/$defs/TravelerProfile"
+        },
+        "boundary_notes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Boundary Notes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "title",
+        "source_plan_case_id",
+        "profile",
+        "traveler_profile",
+        "boundary_notes"
+      ],
+      "title": "LiveComparisonPilotCase",
+      "type": "object"
+    },
+    "LiveComparisonPilotProfile": {
+      "enum": [
+        "beijing_history",
+        "shanghai_view_food",
+        "chengdu_family"
+      ],
+      "title": "LiveComparisonPilotProfile",
+      "type": "string"
+    },
+    "TravelerProfile": {
+      "enum": [
+        "adults",
+        "couple",
+        "family_with_child",
+        "unsupported_boundary"
+      ],
+      "title": "TravelerProfile",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "suite": {
+      "const": "live-system-comparison-pilot-v1",
+      "default": "live-system-comparison-pilot-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "version": {
+      "const": 1,
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "dataset_role": {
+      "const": "repeated_development_pilot",
+      "default": "repeated_development_pilot",
+      "title": "Dataset Role",
+      "type": "string"
+    },
+    "provider_mode": {
+      "const": "frozen_fixture_catalogs",
+      "default": "frozen_fixture_catalogs",
+      "title": "Provider Mode",
+      "type": "string"
+    },
+    "model_provider": {
+      "const": "deepseek",
+      "default": "deepseek",
+      "title": "Model Provider",
+      "type": "string"
+    },
+    "model_name": {
+      "const": "deepseek-v4-pro",
+      "default": "deepseek-v4-pro",
+      "title": "Model Name",
+      "type": "string"
+    },
+    "temperature": {
+      "const": 0,
+      "default": 0,
+      "title": "Temperature",
+      "type": "integer"
+    },
+    "repetitions_per_case": {
+      "const": 2,
+      "default": 2,
+      "title": "Repetitions Per Case",
+      "type": "integer"
+    },
+    "arms": {
+      "items": {
+        "$ref": "#/$defs/ComparisonArm"
+      },
+      "title": "Arms",
+      "type": "array"
+    },
+    "fairness": {
+      "$ref": "#/$defs/LiveComparisonFairnessContract"
+    },
+    "call_budget": {
+      "$ref": "#/$defs/LiveComparisonCallBudget"
+    },
+    "cases": {
+      "items": {
+        "$ref": "#/$defs/LiveComparisonPilotCase"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "title": "Cases",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Limitations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "arms",
+    "fairness",
+    "call_budget",
+    "cases",
+    "limitations"
+  ],
+  "title": "LiveComparisonPilotSuite",
+  "type": "object"
+}

@@ -52,11 +52,18 @@ EZ-501B 已实现三组同构 runner。它读取相同的冻结工具快照，�
 
 报告没有调用 DeepSeek、高德或 LangSmith。Single arm 的 fixture token 记录完整，总计 6720；Product fixture 未完整记录所有 Specialist token，延迟也不是 live wall-clock，因此对应 token 总量和 p50/p95 均明确留空，而不是拿不完整数字比较。
 
+## 下一阶段：有界 repeated-live pilot
+
+EZ-502A 不直接对 30 条开发案例进行昂贵的 live 重放，而是先冻结 3 个代表案例、每条 2 次的 paired pilot。Single arm 每个 trial 使用 2 次模型调用；两个 Product arms 共享同一个初始草案，完整 arm 再消费最多 2 次修复额度，从而隔离随机生成与 Hard Validator/Repair 的影响。全实验硬上限是 54 次模型调用和 55,800 completion tokens；使用冻结 Provider catalogs，运行中高德调用为 0。
+
+这些案例仍来自既有开发集，因此只能形成 point-in-time pilot 证据，不能冒充 holdout 或泛化结果。完整协议、预算公式与零调用预检见 [`live-comparison-pilot-protocol.md`](live-comparison-pilot-protocol.md)。EZ-502A 本身不执行 DeepSeek、LangSmith trace 或高德请求。
+
 ## 验证
 
 ```powershell
 Set-Location backend
 uv run python -m scripts.export_comparison_eval_schemas
 uv run python -m scripts.run_system_comparison_eval
+uv run python -m scripts.plan_live_system_comparison
 uv run pytest tests/test_comparison_evaluation_contract.py tests/test_system_comparison_evaluation.py --no-cov
 ```

@@ -6,6 +6,8 @@ The product-facing planning API now runs Product Graph V2: parallel Explore/Stay
 
 The 30-case system-comparison inventory is frozen under `evals/cases/comparison`, with a deterministic report committed at `evals/reports/system-comparison-fixture.v1.json`. The full single-Agent arm and Product Graph without the hard gate each finalize 4/28 eligible fixtures; Product Graph with Hard Validator and bounded repair finalizes 20/28. The paired +16 recoveries measure only the validator/repair control path over designed development faults. They do not establish Specialist-model quality or a real-user success rate, and the replay performs no DeepSeek, AMap, or LangSmith calls.
 
+The next repeated-live pilot protocol is frozen under `evals/cases/live-comparison`: three existing development cases, two repetitions each, shared Product initial drafts, sequential trials, and a hard ceiling of 54 model calls / 55,800 completion tokens. It reuses frozen Provider catalogs and plans zero AMap calls. The current preflight only validates local inventory, budget math, and key/tracing presence; it makes no DeepSeek, AMap, or LangSmith requests. No live comparison result is claimed yet.
+
 ```powershell
 uv sync --all-groups
 uv run uvicorn app.main:app --reload
@@ -25,6 +27,7 @@ Run the deterministic three-arm system comparison:
 ```powershell
 uv run python -m scripts.export_comparison_eval_schemas
 uv run python -m scripts.run_system_comparison_eval
+uv run python -m scripts.plan_live_system_comparison
 uv run pytest tests/test_comparison_evaluation_contract.py tests/test_system_comparison_evaluation.py --no-cov
 ```
 
