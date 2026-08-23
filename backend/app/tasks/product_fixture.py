@@ -2,6 +2,7 @@ import hashlib
 from datetime import UTC, datetime, time, timedelta, timezone
 
 from app.agents.contracts import (
+    ExploreAgentResult,
     ExploreCandidateObservation,
     ExploreCandidateSelectionProposal,
     ExploreEvidenceKind,
@@ -16,6 +17,7 @@ from app.agents.contracts import (
     PlannerModelResponse,
     PlannerPlacementProposal,
     PlannerProposalBatch,
+    StayAgentResult,
     StayCandidateObservation,
     StayCandidateSelectionProposal,
     StayEvidenceKind,
@@ -27,8 +29,10 @@ from app.agents.contracts import (
     StaySelectionModelResponse,
     StaySelectionProposalBatch,
 )
+from app.agents.explore_agent import run_explore_agent
 from app.agents.plan_agent import run_plan_agent
 from app.agents.plan_agent_contracts import PlanAgentRunResult
+from app.agents.stay_agent import run_stay_agent
 from app.domain.candidates import ActivityEnvironment, CandidatePOI, CandidateStay, GeoPoint
 from app.domain.context import PlannerContext
 from app.domain.opening_hours import OpeningHoursEvidence, OpeningHoursEvidenceBundle
@@ -344,6 +348,12 @@ class FixtureProductPlanningPipeline:
     ) -> PlanningMaterialBundle:
         return await build_planning_material_bundle(specialist_result, self._provider)
 
+    async def rerun_explore(self, context: PlannerContext) -> ExploreAgentResult:
+        return await run_explore_agent(context, self._provider, self._explore_model)
+
+    async def rerun_stay(self, context: PlannerContext) -> StayAgentResult:
+        return await run_stay_agent(context, self._provider, self._stay_model)
+
     def run_plan(
         self,
         request: TripRequest,
@@ -363,7 +373,11 @@ class FixtureProductPlanningPipeline:
                 evidence_id=f"product-fixture-hours-{item.item_id}",
                 candidate_id=item.candidate_id,
                 service_date=day.date,
-                opens_at=datetime.combine(day.date, time(8), tzinfo=CHINA_TIMEZONE),
+                opens_at=datetime.combine(
+                    day.date,
+                    time(10) if item.title == "天坛公园" else time(8),
+                    tzinfo=CHINA_TIMEZONE,
+                ),
                 closes_at=datetime.combine(day.date, time(18), tzinfo=CHINA_TIMEZONE),
                 source=_source(
                     "eztrip-product-opening-hours-fixture",

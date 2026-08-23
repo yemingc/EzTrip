@@ -219,6 +219,70 @@ export interface ProductPlanningMaterials {
   };
 }
 
+export type ProductRepairAction =
+  | "rerun_constraint"
+  | "rerun_explore"
+  | "rerun_stay"
+  | "rerun_route"
+  | "replan_day"
+  | "recalculate_budget"
+  | "ask_user"
+  | "none";
+
+export type ProductResponsibleNode =
+  | "constraint"
+  | "explore"
+  | "stay"
+  | "weather"
+  | "route"
+  | "plan"
+  | "budget"
+  | "validator";
+
+export interface ProductRepairAttempt {
+  attempt_index: number;
+  action_attempt: number;
+  repair_action: ProductRepairAction;
+  responsible_node: ProductResponsibleNode;
+  trigger_issue_codes: string[];
+  execution_status: "succeeded" | "failed";
+  executed_nodes: ProductResponsibleNode[];
+  reused_nodes: ProductResponsibleNode[];
+  before_error_codes: string[];
+  after_error_codes: string[];
+  resolved_issue_codes: string[];
+  introduced_issue_codes: string[];
+  plan_diff: {
+    changed_dates: string[];
+    added_candidate_ids: string[];
+    removed_candidate_ids: string[];
+    total_cost_minimum_before: string | number;
+    total_cost_minimum_after: string | number;
+    total_cost_maximum_before: string | number;
+    total_cost_maximum_after: string | number;
+  };
+  model_call_count: number;
+  provider_call_count: number;
+  error_code: string | null;
+}
+
+export interface ProductRepairResult {
+  schema_version: "1.0";
+  router_version: "repair-router-v1";
+  outcome: "already_finalizable" | "repaired" | "waiting_for_user" | "unresolved";
+  stop_reason:
+    | "finalizable"
+    | "user_confirmation_required"
+    | "unrepairable_issue"
+    | "retry_limit_reached";
+  attempts: ProductRepairAttempt[];
+  retry_counts: { repair_action: ProductRepairAction; attempt_count: number }[];
+  pending_error_codes: string[];
+  requires_user_confirmation: boolean;
+  total_model_call_count: number;
+  total_provider_call_count: number;
+}
+
 export interface PlanRevisionRequest {
   schema_version: "1.0";
   revision_id: string;
@@ -283,6 +347,7 @@ export interface PlanningTaskSnapshot {
       } | null;
       plan?: TripPlan | null;
       validation?: PlanValidation | null;
+      repair?: ProductRepairResult | null;
       review_request: HumanReviewRequest | null;
       revision_result: PlanRevisionResult | null;
     };

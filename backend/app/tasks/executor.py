@@ -1,9 +1,13 @@
 from pathlib import Path
 from typing import Protocol
 
+from app.agents.contracts import ExploreAgentResult, StayAgentResult
+from app.agents.explore_agent import run_live_explore_agent
 from app.agents.plan_agent import run_live_plan_agent
 from app.agents.plan_agent_contracts import PlanAgentRunResult
+from app.agents.stay_agent import run_live_stay_agent
 from app.core.config import Settings
+from app.domain.context import PlannerContext
 from app.domain.opening_hours import OpeningHoursEvidenceBundle
 from app.domain.planning import TripPlan
 from app.domain.request import TripRequest
@@ -49,6 +53,12 @@ class LiveProductPlanningPipeline:
         specialist_result: SpecialistFanoutResult,
     ) -> PlanningMaterialBundle:
         return await build_planning_material_bundle(specialist_result, self._provider)
+
+    async def rerun_explore(self, context: PlannerContext) -> ExploreAgentResult:
+        return await run_live_explore_agent(context, self._provider, self._settings)
+
+    async def rerun_stay(self, context: PlannerContext) -> StayAgentResult:
+        return await run_live_stay_agent(context, self._provider, self._settings)
 
     def run_plan(
         self,
@@ -97,6 +107,14 @@ class ResumeOnlyProductPipeline:
         specialist_result: SpecialistFanoutResult,
     ) -> PlanningMaterialBundle:
         del specialist_result
+        raise self._unexpected()
+
+    async def rerun_explore(self, context: PlannerContext) -> ExploreAgentResult:
+        del context
+        raise self._unexpected()
+
+    async def rerun_stay(self, context: PlannerContext) -> StayAgentResult:
+        del context
         raise self._unexpected()
 
     def run_plan(

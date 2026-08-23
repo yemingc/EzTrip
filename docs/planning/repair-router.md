@@ -52,7 +52,9 @@ Router 只自动处理 `severity=error`：
 ## 当前事实边界
 
 - 已实现真实的路由、重试、停止、校验、产物保护与 trace 代码；
-- 9-case 回归使用注入的 fixture executor 模拟责任节点返回，尚未把 live Explore/Stay/Route/Plan 重跑接入产品任务 Graph；
+- 9-case 隔离回归仍使用注入的 fixture executor 模拟责任节点返回，用于证明 Router 编排契约；
+- Product Graph V2 已注入真实产品 executor：Explore/Stay 修复会重跑对应 Agent、Route 和 Plan，Route/预算/Plan 修复只执行允许的责任链，并把实际模型/Provider 调用计入 trace；
+- 默认产品 fixture 的营业时间错误由确定性 `replan_day` 修复，天坛从 09:00 移到已验证的 10:00 开放窗口，未受影响节点保持复用且不调用模型/Provider；
 - 成功 fixture 证明 orchestration contract，不证明实时高德、营业时间或价格来源可用；
 - 预算费用下界超限必须进入 HITL，Router 不会擅自提高预算或删除硬约束；
 - 天气主动触发和受影响日期的局部修复属于 EZ-305。

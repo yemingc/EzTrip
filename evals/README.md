@@ -16,6 +16,8 @@ Hard Validator fixture 报告验证 12/12 exact issue sets、22/22 责任路由�
 
 Repair Router fixture 报告验证 9/9 exact action + executed-node routes、9/9 重试上限、9/9 未受影响节点复用、9/9 确定性重放和 0 Router 模型调用。fixture executor 只模拟责任节点产物，因此这些数字不代表 live Agent 自动修复成功率。
 
+Product Graph V2 另有产品 executor 单测与 API/浏览器回归，验证 Explore、Stay、Route、Budget、Plan 的最小责任链，以及默认营业时间冲突的零模型/零 Provider 同日排程修复。这组证据不改变上面 9-case 隔离报告的历史口径。
+
 验证命令：
 
 ```powershell

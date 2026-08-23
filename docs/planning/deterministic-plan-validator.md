@@ -57,4 +57,4 @@ uv run pytest tests/test_plan_validator.py tests/test_domain_contract_examples.p
 
 EZ-103 的基础 Validator 保持稳定，继续服务旧纵向切片和 Plan Agent 草案装配。EZ-303 的 [`hard-validators.md`](./hard-validators.md) 在它之上消费 planning materials 与独立营业时间证据，新增 must/avoid、路线可行性、候选城市/血缘和营业窗口规则。
 
-当前仍没有 Repair Router、天气风险局部修复或酒店间夜价格/库存校验。`RECALCULATE_BUDGET`、`REPLAN_DAY`、`RERUN_EXPLORE`、`RERUN_ROUTE` 和 `ASK_USER` 已是可评测的 typed responsibility/repair contract，但不表示修复工作流已经执行。
+当前 Product Graph V2 已让 Repair Router 消费这些 typed issue，并通过真实产品 executor 执行 Explore、Stay、Route、Budget、Plan 的有界责任链；天气风险局部修复仍是独立协调器，酒店间夜价格/库存校验仍未实现。早期 Validator fixture 只证明 responsibility contract，自动修复证据应引用 Repair Router 与产品链回归。

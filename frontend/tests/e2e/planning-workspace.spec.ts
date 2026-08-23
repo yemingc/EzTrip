@@ -8,6 +8,7 @@ test("submits a real fixture planning task and renders its evidence", async ({ p
 
   const trace = page.getByTestId("event-trace");
   await expect(trace).toContainText("任务已入队");
+  await expect(trace).toContainText("执行有界局部修复");
   await expect(trace).toContainText("等待人工审核");
 
   const results = page.getByTestId("planning-results");
@@ -22,6 +23,13 @@ test("submits a real fixture planning task and renders its evidence", async ({ p
   await expect(results).toContainText("weather");
   await expect(results).toContainText("首日优先室内或混合型活动");
   await expect(results).toContainText("价格与可订状态未验证，不提供预订");
+  const repair = page.getByTestId("product-repair-summary");
+  await expect(repair).toContainText("有界自动修复");
+  await expect(repair).toContainText("1 次修复 · repaired");
+  await expect(repair).toContainText("replan_day");
+  await expect(repair).toContainText("实际执行：Plan");
+  await expect(repair).toContainText("营业时间冲突已修复");
+  await expect(repair).toContainText("0 次模型调用 · 0 次工具调用");
 
   const approve = page.getByRole("button", { name: "批准草案" });
   await expect(approve).toBeEnabled();
@@ -73,7 +81,7 @@ test("applies a structured day-scoped revision and renders plan version v2", asy
   await expect(results).toContainText("v2 修改草案 · 尚未再次审核");
   await expect(results).toContainText("v1 → v2");
   await expect(results).toContainText("计划已修改 · 1 个受影响日期");
-  await expect(results).toContainText("11:00 — 13:30");
+  await expect(results).toContainText("12:00 — 14:30");
 
   await page.screenshot({
     path: "test-results/eztrip-structured-revision-v2.png",

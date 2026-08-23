@@ -1,9 +1,9 @@
 # Planning Task API V1
 
 EZ-401 established the asynchronous FastAPI boundary, EZ-403A/403B added checkpoint HITL and a
-bounded PlanVersion v2 revision, and EZ-405 moves the task executor to Product Graph V2. The API
-accepts an already structured `TripRequest`; Chinese free-text extraction and Repair Router are not
-silently implied by this endpoint.
+bounded PlanVersion v2 revision, EZ-405 moved the task executor to Product Graph V2, and EZ-405B
+connected issue-directed product repair before HITL. The API accepts an already structured
+`TripRequest`; Chinese free-text extraction is not silently implied by this endpoint.
 
 ## Endpoints
 
@@ -91,13 +91,19 @@ graph_node_completed (run_specialists, state=planning)
 graph_node_completed (build_materials, state=planning)
 graph_node_completed (run_plan_agent, state=planning)
 graph_node_completed (validate_hard_plan, state=plan_ready)
+graph_node_completed (run_repair, state=plan_ready)
 graph_node_completed (prepare_human_review, state=awaiting_human_review)
 task_awaiting_input
 ```
 
+`run_repair` is conditional: it is committed only when Hard Validator returns at least one error.
+Warnings never start the automatic loop. The default fixture deliberately produces a repairable
+opening-hours conflict, so its first stream contains nine events and one `run_repair` event.
+
 `run_vertical_slice` belongs to the legacy checkpoint baseline and is no longer emitted by the
 default product task executor. Product snapshots expose `specialists`, `materials`, `plan_agent`,
-`plan`, and the `hard-trip-plan-validator-v1` report with preserved source/model/prompt lineage.
+`plan`, the `hard-trip-plan-validator-v1` report, and an optional `repair` result with attempts,
+executed/reused nodes, issue diffs, retry counts, and delegated model/provider counts.
 
 The first stream stops at `awaiting_input`. Heartbeat comments (`: heartbeat`) keep an idle
 connection alive but are not planning progress.
@@ -121,7 +127,7 @@ $acceptedDecision = Invoke-RestMethod `
   -ContentType application/json `
   -Body ([Text.Encoding]::UTF8.GetBytes($decision))
 
-curl.exe -N ("http://localhost:8000" + $acceptedDecision.events_url + "?after=8")
+curl.exe -N ("http://localhost:8000" + $acceptedDecision.events_url + "?after=9")
 ```
 
 The four protocol actions are `approve_draft`, `acknowledge_conflict`, `request_revision`, and
@@ -195,9 +201,9 @@ records `v1 → v2` with changed dates and rescheduled item IDs. It makes zero P
 calls.
 
 This is not an open-ended natural-language replan. It does not add/remove POIs or recalculate
-routes/opening hours. Explore, Stay, Weather, Route/Budget, Plan and Hard Validator are in the
-product task graph; Repair Router is not. The returned v2 remains a draft that has not been
-reviewed again.
+routes/opening hours. Explore, Stay, Weather, Route/Budget, Plan, Hard Validator, and the pre-review
+Repair Router are in the product task graph. The narrow `shift_day_later` revision does not re-enter
+the automatic repair loop; its returned v2 remains a draft that has not been reviewed again.
 
 ## Reconnect and failure rules
 
