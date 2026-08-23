@@ -261,6 +261,141 @@ def test_review_resume_is_idempotent_and_streams_checkpoint_progress(tmp_path: P
     asyncio.run(request_review_until_completed(tmp_path))
 
 
+async def request_structured_revision_until_v2(tmp_path: Path) -> None:
+    settings = Settings(
+        environment="test",
+        planning_checkpoint_dir=tmp_path,
+        planning_sse_heartbeat_seconds=0.01,
+        planning_task_timeout_seconds=10,
+    )
+    service = PlanningTaskService(
+        StatefulGraphPlanningTaskExecutor(settings),
+        heartbeat_seconds=0.01,
+        timeout_seconds=10,
+    )
+    app = create_app(settings=settings, planning_task_service=service)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        create_response = await client.post(
+            "/api/planning-tasks",
+            json=build_fixture_payload().model_dump(mode="json"),
+        )
+        accepted = create_response.json()
+        _ = await client.get(accepted["events_url"])
+        initial_snapshot = (await client.get(accepted["task_url"])).json()
+        review_id = initial_snapshot["result"]["state"]["review_request"]["review_id"]
+        version = initial_snapshot["plan_versions"][0]
+        plan = version["plan"]
+        target_day = plan["days"][1]
+        revision_request = {
+            "revision_id": "revision-api-day-two-later-v1",
+            "base_version_id": version["version_id"],
+            "base_plan_id": plan["plan_id"],
+            "target_date": target_day["date"],
+            "operation": "shift_day_later",
+            "shift_minutes": 120,
+            "target_item_ids": [item["item_id"] for item in target_day["items"]],
+            "protected_item_ids": [
+                item["item_id"]
+                for day in plan["days"]
+                if day["date"] != target_day["date"]
+                for item in day["items"]
+            ],
+            "confirmed": True,
+        }
+        decision = {
+            "decision_id": "review-decision-api-revision-v1",
+            "review_id": review_id,
+            "action": "request_revision",
+            "reviewer_id": "reviewer-api-fixture",
+            "comment": "将第二天整体延后两小时。",
+            "revision_request": revision_request,
+        }
+
+        missing_revision = await client.post(
+            f"{accepted['task_url']}/review-decisions",
+            json={key: value for key, value in decision.items() if key != "revision_request"},
+        )
+        assert missing_revision.status_code == 422
+
+        stale_revision = await client.post(
+            f"{accepted['task_url']}/review-decisions",
+            json={
+                **decision,
+                "decision_id": "review-decision-api-revision-stale",
+                "revision_request": {
+                    **revision_request,
+                    "base_version_id": "plan-version-stale-v1",
+                },
+            },
+        )
+        assert stale_revision.status_code == 409
+        assert stale_revision.json()["detail"]["error_code"] == ("revision-base-version-mismatch")
+
+        scope_drift = await client.post(
+            f"{accepted['task_url']}/review-decisions",
+            json={
+                **decision,
+                "decision_id": "review-decision-api-revision-scope-drift",
+                "revision_request": {
+                    **revision_request,
+                    "protected_item_ids": [],
+                },
+            },
+        )
+        assert scope_drift.status_code == 409
+        assert scope_drift.json()["detail"]["error_code"] == "revision-scope-mismatch"
+
+        decision_response = await client.post(
+            f"{accepted['task_url']}/review-decisions",
+            json=decision,
+        )
+        assert decision_response.status_code == 202
+
+        resumed_response = await client.get(f"{accepted['events_url']}?after=5")
+        resumed = parse_sse_events(resumed_response.text)
+        assert [event["sequence"] for event in resumed] == [6, 7, 8, 9, 10]
+        assert [event["kind"] for event in resumed] == [
+            "task_review_submitted",
+            "graph_node_completed",
+            "graph_node_completed",
+            "graph_node_completed",
+            "task_succeeded",
+        ]
+        assert [event.get("node") for event in resumed[1:4]] == [
+            "human_review",
+            "apply_review_decision",
+            "apply_plan_revision",
+        ]
+        assert [event.get("state_status") for event in resumed[1:4]] == [
+            "review_decided",
+            "revision_requested",
+            "revision_applied",
+        ]
+
+        terminal = (await client.get(accepted["task_url"])).json()
+        assert terminal["status"] == "succeeded"
+        assert terminal["result"]["state"]["status"] == "revision_applied"
+        assert terminal["result"]["state"]["revision_result"]["model_call_count"] == 0
+        assert terminal["result"]["state"]["revision_result"]["provider_call_count"] == 0
+        assert [item["version_number"] for item in terminal["plan_versions"]] == [1, 2]
+        revised_version = terminal["plan_versions"][1]
+        assert revised_version["based_on_version_id"] == version["version_id"]
+        assert revised_version["changed_dates"] == [target_day["date"]]
+        outcome = terminal["review_outcome"]
+        assert outcome["plan_diff"]["from_version_id"] == version["version_id"]
+        assert outcome["plan_diff"]["to_version_id"] == revised_version["version_id"]
+        assert outcome["plan_diff"]["plan_changed"] is True
+        assert outcome["plan_diff"]["changed_dates"] == [target_day["date"]]
+        assert outcome["plan_diff"]["rescheduled_item_ids"] == revision_request["target_item_ids"]
+        assert terminal["plan_versions"][0]["plan"] == plan
+        assert revised_version["plan"]["days"][0] == plan["days"][0]
+
+
+def test_structured_revision_creates_a_scoped_v2(tmp_path: Path) -> None:
+    asyncio.run(request_structured_revision_until_v2(tmp_path))
+
+
 class FailingExecutor:
     async def execute(
         self,

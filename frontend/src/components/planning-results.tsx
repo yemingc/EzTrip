@@ -4,13 +4,14 @@ import type {
   BudgetCategory,
   CandidatePoi,
   HumanReviewAction,
+  PlanRevisionSelection,
   PlanningTaskSnapshot,
 } from "@/lib/planning-task";
 
 const reviewActionLabels: Record<HumanReviewAction, string> = {
   approve_draft: "已批准草案",
   acknowledge_conflict: "已确认冲突",
-  request_revision: "已记录修改请求",
+  request_revision: "已生成修改草案",
   cancel: "已取消规划",
 };
 
@@ -140,25 +141,45 @@ export function PlanningResults({
   reviewError,
 }: {
   snapshot: PlanningTaskSnapshot;
-  onReview: (action: HumanReviewAction, comment?: string) => void | Promise<void>;
+  onReview: (
+    action: HumanReviewAction,
+    comment?: string,
+    revision?: PlanRevisionSelection,
+  ) => void | Promise<void>;
   reviewBusy: boolean;
   reviewError: string | null;
 }) {
   const [showRevisionForm, setShowRevisionForm] = useState(false);
   const [revisionComment, setRevisionComment] = useState("");
+  const [revisionTargetDate, setRevisionTargetDate] = useState("");
+  const [revisionShiftMinutes, setRevisionShiftMinutes] = useState(120);
   const state = snapshot.result?.state;
   const verticalSlice = state?.vertical_slice;
   if (!state || !verticalSlice) {
     return null;
   }
 
-  const { plan, validation } = verticalSlice;
+  const latestVersion = snapshot.plan_versions.at(-1);
+  const revisionResult = state.revision_result;
+  const plan = latestVersion?.plan ?? verticalSlice.plan;
+  const validation = revisionResult?.validation ?? verticalSlice.validation;
   const review = state.review_request;
   const reviewOutcome = snapshot.review_outcome;
   const candidates = verticalSlice.upstream.candidates;
   const budget = validation.budget;
   const hasBudget = budget.status !== "not_requested";
   const displayCity = plan.destination_city.replace(/市$/, "");
+  const selectedRevisionDate = revisionTargetDate || plan.days.at(-1)?.date || plan.start_date;
+  const fromVersionNumber = reviewOutcome
+    ? snapshot.plan_versions.find(
+        (item) => item.version_id === reviewOutcome.plan_diff.from_version_id,
+      )?.version_number
+    : undefined;
+  const toVersionNumber = reviewOutcome
+    ? snapshot.plan_versions.find(
+        (item) => item.version_id === reviewOutcome.plan_diff.to_version_id,
+      )?.version_number
+    : undefined;
 
   return (
     <section className="mx-auto mt-8 max-w-[1480px] px-4 pb-12 sm:px-6 lg:px-8" data-testid="planning-results">
@@ -191,7 +212,9 @@ export function PlanningResults({
               <p className="eyebrow">Itinerary</p>
               <h3 className="mt-1 text-lg font-semibold">可追溯行程时间线</h3>
             </div>
-            <span className="text-xs text-slate-400">草案 · 待人工确认</span>
+            <span className="text-xs text-slate-400">
+              {revisionResult ? "v2 修改草案 · 尚未再次审核" : "草案 · 待人工确认"}
+            </span>
           </div>
 
           <div className="mt-7 space-y-8">
@@ -286,7 +309,7 @@ export function PlanningResults({
                     onClick={() => setShowRevisionForm((current) => !current)}
                     type="button"
                   >
-                    记录修改请求
+                    局部修改
                   </button>
                   <button
                     className="rounded-xl border border-white/10 px-3 py-3 text-xs font-semibold text-slate-400 transition hover:bg-white/5 disabled:opacity-50"
@@ -299,25 +322,63 @@ export function PlanningResults({
                 </div>
                 {showRevisionForm ? (
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="text-[11px] font-semibold text-slate-300">
+                        目标日期
+                        <select
+                          aria-label="修改目标日期"
+                          className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 p-2.5 text-xs text-white outline-none focus:border-emerald-300"
+                          onChange={(event) => setRevisionTargetDate(event.target.value)}
+                          value={selectedRevisionDate}
+                        >
+                          {plan.days.map((day, index) => (
+                            <option key={day.date} value={day.date}>
+                              第 {index + 1} 天 · {day.date.slice(5)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="text-[11px] font-semibold text-slate-300">
+                        整体延后
+                        <select
+                          aria-label="活动延后时间"
+                          className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 p-2.5 text-xs text-white outline-none focus:border-emerald-300"
+                          onChange={(event) => setRevisionShiftMinutes(Number(event.target.value))}
+                          value={revisionShiftMinutes}
+                        >
+                          <option value={60}>60 分钟</option>
+                          <option value={90}>90 分钟</option>
+                          <option value={120}>120 分钟</option>
+                        </select>
+                      </label>
+                    </div>
                     <label className="text-[11px] font-semibold text-slate-300" htmlFor="revision-comment">
-                      修改说明
+                      <span className="mt-3 block">修改说明</span>
                     </label>
                     <textarea
                       className="mt-2 min-h-20 w-full resize-y rounded-xl border border-white/10 bg-slate-900 p-3 text-xs leading-5 text-white outline-none focus:border-emerald-300"
                       id="revision-comment"
                       maxLength={500}
                       onChange={(event) => setRevisionComment(event.target.value)}
-                      placeholder="例如：希望把第二天安排得更轻松。"
+                      placeholder="例如：第二天想晚一点出发。"
                       value={revisionComment}
                     />
                     <button
                       className="mt-2 w-full rounded-xl bg-white px-3 py-2.5 text-xs font-semibold text-slate-950 disabled:opacity-40"
                       disabled={reviewBusy || !revisionComment.trim()}
-                      onClick={() => void onReview("request_revision", revisionComment)}
+                      onClick={() =>
+                        void onReview("request_revision", revisionComment, {
+                          targetDate: selectedRevisionDate,
+                          shiftMinutes: revisionShiftMinutes,
+                        })
+                      }
                       type="button"
                     >
-                      提交修改请求
+                      生成局部修改草案
                     </button>
+                    <p className="mt-2 text-[10px] leading-4 text-slate-500">
+                      系统只调整目标日现有活动时间；其他日期、候选、费用与来源均受保护。
+                    </p>
                   </div>
                 ) : null}
                 {reviewError ? (
@@ -329,7 +390,9 @@ export function PlanningResults({
             ) : null}
             <p className="mt-3 text-[11px] leading-5 text-slate-500">
               {reviewOutcome
-                ? "决定已通过 review-resume API 写入同一 checkpoint；审批不代表预订或付款。"
+                ? reviewOutcome.action === "request_revision"
+                  ? "v2 由同一 checkpoint 的确定性 revision node 生成，尚未再次批准，也不代表预订。"
+                  : "决定已通过 review-resume API 写入同一 checkpoint；审批不代表预订或付款。"
                 : "审核动作会恢复同一个 LangGraph checkpoint，不会重跑景点搜索或 Planner。"}
             </p>
           </article>
@@ -347,11 +410,19 @@ export function PlanningResults({
             {reviewOutcome ? (
               <div className="mt-4 rounded-2xl bg-slate-50 p-4">
                 <p className="text-sm font-semibold text-slate-900">
-                  v{snapshot.plan_versions.at(-1)?.version_number ?? 1} → v{snapshot.plan_versions.at(-1)?.version_number ?? 1}
+                  v{fromVersionNumber ?? latestVersion?.version_number ?? 1} → v
+                  {toVersionNumber ?? latestVersion?.version_number ?? 1}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
-                  {reviewOutcome.plan_diff.plan_changed ? "计划结构已变化" : "计划未修改 · 0 个受影响日期"}
+                  {reviewOutcome.plan_diff.plan_changed
+                    ? `计划已修改 · ${reviewOutcome.plan_diff.changed_dates.length} 个受影响日期`
+                    : "计划未修改 · 0 个受影响日期"}
                 </p>
+                {reviewOutcome.plan_diff.changed_dates.length ? (
+                  <p className="mt-2 text-[11px] text-slate-400">
+                    受影响：{reviewOutcome.plan_diff.changed_dates.join("、")}
+                  </p>
+                ) : null}
               </div>
             ) : (
               <p className="mt-4 text-xs leading-5 text-slate-500">

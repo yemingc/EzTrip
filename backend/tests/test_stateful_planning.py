@@ -1,7 +1,7 @@
 import asyncio
 import copy
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -34,6 +34,8 @@ from app.planning import (
     HumanReviewKind,
     HumanReviewResume,
     PlanningThreadStatus,
+    PlanRevisionOperation,
+    PlanRevisionRequest,
     StatefulPlanningNodeName,
     StatefulPlanningProgress,
     StatefulPlanningProtocolError,
@@ -222,11 +224,107 @@ def test_sqlite_checkpoint_restores_pending_review_without_replaying_planning(
             PlanningThreadStatus.REVIEW_DECIDED,
             PlanningThreadStatus.APPROVED_DRAFT,
         ]
-        assert tuple(event.node for event in terminal.state.events) == tuple(
-            StatefulPlanningNodeName
+        assert tuple(event.node for event in terminal.state.events) == (
+            StatefulPlanningNodeName.RUN_VERTICAL_SLICE,
+            StatefulPlanningNodeName.PREPARE_HUMAN_REVIEW,
+            StatefulPlanningNodeName.HUMAN_REVIEW,
+            StatefulPlanningNodeName.APPLY_REVIEW_DECISION,
         )
         assert any(entry.state_status == PlanningThreadStatus.PLANNING for entry in history)
         assert history[-1].state_status == PlanningThreadStatus.APPROVED_DRAFT
+
+    asyncio.run(exercise())
+
+
+def test_structured_revision_resumes_checkpoint_without_replaying_dependencies(
+    tmp_path: Path,
+) -> None:
+    async def exercise() -> None:
+        case_index, case = next(
+            (index, item)
+            for index, item in enumerate(load_vertical_slice_suite().cases)
+            if item.expected.outcome == "ready"
+        )
+        provider, model = build_fixture_dependencies(case_index)
+        checkpoint_path = tmp_path / "structured-revision.sqlite"
+        thread_id = "checkpoint-structured-revision-v1"
+        async with open_sqlite_planning_runtime(
+            checkpoint_path,
+            provider,
+            model,
+            clock=lambda: FIXED_REVIEW_TIME,
+        ) as runtime:
+            paused = await runtime.start(
+                thread_id,
+                case.request,
+                case.cost_items,
+                data_mode=DataMode.FIXTURE,
+            )
+        assert paused.state.vertical_slice is not None
+        assert paused.state.review_request is not None
+        base_plan = paused.state.vertical_slice.plan
+        target_day = base_plan.days[1]
+        protected = tuple(
+            item.item_id
+            for day in base_plan.days
+            if day.date != target_day.date
+            for item in day.items
+        )
+        progress: list[StatefulPlanningProgress] = []
+
+        async def capture_progress(item: StatefulPlanningProgress) -> None:
+            progress.append(item)
+
+        async with open_sqlite_planning_runtime(
+            checkpoint_path,
+            FailIfCalledProvider(),
+            FailIfCalledPlannerModel(),
+            clock=lambda: FIXED_REVIEW_TIME,
+        ) as restored_runtime:
+            terminal = await restored_runtime.resume_with_progress(
+                thread_id,
+                HumanReviewResume(
+                    review_id=paused.state.review_request.review_id,
+                    action=HumanReviewAction.REQUEST_REVISION,
+                    reviewer_id="reviewer-fixture",
+                    comment="将第二天整体延后两小时。",
+                    revision_request=PlanRevisionRequest(
+                        revision_id="revision-structured-fixture-v1",
+                        base_version_id="plan-version-fixture-v1",
+                        base_plan_id=base_plan.plan_id,
+                        target_date=target_day.date,
+                        operation=PlanRevisionOperation.SHIFT_DAY_LATER,
+                        shift_minutes=120,
+                        target_item_ids=tuple(item.item_id for item in target_day.items),
+                        protected_item_ids=protected,
+                        confirmed=True,
+                    ),
+                ),
+                on_progress=capture_progress,
+            )
+
+        assert terminal.state.status == PlanningThreadStatus.REVISION_APPLIED
+        assert terminal.next_nodes == ()
+        assert terminal.state.revision_result is not None
+        revised = terminal.state.revision_result
+        assert revised.model_call_count == 0
+        assert revised.provider_call_count == 0
+        assert revised.diff.changed_dates == (target_day.date,)
+        assert revised.revised_plan.days[0] == base_plan.days[0]
+        assert revised.revised_plan.days[2] == base_plan.days[2]
+        assert revised.revised_plan.days[1].items[0].start_at == (
+            target_day.items[0].start_at + timedelta(hours=2)
+        )
+        assert [item.node for item in progress] == [
+            StatefulPlanningNodeName.HUMAN_REVIEW,
+            StatefulPlanningNodeName.APPLY_REVIEW_DECISION,
+            StatefulPlanningNodeName.APPLY_PLAN_REVISION,
+        ]
+        assert [item.state_status for item in progress] == [
+            PlanningThreadStatus.REVIEW_DECIDED,
+            PlanningThreadStatus.REVISION_REQUESTED,
+            PlanningThreadStatus.REVISION_APPLIED,
+        ]
 
     asyncio.run(exercise())
 

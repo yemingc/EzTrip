@@ -51,7 +51,7 @@ export default function Home() {
             <p className="text-sm font-semibold">本阶段真实能力</p>
             <span className="flex items-center gap-2 text-[11px] font-semibold text-emerald-800">
               <span className="size-2 rounded-full bg-emerald-500" />
-              EZ-402
+              EZ-403B
             </span>
           </div>
           <dl className="mt-5 space-y-4 text-xs">
@@ -64,8 +64,8 @@ export default function Home() {
               <dd className="text-right font-semibold">高德协议 Fixture</dd>
             </div>
             <div className="flex items-start justify-between gap-6">
-              <dt className="text-slate-500">最终确认</dt>
-              <dd className="text-right font-semibold text-amber-700">等待 EZ-403 接通</dd>
+              <dt className="text-slate-500">审核与修改</dt>
+              <dd className="text-right font-semibold text-emerald-800">HITL + v2 局部 diff</dd>
             </div>
           </dl>
         </div>

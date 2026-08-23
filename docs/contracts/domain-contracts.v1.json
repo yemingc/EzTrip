@@ -7678,6 +7678,94 @@
           ],
           "title": "HumanReviewAction",
           "type": "string"
+        },
+        "PlanRevisionRequest": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "revision_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Revision Id",
+              "type": "string"
+            },
+            "base_version_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Base Version Id",
+              "type": "string"
+            },
+            "base_plan_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Base Plan Id",
+              "type": "string"
+            },
+            "target_date": {
+              "format": "date",
+              "title": "Target Date",
+              "type": "string"
+            },
+            "operation": {
+              "const": "shift_day_later",
+              "title": "Operation",
+              "type": "string"
+            },
+            "shift_minutes": {
+              "maximum": 180,
+              "minimum": 30,
+              "multipleOf": 30,
+              "title": "Shift Minutes",
+              "type": "integer"
+            },
+            "target_item_ids": {
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Target Item Ids",
+              "type": "array"
+            },
+            "protected_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Protected Item Ids",
+              "type": "array"
+            },
+            "confirmed": {
+              "const": true,
+              "title": "Confirmed",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "revision_id",
+            "base_version_id",
+            "base_plan_id",
+            "target_date",
+            "operation",
+            "shift_minutes",
+            "target_item_ids",
+            "confirmed"
+          ],
+          "title": "PlanRevisionRequest",
+          "type": "object"
         }
       },
       "additionalProperties": false,
@@ -7717,6 +7805,17 @@
           ],
           "default": null,
           "title": "Comment"
+        },
+        "revision_request": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlanRevisionRequest"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [

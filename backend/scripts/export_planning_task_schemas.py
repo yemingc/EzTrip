@@ -2,6 +2,11 @@ import json
 from pathlib import Path
 from typing import Any
 
+from app.planning.revision_contracts import (
+    PlanRevisionDiff,
+    PlanRevisionRequest,
+    PlanRevisionResult,
+)
 from app.tasks.contracts import (
     PlanningTaskAccepted,
     PlanningTaskCreateRequest,
@@ -26,6 +31,9 @@ SCHEMA_MODELS = (
     PlanningTaskReviewDecisionAccepted,
     PlanningTaskPlanDiff,
     PlanningTaskReviewOutcome,
+    PlanRevisionRequest,
+    PlanRevisionDiff,
+    PlanRevisionResult,
 )
 
 

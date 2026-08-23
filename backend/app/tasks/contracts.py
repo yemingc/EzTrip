@@ -9,6 +9,7 @@ from app.domain.money import CostItem
 from app.domain.planning import PlanVersion
 from app.domain.request import TripRequest
 from app.domain.sources import DataMode
+from app.planning.revision_contracts import PlanRevisionRequest
 from app.planning.stateful_contracts import (
     HumanReviewAction,
     PlanningThreadStatus,
@@ -170,8 +171,19 @@ class PlanningTaskSnapshot(DomainModel):
         version_numbers = tuple(item.version_number for item in self.plan_versions)
         if version_numbers != tuple(range(1, len(self.plan_versions) + 1)):
             raise ValueError("plan versions must be contiguous and ordered")
+        if any(
+            current.based_on_version_id != previous.version_id
+            for previous, current in zip(self.plan_versions, self.plan_versions[1:], strict=False)
+        ):
+            raise ValueError("plan versions must preserve direct parent lineage")
         if self.result is not None and not self.plan_versions:
             raise ValueError("task results require at least one plan version")
+        if (
+            self.result is not None
+            and self.result.state.revision_result is not None
+            and self.plan_versions[-1].plan != self.result.state.revision_result.revised_plan
+        ):
+            raise ValueError("latest plan version must preserve the revision result")
         if self.review_outcome is not None:
             if self.status != PlanningTaskStatus.SUCCEEDED or self.result is None:
                 raise ValueError("review outcome requires a succeeded task result")
@@ -202,10 +214,14 @@ class PlanningTaskReviewDecisionRequest(DomainModel):
     action: HumanReviewAction
     reviewer_id: Identifier
     comment: str | None = Field(default=None, min_length=1, max_length=500)
+    revision_request: PlanRevisionRequest | None = None
 
     @model_validator(mode="after")
     def validate_revision_comment(self) -> "PlanningTaskReviewDecisionRequest":
-        if self.action == HumanReviewAction.REQUEST_REVISION and self.comment is None:
+        is_revision = self.action == HumanReviewAction.REQUEST_REVISION
+        if is_revision != (self.revision_request is not None):
+            raise ValueError("request_revision requires exactly one structured revision request")
+        if is_revision and self.comment is None:
             raise ValueError("request_revision requires a comment")
         return self
 

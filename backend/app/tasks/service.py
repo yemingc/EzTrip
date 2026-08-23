@@ -8,6 +8,7 @@ from app.agents.single_planner import (
     SinglePlannerProtocolError,
 )
 from app.planning.minimal_graph import PlanningGraphProtocolError
+from app.planning.plan_revision import PlanRevisionProtocolError
 from app.planning.stateful_contracts import (
     HumanReviewResume,
     PlanningThreadStatus,
@@ -224,6 +225,7 @@ class PlanningTaskService:
             action=decision.action,
             reviewer_id=decision.reviewer_id,
             comment=decision.comment,
+            revision_request=decision.revision_request,
         )
         try:
             async with asyncio.timeout(self._timeout_seconds):
@@ -270,6 +272,7 @@ class PlanningTaskService:
             error,
             (
                 PlanningGraphProtocolError,
+                PlanRevisionProtocolError,
                 SinglePlannerProtocolError,
                 StatefulPlanningProtocolError,
                 VerticalSliceProtocolError,

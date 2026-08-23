@@ -9,7 +9,9 @@ flowchart LR
     C -. SQLite checkpoint .-> R[rebuild runtime]
     R -->|Command resume| C
     C --> D[apply_review_decision]
-    D --> E[terminal workflow status]
+    D -->|approve / acknowledge / cancel| E[terminal workflow status]
+    D -->|structured request_revision| F[apply_plan_revision]
+    F --> G[revision_applied + PlanVersion v2]
 ```
 
 ## 状态与责任边界
@@ -20,6 +22,7 @@ flowchart LR
 | `prepare_human_review` | 根据校验结果生成 review ID、提示和允许动作 | 不会 |
 | `human_review` | `interrupt()` 暂停，校验显式人工 resume | 节点会从头进入，但中断前无副作用；不会重跑规划 |
 | `apply_review_decision` | 记录 reviewer、时间、comment 并映射工作流终态 | resume 后执行一次 |
+| `apply_plan_revision` | 校验 base/scope，只调整目标日时间并重新运行当前 Validator | 仅结构化修改时执行；Provider/Planner 均不重跑 |
 
 内部候选搜索图和 Single Planner 图是主节点内的原子子步骤，并显式关闭 inherited checkpointer。这样持久化语义只有一层：要么纵向切片完整写入，要么该主节点失败，不会留下“模型已调用但内部半个状态可恢复”的模糊边界。
 
@@ -31,6 +34,8 @@ flowchart LR
 | 有硬冲突 | `conflict_resolution` | `acknowledge_conflict` / `request_revision` / `cancel` | 禁止 `approve_draft`，不静默放宽预算等约束 |
 
 `approve_draft` 只产生工作流状态 `approved_draft`。原 `TripPlan.status` 仍是 `draft`，这是有意的真实性边界。
+
+`request_revision` 不能只带一句评论。它还必须提交当前 version/plan ID、目标日期、目标日全部 item、其他日期全部 protected item、30–180 分钟的整体延后量和 `confirmed=true`。服务端先做版本与 scope 冲突检查，再由 checkpoint 内的确定性节点生成 v2；任何过期版本、漏保护 item 或跨日时间都会拒绝。v2 仍是尚未再次审核的 draft。
 
 ## 持久化与恢复
 
@@ -58,3 +63,5 @@ uv run pytest tests/test_stateful_planning.py --no-cov
 ```
 
 这些数字只证明固定 fixture 下的状态机、磁盘恢复、HITL 策略和无昂贵步骤重放。它们不代表实时数据、模型行程质量、生产恢复 SLA，也未覆盖前端审核界面、用户认证、进程强杀、并发 resume、分布式 worker、加密或保留期。
+
+EZ-403B 另有专项/API/浏览器测试验证目标日延后、保护日不变、v2 lineage、事件 6–10、过期基准拒绝以及恢复阶段 0 Provider/Planner 调用；这些证据不改变上面 EZ-201 两案例报告的历史口径，也不代表完整 Repair Router 已进入产品 Graph。

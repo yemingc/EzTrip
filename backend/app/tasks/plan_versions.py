@@ -1,6 +1,6 @@
 import hashlib
 import json
-from datetime import datetime
+from datetime import date, datetime
 
 from app.domain.planning import PlanVersion
 from app.planning.stateful_contracts import StatefulPlanningSnapshot
@@ -49,10 +49,42 @@ def build_initial_plan_version(
     )
 
 
+def build_revised_plan_version(
+    snapshot: StatefulPlanningSnapshot,
+    previous: PlanVersion,
+    *,
+    created_at: datetime,
+) -> PlanVersion:
+    revision = snapshot.state.revision_result
+    if revision is None:
+        raise ValueError("revised plan version requires a persisted revision result")
+    if revision.request.base_version_id != previous.version_id:
+        raise ValueError("revision base version does not match the current task version")
+    plan = revision.revised_plan
+    plan_digest = _sha256(plan.model_dump(mode="json"))
+    return PlanVersion(
+        version_id=f"plan-version-{plan_digest[:16]}",
+        plan=plan,
+        version_number=previous.version_number + 1,
+        based_on_version_id=previous.version_id,
+        created_at=created_at,
+        input_constraint_sha256=previous.input_constraint_sha256,
+        tool_snapshot_ids=previous.tool_snapshot_ids,
+        model_versions=previous.model_versions,
+        prompt_versions=previous.prompt_versions,
+        change_summary=(
+            f"按用户确认的结构化请求将 {revision.request.target_date.isoformat()} "
+            f"全部活动延后 {revision.request.shift_minutes} 分钟。",
+            "复用原 Provider/Planner 产物并重新执行 deterministic-plan-validator-v1。",
+        ),
+        changed_dates=revision.diff.changed_dates,
+    )
+
+
 def build_review_outcome(
     snapshot: StatefulPlanningSnapshot,
     decision: PlanningTaskReviewDecisionRequest,
-    version: PlanVersion,
+    versions: tuple[PlanVersion, ...],
 ) -> PlanningTaskReviewOutcome:
     review_decision = snapshot.state.review_decision
     if review_decision is None:
@@ -62,14 +94,31 @@ def build_review_outcome(
         or review_decision.action != decision.action
         or review_decision.reviewer_id != decision.reviewer_id
         or review_decision.comment != decision.comment
+        or review_decision.revision_request != decision.revision_request
     ):
         raise ValueError("persisted review decision does not match the API submission")
+    if not versions:
+        raise ValueError("review outcome requires at least one plan version")
+    from_version = versions[-1]
+    to_version = versions[-1]
+    changed_dates: tuple[date, ...] = ()
+    rescheduled_item_ids: tuple[str, ...] = ()
     summary = {
         "approve_draft": "用户批准现有草案, 审核恢复没有修改行程结构。",
         "acknowledge_conflict": "用户确认已知冲突, 原草案保持不变且未被标记为可执行。",
-        "request_revision": "用户已记录修改请求, 本增量尚未生成新的计划版本。",
+        "request_revision": "结构化修改已应用到目标日期并生成新的待确认草案版本。",
         "cancel": "用户取消本次规划, 原草案仅保留为审计记录。",
     }[decision.action.value]
+    revision = snapshot.state.revision_result
+    if decision.action.value == "request_revision":
+        if decision.revision_request is None or revision is None or len(versions) < 2:
+            raise ValueError("request_revision outcome requires a revised plan version")
+        from_version = versions[-2]
+        to_version = versions[-1]
+        if decision.revision_request.base_version_id != from_version.version_id:
+            raise ValueError("revision decision does not reference the previous version")
+        changed_dates = revision.diff.changed_dates
+        rescheduled_item_ids = revision.diff.rescheduled_item_ids
     return PlanningTaskReviewOutcome(
         decision_id=decision.decision_id,
         review_id=decision.review_id,
@@ -79,13 +128,13 @@ def build_review_outcome(
         decided_at=review_decision.decided_at,
         resulting_state_status=snapshot.state.status,
         plan_diff=PlanningTaskPlanDiff(
-            from_version_id=version.version_id,
-            to_version_id=version.version_id,
-            plan_changed=False,
-            changed_dates=(),
+            from_version_id=from_version.version_id,
+            to_version_id=to_version.version_id,
+            plan_changed=from_version.version_id != to_version.version_id,
+            changed_dates=changed_dates,
             added_item_ids=(),
             removed_item_ids=(),
-            rescheduled_item_ids=(),
+            rescheduled_item_ids=rescheduled_item_ids,
             summary=(summary,),
         ),
     )

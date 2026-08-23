@@ -38,6 +38,7 @@ from app.planning.minimal_graph import (
     derive_candidate_search_queries,
     run_minimal_planning_graph,
 )
+from app.planning.plan_revision import PlanRevisionProtocolError, apply_plan_revision
 from app.planning.repair_contracts import (
     RepairArtifactHashes,
     RepairAttemptTrace,
@@ -55,6 +56,12 @@ from app.planning.repair_router import (
     RepairExecutor,
     RepairRouterProtocolError,
     run_repair_router,
+)
+from app.planning.revision_contracts import (
+    PlanRevisionDiff,
+    PlanRevisionOperation,
+    PlanRevisionRequest,
+    PlanRevisionResult,
 )
 from app.planning.specialist_contracts import (
     SpecialistBranchResult,
@@ -161,6 +168,11 @@ __all__ = [
     "HumanReviewKind",
     "HumanReviewRequest",
     "HumanReviewResume",
+    "PlanRevisionDiff",
+    "PlanRevisionOperation",
+    "PlanRevisionProtocolError",
+    "PlanRevisionRequest",
+    "PlanRevisionResult",
     "PlanningCandidateKind",
     "PlanningGraphProtocolError",
     "PlanningMaterialBundle",
@@ -222,6 +234,7 @@ __all__ = [
     "WeatherReplanExecutionStatus",
     "WeatherReplanExecutor",
     "allocate_budget",
+    "apply_plan_revision",
     "assemble_trip_plan",
     "build_human_review_request",
     "build_minimal_planning_graph",
