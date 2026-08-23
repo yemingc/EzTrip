@@ -108,6 +108,9 @@ async def request_until_awaiting_input(tmp_path: Path) -> None:
         assert snapshot["event_count"] == 5
         assert snapshot["result"]["state"]["status"] == "awaiting_human_review"
         assert snapshot["result"]["state"]["review_request"]["review_id"] == events[-1]["review_id"]
+        assert len(snapshot["plan_versions"]) == 1
+        assert snapshot["plan_versions"][0]["version_number"] == 1
+        assert snapshot["review_outcome"] is None
 
         replay_response = await client.get(
             accepted["events_url"],
@@ -130,6 +133,132 @@ async def request_until_awaiting_input(tmp_path: Path) -> None:
 
 def test_real_graph_task_api_and_sse_replay(tmp_path: Path) -> None:
     asyncio.run(request_until_awaiting_input(tmp_path))
+
+
+async def request_review_until_completed(tmp_path: Path) -> None:
+    settings = Settings(
+        environment="test",
+        planning_checkpoint_dir=tmp_path,
+        planning_sse_heartbeat_seconds=0.01,
+        planning_task_timeout_seconds=10,
+    )
+    service = PlanningTaskService(
+        StatefulGraphPlanningTaskExecutor(settings),
+        heartbeat_seconds=0.01,
+        timeout_seconds=10,
+    )
+    app = create_app(settings=settings, planning_task_service=service)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        create_response = await client.post(
+            "/api/planning-tasks",
+            json=build_fixture_payload().model_dump(mode="json"),
+        )
+        accepted = create_response.json()
+        initial_events_response = await client.get(accepted["events_url"])
+        initial_events = parse_sse_events(initial_events_response.text)
+        review_id = str(initial_events[-1]["review_id"])
+        decision = {
+            "decision_id": "review-decision-api-001",
+            "review_id": review_id,
+            "action": "approve_draft",
+            "reviewer_id": "reviewer-api-fixture",
+            "comment": "批准当前草案。",
+        }
+
+        concurrent_responses = await asyncio.gather(
+            client.post(
+                f"{accepted['task_url']}/review-decisions",
+                json=decision,
+            ),
+            client.post(
+                f"{accepted['task_url']}/review-decisions",
+                json=decision,
+            ),
+        )
+        assert [response.status_code for response in concurrent_responses] == [202, 202]
+        response_payloads = [response.json() for response in concurrent_responses]
+        assert sorted(payload["idempotent_replay"] for payload in response_payloads) == [
+            False,
+            True,
+        ]
+        accepted_payload = next(
+            payload for payload in response_payloads if not payload["idempotent_replay"]
+        )
+        assert accepted_payload == {
+            "schema_version": "1.0",
+            "decision_id": "review-decision-api-001",
+            "task_id": accepted["task_id"],
+            "review_id": review_id,
+            "action": "approve_draft",
+            "status": "running",
+            "idempotent_replay": False,
+            "task_url": accepted["task_url"],
+            "events_url": accepted["events_url"],
+        }
+
+        conflicting_replay = await client.post(
+            f"{accepted['task_url']}/review-decisions",
+            json={**decision, "action": "cancel"},
+        )
+        assert conflicting_replay.status_code == 409
+        assert (
+            conflicting_replay.json()["detail"]["error_code"]
+            == "review-decision-idempotency-conflict"
+        )
+
+        resumed_events_response = await client.get(f"{accepted['events_url']}?after=5")
+        resumed_events = parse_sse_events(resumed_events_response.text)
+        assert [event["sequence"] for event in resumed_events] == [6, 7, 8, 9]
+        assert [event["kind"] for event in resumed_events] == [
+            "task_review_submitted",
+            "graph_node_completed",
+            "graph_node_completed",
+            "task_succeeded",
+        ]
+        assert resumed_events[0]["review_id"] == review_id
+        assert resumed_events[0]["review_action"] == "approve_draft"
+        assert [event.get("node") for event in resumed_events[1:3]] == [
+            "human_review",
+            "apply_review_decision",
+        ]
+        assert [event.get("state_status") for event in resumed_events[1:3]] == [
+            "review_decided",
+            "approved_draft",
+        ]
+
+        snapshot_response = await client.get(accepted["task_url"])
+        snapshot = snapshot_response.json()
+        assert snapshot["status"] == "succeeded"
+        assert snapshot["event_count"] == 9
+        assert snapshot["result"]["state"]["status"] == "approved_draft"
+        assert len(snapshot["plan_versions"]) == 1
+        version = snapshot["plan_versions"][0]
+        outcome = snapshot["review_outcome"]
+        assert outcome["decision_id"] == decision["decision_id"]
+        assert outcome["resulting_state_status"] == "approved_draft"
+        assert outcome["plan_diff"] == {
+            "schema_version": "1.0",
+            "from_version_id": version["version_id"],
+            "to_version_id": version["version_id"],
+            "plan_changed": False,
+            "changed_dates": [],
+            "added_item_ids": [],
+            "removed_item_ids": [],
+            "rescheduled_item_ids": [],
+            "summary": ["用户批准现有草案, 审核恢复没有修改行程结构。"],
+        }
+
+        second_decision = await client.post(
+            f"{accepted['task_url']}/review-decisions",
+            json={**decision, "decision_id": "review-decision-api-002"},
+        )
+        assert second_decision.status_code == 409
+        assert second_decision.json()["detail"]["error_code"] == "review-already-decided"
+
+
+def test_review_resume_is_idempotent_and_streams_checkpoint_progress(tmp_path: Path) -> None:
+    asyncio.run(request_review_until_completed(tmp_path))
 
 
 class FailingExecutor:
@@ -189,5 +318,9 @@ def test_planning_task_schema_bundle_and_openapi_do_not_drift() -> None:
         "/api/planning-tasks",
         "/api/planning-tasks/{task_id}",
         "/api/planning-tasks/{task_id}/events",
+        "/api/planning-tasks/{task_id}/review-decisions",
     }
     assert openapi["paths"]["/api/planning-tasks"]["post"]["responses"]["202"]
+    assert openapi["paths"]["/api/planning-tasks/{task_id}/review-decisions"]["post"]["responses"][
+        "202"
+    ]

@@ -578,12 +578,23 @@
     },
     "PlanningTaskEvent": {
       "$defs": {
+        "HumanReviewAction": {
+          "enum": [
+            "approve_draft",
+            "acknowledge_conflict",
+            "request_revision",
+            "cancel"
+          ],
+          "title": "HumanReviewAction",
+          "type": "string"
+        },
         "PlanningTaskEventKind": {
           "enum": [
             "task_created",
             "task_started",
             "graph_node_completed",
             "task_awaiting_input",
+            "task_review_submitted",
             "task_succeeded",
             "task_failed"
           ],
@@ -711,6 +722,17 @@
           ],
           "default": null,
           "title": "Review Id"
+        },
+        "review_action": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HumanReviewAction"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "error_code": {
           "anyOf": [
@@ -2125,6 +2147,120 @@
           "title": "PlanValidationStatus",
           "type": "string"
         },
+        "PlanVersion": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "version_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Version Id",
+              "type": "string"
+            },
+            "plan": {
+              "$ref": "#/$defs/TripPlan"
+            },
+            "version_number": {
+              "minimum": 1,
+              "title": "Version Number",
+              "type": "integer"
+            },
+            "based_on_version_id": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Based On Version Id"
+            },
+            "created_at": {
+              "format": "date-time",
+              "title": "Created At",
+              "type": "string"
+            },
+            "input_constraint_sha256": {
+              "pattern": "^[a-f0-9]{64}$",
+              "title": "Input Constraint Sha256",
+              "type": "string"
+            },
+            "tool_snapshot_ids": {
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Tool Snapshot Ids",
+              "type": "array"
+            },
+            "model_versions": {
+              "additionalProperties": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "propertyNames": {
+                "minLength": 1
+              },
+              "title": "Model Versions",
+              "type": "object"
+            },
+            "prompt_versions": {
+              "additionalProperties": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "propertyNames": {
+                "minLength": 1
+              },
+              "title": "Prompt Versions",
+              "type": "object"
+            },
+            "change_summary": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Change Summary",
+              "type": "array"
+            },
+            "changed_dates": {
+              "default": [],
+              "items": {
+                "format": "date",
+                "type": "string"
+              },
+              "title": "Changed Dates",
+              "type": "array"
+            }
+          },
+          "required": [
+            "version_id",
+            "plan",
+            "version_number",
+            "created_at",
+            "input_constraint_sha256",
+            "tool_snapshot_ids",
+            "model_versions",
+            "prompt_versions",
+            "change_summary"
+          ],
+          "title": "PlanVersion",
+          "type": "object"
+        },
         "PlannerCapability": {
           "enum": [
             "candidate_search",
@@ -2581,6 +2717,163 @@
           ],
           "title": "PlanningTaskFailureCategory",
           "type": "string"
+        },
+        "PlanningTaskPlanDiff": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "from_version_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "From Version Id",
+              "type": "string"
+            },
+            "to_version_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "To Version Id",
+              "type": "string"
+            },
+            "plan_changed": {
+              "title": "Plan Changed",
+              "type": "boolean"
+            },
+            "changed_dates": {
+              "default": [],
+              "items": {
+                "format": "date",
+                "type": "string"
+              },
+              "title": "Changed Dates",
+              "type": "array"
+            },
+            "added_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Added Item Ids",
+              "type": "array"
+            },
+            "removed_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Removed Item Ids",
+              "type": "array"
+            },
+            "rescheduled_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Rescheduled Item Ids",
+              "type": "array"
+            },
+            "summary": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Summary",
+              "type": "array"
+            }
+          },
+          "required": [
+            "from_version_id",
+            "to_version_id",
+            "plan_changed",
+            "summary"
+          ],
+          "title": "PlanningTaskPlanDiff",
+          "type": "object"
+        },
+        "PlanningTaskReviewOutcome": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "decision_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Decision Id",
+              "type": "string"
+            },
+            "review_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Review Id",
+              "type": "string"
+            },
+            "action": {
+              "$ref": "#/$defs/HumanReviewAction"
+            },
+            "reviewer_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Reviewer Id",
+              "type": "string"
+            },
+            "comment": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Comment"
+            },
+            "decided_at": {
+              "format": "date-time",
+              "title": "Decided At",
+              "type": "string"
+            },
+            "resulting_state_status": {
+              "$ref": "#/$defs/PlanningThreadStatus"
+            },
+            "plan_diff": {
+              "$ref": "#/$defs/PlanningTaskPlanDiff"
+            }
+          },
+          "required": [
+            "decision_id",
+            "review_id",
+            "action",
+            "reviewer_id",
+            "decided_at",
+            "resulting_state_status",
+            "plan_diff"
+          ],
+          "title": "PlanningTaskReviewOutcome",
+          "type": "object"
         },
         "PlanningTaskStatus": {
           "enum": [
@@ -3635,6 +3928,25 @@
             }
           ],
           "default": null
+        },
+        "plan_versions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/PlanVersion"
+          },
+          "title": "Plan Versions",
+          "type": "array"
+        },
+        "review_outcome": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlanningTaskReviewOutcome"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -3697,6 +4009,424 @@
         "user_message"
       ],
       "title": "PlanningTaskFailure",
+      "type": "object"
+    },
+    "PlanningTaskReviewDecisionRequest": {
+      "$defs": {
+        "HumanReviewAction": {
+          "enum": [
+            "approve_draft",
+            "acknowledge_conflict",
+            "request_revision",
+            "cancel"
+          ],
+          "title": "HumanReviewAction",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "decision_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Decision Id",
+          "type": "string"
+        },
+        "review_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Review Id",
+          "type": "string"
+        },
+        "action": {
+          "$ref": "#/$defs/HumanReviewAction"
+        },
+        "reviewer_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Reviewer Id",
+          "type": "string"
+        },
+        "comment": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comment"
+        }
+      },
+      "required": [
+        "decision_id",
+        "review_id",
+        "action",
+        "reviewer_id"
+      ],
+      "title": "PlanningTaskReviewDecisionRequest",
+      "type": "object"
+    },
+    "PlanningTaskReviewDecisionAccepted": {
+      "$defs": {
+        "HumanReviewAction": {
+          "enum": [
+            "approve_draft",
+            "acknowledge_conflict",
+            "request_revision",
+            "cancel"
+          ],
+          "title": "HumanReviewAction",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "decision_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Decision Id",
+          "type": "string"
+        },
+        "task_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Task Id",
+          "type": "string"
+        },
+        "review_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Review Id",
+          "type": "string"
+        },
+        "action": {
+          "$ref": "#/$defs/HumanReviewAction"
+        },
+        "status": {
+          "const": "running",
+          "default": "running",
+          "title": "Status",
+          "type": "string"
+        },
+        "idempotent_replay": {
+          "title": "Idempotent Replay",
+          "type": "boolean"
+        },
+        "task_url": {
+          "minLength": 1,
+          "title": "Task Url",
+          "type": "string"
+        },
+        "events_url": {
+          "minLength": 1,
+          "title": "Events Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "decision_id",
+        "task_id",
+        "review_id",
+        "action",
+        "idempotent_replay",
+        "task_url",
+        "events_url"
+      ],
+      "title": "PlanningTaskReviewDecisionAccepted",
+      "type": "object"
+    },
+    "PlanningTaskPlanDiff": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "from_version_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "From Version Id",
+          "type": "string"
+        },
+        "to_version_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "To Version Id",
+          "type": "string"
+        },
+        "plan_changed": {
+          "title": "Plan Changed",
+          "type": "boolean"
+        },
+        "changed_dates": {
+          "default": [],
+          "items": {
+            "format": "date",
+            "type": "string"
+          },
+          "title": "Changed Dates",
+          "type": "array"
+        },
+        "added_item_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Added Item Ids",
+          "type": "array"
+        },
+        "removed_item_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Removed Item Ids",
+          "type": "array"
+        },
+        "rescheduled_item_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Rescheduled Item Ids",
+          "type": "array"
+        },
+        "summary": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Summary",
+          "type": "array"
+        }
+      },
+      "required": [
+        "from_version_id",
+        "to_version_id",
+        "plan_changed",
+        "summary"
+      ],
+      "title": "PlanningTaskPlanDiff",
+      "type": "object"
+    },
+    "PlanningTaskReviewOutcome": {
+      "$defs": {
+        "HumanReviewAction": {
+          "enum": [
+            "approve_draft",
+            "acknowledge_conflict",
+            "request_revision",
+            "cancel"
+          ],
+          "title": "HumanReviewAction",
+          "type": "string"
+        },
+        "PlanningTaskPlanDiff": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "from_version_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "From Version Id",
+              "type": "string"
+            },
+            "to_version_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "To Version Id",
+              "type": "string"
+            },
+            "plan_changed": {
+              "title": "Plan Changed",
+              "type": "boolean"
+            },
+            "changed_dates": {
+              "default": [],
+              "items": {
+                "format": "date",
+                "type": "string"
+              },
+              "title": "Changed Dates",
+              "type": "array"
+            },
+            "added_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Added Item Ids",
+              "type": "array"
+            },
+            "removed_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Removed Item Ids",
+              "type": "array"
+            },
+            "rescheduled_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Rescheduled Item Ids",
+              "type": "array"
+            },
+            "summary": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Summary",
+              "type": "array"
+            }
+          },
+          "required": [
+            "from_version_id",
+            "to_version_id",
+            "plan_changed",
+            "summary"
+          ],
+          "title": "PlanningTaskPlanDiff",
+          "type": "object"
+        },
+        "PlanningThreadStatus": {
+          "enum": [
+            "planning",
+            "plan_ready",
+            "awaiting_human_review",
+            "review_decided",
+            "approved_draft",
+            "conflict_acknowledged",
+            "revision_requested",
+            "cancelled"
+          ],
+          "title": "PlanningThreadStatus",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "decision_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Decision Id",
+          "type": "string"
+        },
+        "review_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Review Id",
+          "type": "string"
+        },
+        "action": {
+          "$ref": "#/$defs/HumanReviewAction"
+        },
+        "reviewer_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Reviewer Id",
+          "type": "string"
+        },
+        "comment": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comment"
+        },
+        "decided_at": {
+          "format": "date-time",
+          "title": "Decided At",
+          "type": "string"
+        },
+        "resulting_state_status": {
+          "$ref": "#/$defs/PlanningThreadStatus"
+        },
+        "plan_diff": {
+          "$ref": "#/$defs/PlanningTaskPlanDiff"
+        }
+      },
+      "required": [
+        "decision_id",
+        "review_id",
+        "action",
+        "reviewer_id",
+        "decided_at",
+        "resulting_state_status",
+        "plan_diff"
+      ],
+      "title": "PlanningTaskReviewOutcome",
       "type": "object"
     }
   }

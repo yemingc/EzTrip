@@ -10,6 +10,7 @@ export type PlanningTaskEventKind =
   | "task_started"
   | "graph_node_completed"
   | "task_awaiting_input"
+  | "task_review_submitted"
   | "task_succeeded"
   | "task_failed";
 
@@ -192,6 +193,8 @@ export interface PlanningTaskSnapshot {
     retryable: boolean;
     user_message: string;
   } | null;
+  plan_versions: PlanVersion[];
+  review_outcome: PlanningTaskReviewOutcome | null;
 }
 
 export interface PlanningTaskAccepted {
@@ -213,7 +216,61 @@ export interface PlanningTaskEvent {
   node: string | null;
   state_status: string | null;
   review_id: string | null;
+  review_action: HumanReviewAction | null;
   error_code: string | null;
+}
+
+export type HumanReviewAction =
+  | "approve_draft"
+  | "acknowledge_conflict"
+  | "request_revision"
+  | "cancel";
+
+export interface PlanVersion {
+  version_id: string;
+  plan: TripPlan;
+  version_number: number;
+  based_on_version_id: string | null;
+  created_at: string;
+  input_constraint_sha256: string;
+  tool_snapshot_ids: string[];
+  model_versions: Record<string, string>;
+  prompt_versions: Record<string, string>;
+  change_summary: string[];
+  changed_dates: string[];
+}
+
+export interface PlanningTaskPlanDiff {
+  from_version_id: string;
+  to_version_id: string;
+  plan_changed: boolean;
+  changed_dates: string[];
+  added_item_ids: string[];
+  removed_item_ids: string[];
+  rescheduled_item_ids: string[];
+  summary: string[];
+}
+
+export interface PlanningTaskReviewOutcome {
+  decision_id: string;
+  review_id: string;
+  action: HumanReviewAction;
+  reviewer_id: string;
+  comment: string | null;
+  decided_at: string;
+  resulting_state_status: string;
+  plan_diff: PlanningTaskPlanDiff;
+}
+
+export interface PlanningTaskReviewDecisionAccepted {
+  decision_id: string;
+  task_id: string;
+  review_id: string;
+  action: HumanReviewAction;
+  status: "running";
+  idempotent_replay: boolean;
+  task_url: string;
+  events_url: string;
 }
 
 export interface PlannerFormValues {
@@ -336,6 +393,35 @@ export async function getPlanningTask(
   return parseJsonResponse<PlanningTaskSnapshot>(response);
 }
 
-export function planningEventsUrl(taskId: string): string {
-  return `${apiBaseUrl}/api/planning-tasks/${taskId}/events`;
+export async function submitPlanningTaskReview(
+  taskId: string,
+  input: {
+    decisionId: string;
+    reviewId: string;
+    action: HumanReviewAction;
+    reviewerId: string;
+    comment?: string;
+  },
+): Promise<PlanningTaskReviewDecisionAccepted> {
+  const response = await fetch(
+    `${apiBaseUrl}/api/planning-tasks/${taskId}/review-decisions`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        schema_version: "1.0",
+        decision_id: input.decisionId,
+        review_id: input.reviewId,
+        action: input.action,
+        reviewer_id: input.reviewerId,
+        comment: input.comment?.trim() || null,
+      }),
+    },
+  );
+  return parseJsonResponse<PlanningTaskReviewDecisionAccepted>(response);
+}
+
+export function planningEventsUrl(taskId: string, afterSequence = 0): string {
+  const base = `${apiBaseUrl}/api/planning-tasks/${taskId}/events`;
+  return afterSequence > 0 ? `${base}?after=${afterSequence}` : base;
 }

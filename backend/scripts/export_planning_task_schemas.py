@@ -7,6 +7,10 @@ from app.tasks.contracts import (
     PlanningTaskCreateRequest,
     PlanningTaskEvent,
     PlanningTaskFailure,
+    PlanningTaskPlanDiff,
+    PlanningTaskReviewDecisionAccepted,
+    PlanningTaskReviewDecisionRequest,
+    PlanningTaskReviewOutcome,
     PlanningTaskSnapshot,
 )
 
@@ -18,6 +22,10 @@ SCHEMA_MODELS = (
     PlanningTaskEvent,
     PlanningTaskSnapshot,
     PlanningTaskFailure,
+    PlanningTaskReviewDecisionRequest,
+    PlanningTaskReviewDecisionAccepted,
+    PlanningTaskPlanDiff,
+    PlanningTaskReviewOutcome,
 )
 
 

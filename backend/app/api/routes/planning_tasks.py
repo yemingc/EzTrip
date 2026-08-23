@@ -8,9 +8,15 @@ from app.tasks.contracts import (
     PlanningTaskAccepted,
     PlanningTaskCreateRequest,
     PlanningTaskEvent,
+    PlanningTaskReviewDecisionAccepted,
+    PlanningTaskReviewDecisionRequest,
     PlanningTaskSnapshot,
 )
-from app.tasks.service import PlanningTaskNotFoundError, PlanningTaskService
+from app.tasks.service import (
+    PlanningTaskNotFoundError,
+    PlanningTaskReviewConflictError,
+    PlanningTaskService,
+)
 
 router = APIRouter(prefix="/planning-tasks", tags=["planning-tasks"])
 
@@ -39,6 +45,13 @@ def _bad_cursor(message: str) -> HTTPException:
     )
 
 
+def _review_conflict(error: PlanningTaskReviewConflictError) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail={"error_code": error.error_code, "message": error.message},
+    )
+
+
 @router.post("", response_model=PlanningTaskAccepted, status_code=status.HTTP_202_ACCEPTED)
 async def create_planning_task(
     payload: PlanningTaskCreateRequest,
@@ -53,6 +66,24 @@ async def get_planning_task(task_id: str, request: Request) -> PlanningTaskSnaps
         return await get_planning_task_service(request).get(task_id)
     except PlanningTaskNotFoundError as error:
         raise _not_found(task_id) from error
+
+
+@router.post(
+    "/{task_id}/review-decisions",
+    response_model=PlanningTaskReviewDecisionAccepted,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def submit_planning_task_review(
+    task_id: str,
+    payload: PlanningTaskReviewDecisionRequest,
+    request: Request,
+) -> PlanningTaskReviewDecisionAccepted:
+    try:
+        return await get_planning_task_service(request).submit_review(task_id, payload)
+    except PlanningTaskNotFoundError as error:
+        raise _not_found(task_id) from error
+    except PlanningTaskReviewConflictError as error:
+        raise _review_conflict(error) from error
 
 
 def _encode_event(event: PlanningTaskEvent) -> str:

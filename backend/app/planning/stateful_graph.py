@@ -432,6 +432,15 @@ class StatefulPlanningRuntime:
         thread_id: str,
         resume: HumanReviewResume,
     ) -> StatefulPlanningSnapshot:
+        return await self.resume_with_progress(thread_id, resume)
+
+    async def resume_with_progress(
+        self,
+        thread_id: str,
+        resume: HumanReviewResume,
+        *,
+        on_progress: ProgressCallback | None = None,
+    ) -> StatefulPlanningSnapshot:
         pending = await self.snapshot(thread_id)
         if (
             pending.state.status != PlanningThreadStatus.AWAITING_HUMAN_REVIEW
@@ -440,7 +449,44 @@ class StatefulPlanningRuntime:
             raise StatefulPlanningProtocolError("planning thread is not awaiting human review")
         validate_human_review_resume(pending.state.review_request, resume)
         config = build_stateful_run_config(thread_id)
-        await self.graph.ainvoke(Command(resume=resume.model_dump(mode="json")), config=config)
+        async for raw_update in self.graph.astream(
+            Command(resume=resume.model_dump(mode="json")),
+            config=config,
+            stream_mode="updates",
+        ):
+            if not isinstance(raw_update, dict):
+                raise StatefulPlanningProtocolError("planning update stream returned invalid data")
+            for raw_node, raw_payload in raw_update.items():
+                if raw_node == "__interrupt__":
+                    continue
+                try:
+                    node = StatefulPlanningNodeName(str(raw_node))
+                except ValueError as error:
+                    raise StatefulPlanningProtocolError(
+                        f"planning update stream returned unknown node {raw_node}"
+                    ) from error
+                if not isinstance(raw_payload, dict):
+                    raise StatefulPlanningProtocolError(
+                        f"planning update for {node.value} contains no state payload"
+                    )
+                raw_state = raw_payload.get("state")
+                if raw_state is None:
+                    raise StatefulPlanningProtocolError(
+                        f"planning update for {node.value} contains no committed state"
+                    )
+                state = StatefulPlanningData.model_validate(raw_state)
+                if not state.events or state.events[-1].node != node:
+                    raise StatefulPlanningProtocolError(
+                        f"planning update for {node.value} does not match its state event"
+                    )
+                if on_progress is not None:
+                    await on_progress(
+                        StatefulPlanningProgress(
+                            node=node,
+                            state_status=state.status,
+                            event=state.events[-1],
+                        )
+                    )
         return await self.snapshot(thread_id)
 
     async def snapshot(self, thread_id: str) -> StatefulPlanningSnapshot:

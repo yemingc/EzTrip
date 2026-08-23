@@ -1,15 +1,23 @@
 import asyncio
 
-from app.planning.stateful_contracts import PlanningThreadStatus, StatefulPlanningNodeName
+from app.domain.planning import PlanVersion
+from app.planning.stateful_contracts import (
+    HumanReviewAction,
+    PlanningThreadStatus,
+    StatefulPlanningNodeName,
+)
 from app.tasks.contracts import (
     PlanningTaskEvent,
     PlanningTaskEventKind,
     PlanningTaskFailure,
+    PlanningTaskReviewDecisionRequest,
+    PlanningTaskReviewOutcome,
     PlanningTaskSnapshot,
     PlanningTaskStatus,
     PlanningTaskSubmission,
     utc_now,
 )
+from app.tasks.plan_versions import build_initial_plan_version, build_review_outcome
 
 
 class PlanningTaskNotFoundError(KeyError):
@@ -20,12 +28,23 @@ class PlanningTaskTransitionError(RuntimeError):
     """Raised when task state and event transitions diverge."""
 
 
+class PlanningTaskReviewConflictError(RuntimeError):
+    """Raised when a review decision conflicts with task or idempotency state."""
+
+    def __init__(self, error_code: str, message: str) -> None:
+        super().__init__(message)
+        self.error_code = error_code
+        self.message = message
+
+
 class InMemoryPlanningTaskStore:
     """Process-local snapshots and replayable events for the first API increment."""
 
     def __init__(self) -> None:
         self._snapshots: dict[str, PlanningTaskSnapshot] = {}
         self._events: dict[str, list[PlanningTaskEvent]] = {}
+        self._review_decisions: dict[tuple[str, str], PlanningTaskReviewDecisionRequest] = {}
+        self._task_decision_ids: dict[str, str] = {}
         self._condition = asyncio.Condition()
 
     async def create(self, submission: PlanningTaskSubmission) -> PlanningTaskSnapshot:
@@ -124,6 +143,62 @@ class InMemoryPlanningTaskStore:
             state_status=state_status,
         )
 
+    async def submit_review(
+        self,
+        task_id: str,
+        decision: PlanningTaskReviewDecisionRequest,
+    ) -> bool:
+        """Atomically accept one review decision; return True for an exact replay."""
+
+        async with self._condition:
+            key = (task_id, decision.decision_id)
+            existing = self._review_decisions.get(key)
+            if existing is not None:
+                if existing != decision:
+                    raise PlanningTaskReviewConflictError(
+                        "review-decision-idempotency-conflict",
+                        "同一 decision_id 已用于不同的审核内容。",
+                    )
+                return True
+
+            previous = self._require_snapshot(task_id)
+            accepted_decision_id = self._task_decision_ids.get(task_id)
+            if accepted_decision_id is not None:
+                raise PlanningTaskReviewConflictError(
+                    "review-already-decided",
+                    f"该任务已接受审核决定 {accepted_decision_id}。",
+                )
+            if previous.status != PlanningTaskStatus.AWAITING_INPUT or previous.result is None:
+                raise PlanningTaskReviewConflictError(
+                    "task-not-awaiting-review",
+                    "该规划任务当前不在等待审核状态。",
+                )
+            review = previous.result.state.review_request
+            if review is None or decision.review_id != review.review_id:
+                raise PlanningTaskReviewConflictError(
+                    "review-id-mismatch",
+                    "review_id 与当前待处理审核不一致。",
+                )
+            if decision.action not in review.allowed_actions:
+                raise PlanningTaskReviewConflictError(
+                    "review-action-not-allowed",
+                    f"当前审核不允许动作 {decision.action.value}。",
+                )
+
+            self._append_locked(
+                task_id,
+                kind=PlanningTaskEventKind.TASK_REVIEW_SUBMITTED,
+                status=PlanningTaskStatus.RUNNING,
+                message="审核决定已接收, 正在恢复原 LangGraph checkpoint。",
+                allowed_from={PlanningTaskStatus.AWAITING_INPUT},
+                review_id=decision.review_id,
+                review_action=decision.action,
+            )
+            self._review_decisions[key] = decision
+            self._task_decision_ids[task_id] = decision.decision_id
+            self._condition.notify_all()
+            return False
+
     async def await_input(
         self,
         task_id: str,
@@ -134,6 +209,7 @@ class InMemoryPlanningTaskStore:
         from app.planning.stateful_contracts import StatefulPlanningSnapshot
 
         snapshot = StatefulPlanningSnapshot.model_validate(result)
+        plan_version = build_initial_plan_version(snapshot, created_at=utc_now())
         return await self._append(
             task_id,
             kind=PlanningTaskEventKind.TASK_AWAITING_INPUT,
@@ -142,6 +218,7 @@ class InMemoryPlanningTaskStore:
             allowed_from={PlanningTaskStatus.RUNNING},
             result=snapshot,
             review_id=review_id,
+            plan_versions=(plan_version,),
         )
 
     async def succeed(
@@ -149,10 +226,21 @@ class InMemoryPlanningTaskStore:
         task_id: str,
         *,
         result: object,
+        review_decision: PlanningTaskReviewDecisionRequest | None = None,
     ) -> PlanningTaskSnapshot:
         from app.planning.stateful_contracts import StatefulPlanningSnapshot
 
         snapshot = StatefulPlanningSnapshot.model_validate(result)
+        current = await self.get(task_id)
+        review_outcome: PlanningTaskReviewOutcome | None = None
+        if review_decision is not None:
+            if not current.plan_versions:
+                raise PlanningTaskTransitionError("review completion requires a plan version")
+            review_outcome = build_review_outcome(
+                snapshot,
+                review_decision,
+                current.plan_versions[-1],
+            )
         return await self._append(
             task_id,
             kind=PlanningTaskEventKind.TASK_SUCCEEDED,
@@ -160,6 +248,7 @@ class InMemoryPlanningTaskStore:
             message="规划工作流已完成。",
             allowed_from={PlanningTaskStatus.RUNNING},
             result=snapshot,
+            review_outcome=review_outcome,
         )
 
     async def fail(
@@ -189,46 +278,89 @@ class InMemoryPlanningTaskStore:
         node: StatefulPlanningNodeName | None = None,
         state_status: PlanningThreadStatus | None = None,
         review_id: str | None = None,
+        review_action: HumanReviewAction | None = None,
         error_code: str | None = None,
         result: object | None = None,
         failure: PlanningTaskFailure | None = None,
+        plan_versions: tuple[PlanVersion, ...] | None = None,
+        review_outcome: PlanningTaskReviewOutcome | None = None,
     ) -> PlanningTaskSnapshot:
         async with self._condition:
-            previous = self._require_snapshot(task_id)
-            if previous.status not in allowed_from:
-                raise PlanningTaskTransitionError(
-                    f"cannot append {kind.value} from {previous.status.value}"
-                )
-            sequence = previous.event_count + 1
-            now = utc_now()
-            event = PlanningTaskEvent(
-                event_id=self._event_id(task_id, sequence),
-                sequence=sequence,
-                task_id=task_id,
+            snapshot = self._append_locked(
+                task_id,
                 kind=kind,
-                task_status=status,
-                occurred_at=now,
+                status=status,
                 message=message,
+                allowed_from=allowed_from,
                 node=node,
                 state_status=state_status,
                 review_id=review_id,
+                review_action=review_action,
                 error_code=error_code,
+                result=result,
+                failure=failure,
+                plan_versions=plan_versions,
+                review_outcome=review_outcome,
             )
-            payload = previous.model_dump(mode="python")
-            payload.update(
-                {
-                    "status": status,
-                    "updated_at": now,
-                    "event_count": sequence,
-                    "result": result,
-                    "failure": failure,
-                }
-            )
-            snapshot = PlanningTaskSnapshot.model_validate(payload)
-            self._events[task_id].append(event)
-            self._snapshots[task_id] = snapshot
             self._condition.notify_all()
             return snapshot
+
+    def _append_locked(
+        self,
+        task_id: str,
+        *,
+        kind: PlanningTaskEventKind,
+        status: PlanningTaskStatus,
+        message: str,
+        allowed_from: set[PlanningTaskStatus],
+        node: StatefulPlanningNodeName | None = None,
+        state_status: PlanningThreadStatus | None = None,
+        review_id: str | None = None,
+        review_action: HumanReviewAction | None = None,
+        error_code: str | None = None,
+        result: object | None = None,
+        failure: PlanningTaskFailure | None = None,
+        plan_versions: tuple[PlanVersion, ...] | None = None,
+        review_outcome: PlanningTaskReviewOutcome | None = None,
+    ) -> PlanningTaskSnapshot:
+        previous = self._require_snapshot(task_id)
+        if previous.status not in allowed_from:
+            raise PlanningTaskTransitionError(
+                f"cannot append {kind.value} from {previous.status.value}"
+            )
+        sequence = previous.event_count + 1
+        now = utc_now()
+        event = PlanningTaskEvent(
+            event_id=self._event_id(task_id, sequence),
+            sequence=sequence,
+            task_id=task_id,
+            kind=kind,
+            task_status=status,
+            occurred_at=now,
+            message=message,
+            node=node,
+            state_status=state_status,
+            review_id=review_id,
+            review_action=review_action,
+            error_code=error_code,
+        )
+        payload = previous.model_dump(mode="python")
+        payload.update(
+            {
+                "status": status,
+                "updated_at": now,
+                "event_count": sequence,
+                "result": result,
+                "failure": failure,
+                "review_outcome": review_outcome,
+            }
+        )
+        if plan_versions is not None:
+            payload["plan_versions"] = plan_versions
+        snapshot = PlanningTaskSnapshot.model_validate(payload)
+        self._events[task_id].append(event)
+        self._snapshots[task_id] = snapshot
+        return snapshot
 
     def _require_snapshot(self, task_id: str) -> PlanningTaskSnapshot:
         try:

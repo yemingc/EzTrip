@@ -35,6 +35,7 @@ from app.planning import (
     HumanReviewResume,
     PlanningThreadStatus,
     StatefulPlanningNodeName,
+    StatefulPlanningProgress,
     StatefulPlanningProtocolError,
     open_sqlite_planning_runtime,
 )
@@ -181,7 +182,12 @@ def test_sqlite_checkpoint_restores_pending_review_without_replaying_planning(
         ) as restored_runtime:
             restored = await restored_runtime.snapshot(thread_id)
             assert restored.state == paused.state
-            terminal = await restored_runtime.resume(
+            progress: list[StatefulPlanningProgress] = []
+
+            async def capture_progress(item: StatefulPlanningProgress) -> None:
+                progress.append(item)
+
+            terminal = await restored_runtime.resume_with_progress(
                 thread_id,
                 HumanReviewResume(
                     review_id=review.review_id,
@@ -189,6 +195,7 @@ def test_sqlite_checkpoint_restores_pending_review_without_replaying_planning(
                     reviewer_id="reviewer-fixture",
                     comment="批准该草案进入后续执行前准备。",
                 ),
+                on_progress=capture_progress,
             )
             history = await restored_runtime.history(thread_id)
             with pytest.raises(StatefulPlanningProtocolError, match="not awaiting"):
@@ -207,6 +214,14 @@ def test_sqlite_checkpoint_restores_pending_review_without_replaying_planning(
         assert terminal.state.vertical_slice.plan.status == "draft"
         assert terminal.state.review_decision is not None
         assert terminal.state.review_decision.decided_at == FIXED_REVIEW_TIME
+        assert [item.node for item in progress] == [
+            StatefulPlanningNodeName.HUMAN_REVIEW,
+            StatefulPlanningNodeName.APPLY_REVIEW_DECISION,
+        ]
+        assert [item.state_status for item in progress] == [
+            PlanningThreadStatus.REVIEW_DECIDED,
+            PlanningThreadStatus.APPROVED_DRAFT,
+        ]
         assert tuple(event.node for event in terminal.state.events) == tuple(
             StatefulPlanningNodeName
         )

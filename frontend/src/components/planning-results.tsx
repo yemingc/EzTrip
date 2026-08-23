@@ -1,8 +1,18 @@
+import { useState } from "react";
+
 import type {
   BudgetCategory,
   CandidatePoi,
+  HumanReviewAction,
   PlanningTaskSnapshot,
 } from "@/lib/planning-task";
+
+const reviewActionLabels: Record<HumanReviewAction, string> = {
+  approve_draft: "已批准草案",
+  acknowledge_conflict: "已确认冲突",
+  request_revision: "已记录修改请求",
+  cancel: "已取消规划",
+};
 
 const categoryLabels: Record<BudgetCategory, string> = {
   lodging: "住宿",
@@ -123,7 +133,19 @@ function CoordinateOverview({ candidates }: { candidates: CandidatePoi[] }) {
   );
 }
 
-export function PlanningResults({ snapshot }: { snapshot: PlanningTaskSnapshot }) {
+export function PlanningResults({
+  snapshot,
+  onReview,
+  reviewBusy,
+  reviewError,
+}: {
+  snapshot: PlanningTaskSnapshot;
+  onReview: (action: HumanReviewAction, comment?: string) => void | Promise<void>;
+  reviewBusy: boolean;
+  reviewError: string | null;
+}) {
+  const [showRevisionForm, setShowRevisionForm] = useState(false);
+  const [revisionComment, setRevisionComment] = useState("");
   const state = snapshot.result?.state;
   const verticalSlice = state?.vertical_slice;
   if (!state || !verticalSlice) {
@@ -132,6 +154,7 @@ export function PlanningResults({ snapshot }: { snapshot: PlanningTaskSnapshot }
 
   const { plan, validation } = verticalSlice;
   const review = state.review_request;
+  const reviewOutcome = snapshot.review_outcome;
   const candidates = verticalSlice.upstream.candidates;
   const budget = validation.budget;
   const hasBudget = budget.status !== "not_requested";
@@ -214,25 +237,129 @@ export function PlanningResults({ snapshot }: { snapshot: PlanningTaskSnapshot }
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-300">Human review</p>
-                <h3 className="mt-2 text-lg font-semibold">{review ? "等待你的确认" : "审核状态"}</h3>
+                <h3 className="mt-2 text-lg font-semibold">
+                  {reviewOutcome ? "审核已完成" : review ? "等待你的确认" : "审核状态"}
+                </h3>
               </div>
               <span className="flex size-10 items-center justify-center rounded-full bg-amber-300 text-lg text-slate-950">!</span>
             </div>
             <p className="mt-5 text-sm leading-6 text-slate-300">
-              {review?.prompt ?? "当前任务没有生成待审核请求。"}
+              {reviewOutcome
+                ? reviewOutcome.plan_diff.summary.join(" ")
+                : review?.prompt ?? "当前任务没有生成待审核请求。"}
             </p>
-            {review ? (
-              <div className="mt-5 grid grid-cols-2 gap-2">
-                <button className="rounded-xl bg-white/10 px-3 py-3 text-xs font-semibold text-white/45" disabled>
-                  批准草案
-                </button>
-                <button className="rounded-xl border border-white/10 px-3 py-3 text-xs font-semibold text-white/45" disabled>
-                  请求修改
-                </button>
+            {reviewOutcome ? (
+              <div className="mt-5 rounded-2xl border border-emerald-300/15 bg-emerald-300/10 p-4">
+                <p className="text-sm font-semibold text-emerald-200">
+                  {reviewActionLabels[reviewOutcome.action]}
+                </p>
+                <p className="mt-1 text-[11px] text-slate-400">
+                  {new Date(reviewOutcome.decided_at).toLocaleString("zh-CN")} · {reviewOutcome.reviewer_id.slice(0, 20)}…
+                </p>
+              </div>
+            ) : review && snapshot.status === "awaiting_input" ? (
+              <div className="mt-5 space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  {review.allowed_actions.includes("approve_draft") ? (
+                    <button
+                      className="rounded-xl bg-emerald-300 px-3 py-3 text-xs font-semibold text-slate-950 transition hover:bg-emerald-200 disabled:opacity-50"
+                      disabled={reviewBusy}
+                      onClick={() => void onReview("approve_draft")}
+                      type="button"
+                    >
+                      批准草案
+                    </button>
+                  ) : null}
+                  {review.allowed_actions.includes("acknowledge_conflict") ? (
+                    <button
+                      className="rounded-xl bg-amber-300 px-3 py-3 text-xs font-semibold text-slate-950 transition hover:bg-amber-200 disabled:opacity-50"
+                      disabled={reviewBusy}
+                      onClick={() => void onReview("acknowledge_conflict")}
+                      type="button"
+                    >
+                      确认已知冲突
+                    </button>
+                  ) : null}
+                  <button
+                    className="rounded-xl border border-white/15 px-3 py-3 text-xs font-semibold text-white transition hover:bg-white/5 disabled:opacity-50"
+                    disabled={reviewBusy}
+                    onClick={() => setShowRevisionForm((current) => !current)}
+                    type="button"
+                  >
+                    记录修改请求
+                  </button>
+                  <button
+                    className="rounded-xl border border-white/10 px-3 py-3 text-xs font-semibold text-slate-400 transition hover:bg-white/5 disabled:opacity-50"
+                    disabled={reviewBusy}
+                    onClick={() => void onReview("cancel")}
+                    type="button"
+                  >
+                    取消规划
+                  </button>
+                </div>
+                {showRevisionForm ? (
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                    <label className="text-[11px] font-semibold text-slate-300" htmlFor="revision-comment">
+                      修改说明
+                    </label>
+                    <textarea
+                      className="mt-2 min-h-20 w-full resize-y rounded-xl border border-white/10 bg-slate-900 p-3 text-xs leading-5 text-white outline-none focus:border-emerald-300"
+                      id="revision-comment"
+                      maxLength={500}
+                      onChange={(event) => setRevisionComment(event.target.value)}
+                      placeholder="例如：希望把第二天安排得更轻松。"
+                      value={revisionComment}
+                    />
+                    <button
+                      className="mt-2 w-full rounded-xl bg-white px-3 py-2.5 text-xs font-semibold text-slate-950 disabled:opacity-40"
+                      disabled={reviewBusy || !revisionComment.trim()}
+                      onClick={() => void onReview("request_revision", revisionComment)}
+                      type="button"
+                    >
+                      提交修改请求
+                    </button>
+                  </div>
+                ) : null}
+                {reviewError ? (
+                  <p className="rounded-xl bg-rose-400/10 px-3 py-2 text-[11px] leading-5 text-rose-200" role="alert">
+                    {reviewError}
+                  </p>
+                ) : null}
               </div>
             ) : null}
             <p className="mt-3 text-[11px] leading-5 text-slate-500">
-              操作按钮将在 EZ-403 接通审核恢复 API；当前不会伪造已执行的人工决策。
+              {reviewOutcome
+                ? "决定已通过 review-resume API 写入同一 checkpoint；审批不代表预订或付款。"
+                : "审核动作会恢复同一个 LangGraph checkpoint，不会重跑景点搜索或 Planner。"}
+            </p>
+          </article>
+
+          <article className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="eyebrow">Plan lineage</p>
+                <h3 className="mt-2 font-semibold">计划版本</h3>
+              </div>
+              <span className="rounded-full bg-slate-950 px-3 py-1.5 text-[11px] font-bold text-white">
+                v{snapshot.plan_versions.at(-1)?.version_number ?? 1}
+              </span>
+            </div>
+            {reviewOutcome ? (
+              <div className="mt-4 rounded-2xl bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-900">
+                  v{snapshot.plan_versions.at(-1)?.version_number ?? 1} → v{snapshot.plan_versions.at(-1)?.version_number ?? 1}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {reviewOutcome.plan_diff.plan_changed ? "计划结构已变化" : "计划未修改 · 0 个受影响日期"}
+                </p>
+              </div>
+            ) : (
+              <p className="mt-4 text-xs leading-5 text-slate-500">
+                初始 provider-grounded 草案已登记为 v1；审核决定产生前不会制造新版本。
+              </p>
+            )}
+            <p className="mt-3 break-all font-mono text-[10px] leading-4 text-slate-400">
+              {snapshot.plan_versions.at(-1)?.version_id ?? "version unavailable"}
             </p>
           </article>
 
