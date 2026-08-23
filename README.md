@@ -2,7 +2,7 @@
 
 面向中国城市自由行的可验证、可调整、可追溯旅行规划助手。
 
-当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、开放式景点/餐饮 Explore Agent、住宿区域筛选 Stay Agent、确定性预算/基础计划 Validator、北京三日 Gate 2 最小纵向切片、基于 SQLite checkpoint 的可恢复主编排与原生 HITL、Explore/Stay/主动天气三分支并行编排、有界路线矩阵和确定性预算材料层、把这些专业信息包合成为同构完整 `TripPlan` 草案的 schema-constrained Plan Agent、阻止不可靠草案定稿的 Hard Validators、消费 typed issue 的有界 Repair Router，以及 Weather Provider 风险主动触发的局部修复协调器。模型路径都有真实 DeepSeek/LangSmith 隔离评测；纵向切片、恢复、fan-out、材料层、Plan Agent、Hard Validators、Repair Router 与 Weather Repair 都有 fixture 可重放证据。另已冻结公平的 30-case system comparison 协议，但尚未发布三组对照结果。
+当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、开放式景点/餐饮 Explore Agent、住宿区域筛选 Stay Agent、确定性预算/基础计划 Validator、北京三日 Gate 2 最小纵向切片、基于 SQLite checkpoint 的可恢复主编排与原生 HITL、Explore/Stay/主动天气三分支并行编排、有界路线矩阵和确定性预算材料层、把这些专业信息包合成为同构完整 `TripPlan` 草案的 schema-constrained Plan Agent、阻止不可靠草案定稿的 Hard Validators、消费 typed issue 的有界 Repair Router，以及 Weather Provider 风险主动触发的局部修复协调器。模型路径都有真实 DeepSeek/LangSmith 隔离评测；纵向切片、恢复、fan-out、材料层、Plan Agent、Hard Validators、Repair Router 与 Weather Repair 都有 fixture 可重放证据。另已完成公平 30-case system comparison 的离线控制路径重放；报告明确不把 fixture 恢复率包装成模型质量或真实成功率。
 
 产品调用层已切换到 Product Graph V2：一次 FastAPI 任务依次提交 `run_specialists → build_materials → run_plan_agent → validate_hard_plan → [run_repair] → HITL`。可修复 hard error 会进入最多两次/动作的 Repair Router；真实 executor 只重跑 Explore、Stay、Route、Budget 或 Plan 责任链，随后重新执行 Hard Validator，并显式记录执行节点、复用节点、调用计数和 issue diff。任务快照、可回放 SSE、四类人工审核决定、PlanVersion 与结构化局部修改继续复用原协议。Next.js 工作台会展示多 Agent 结果、修复轨迹、事实边界、审核结果和版本差异；Playwright 使用真实 fixture 后端覆盖完整产品链。Weather Repair 仍是独立能力；中文 Constraint Agent 产品入口和开放式自然语言重规划尚未接入。协议见 [`docs/api/planning-task-api.md`](docs/api/planning-task-api.md)，前端边界见 [`frontend/README.md`](frontend/README.md)。
 
@@ -377,7 +377,13 @@ fixture 模式使用明确标记的北京合成数据：首日中雨由天气 Pr
 
 [`docs/evaluation/system-comparison-protocol.md`](docs/evaluation/system-comparison-protocol.md) 冻结 20 standard + 10 hard case，并规定 `single_agent_tools`、`product_graph_no_hard_gate`、`product_graph_bounded_repair` 三组必须共享请求、Provider fixture、完整 `TripPlan` 契约、post-run evaluator 和 live 模型名称。旧 Single Planner 只输出部分 `DayPlan`，不会被错误复用为公平对照。
 
-当前完成的是数据集、引用哈希、Pydantic/JSON Schema 与 drift tests，不是对照结果；因此 README 和简历仍不能声称多 Agent 提升了硬约束通过率。下一增量会先实现同构的完整单 Agent runner，再运行三组 fixture regression，live DeepSeek 对照保持显式 opt-in。
+三组 fixture runner 已共享冻结请求、工具快照、完整 `TripPlan` 和 `hard-trip-plan-validator-v1`：Single Agent 为 4/28，无 Hard Gate Product Graph 为 4/28，完整 Product Graph 为 20/28。后两组配对为 16 个改善、0 个恶化，即 `+57.14` 个百分点；这只证明 Hard Validator 与 bounded Repair 在该开发集故障注入上的恢复价值。Single 与无 Gate Product 没有差异，所以这份报告不能用于声称 Specialist Agent 提升了模型质量，更不能当作真实用户成功率。报告未调用 DeepSeek、高德或 LangSmith；live/holdout 对照仍保持显式 opt-in。
+
+```powershell
+Set-Location backend
+uv run python -m scripts.run_system_comparison_eval
+uv run pytest tests/test_comparison_evaluation_contract.py tests/test_system_comparison_evaluation.py --no-cov
+```
 
 ## 当前边界
 
