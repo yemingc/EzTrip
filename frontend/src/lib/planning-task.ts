@@ -36,6 +36,20 @@ export interface CandidatePoi {
   source: SourceReference;
 }
 
+export interface CandidateStay {
+  candidate_id: string;
+  name: string;
+  city: string;
+  district: string | null;
+  address: string | null;
+  location: { latitude: number; longitude: number };
+  area_name: string;
+  tags: string[];
+  availability_status: "unknown";
+  booking_supported: false;
+  source: SourceReference;
+}
+
 export interface RouteLeg {
   mode: "walking" | "transit" | "driving" | "cycling";
   distance_meters: number;
@@ -170,6 +184,41 @@ export interface VerticalSliceResult {
   validation: PlanValidation;
 }
 
+export interface ProductSpecialistBranch {
+  specialist: "explore" | "stay" | "weather";
+  status: "succeeded" | "skipped" | "failed";
+  explore_result: {
+    recommendations: { candidate: CandidatePoi }[];
+    query_model: string;
+    selection_model: string;
+  } | null;
+  stay_result: {
+    recommendations: { candidate: CandidateStay }[];
+    query_model: string;
+    selection_model: string;
+  } | null;
+  weather_risks: WeatherRisk[];
+}
+
+export interface ProductPlanningMaterials {
+  status: "ready" | "partial" | "blocked";
+  issues: string[];
+  shortlist: {
+    poi_candidates: CandidatePoi[];
+    primary_stay: CandidateStay | null;
+  };
+  route_matrix: {
+    status: string;
+    expected_edge_count: number;
+    succeeded_edge_count: number;
+  };
+  budget_allocation: {
+    status: string;
+    total_limit: string | number | null;
+    hard_limit: boolean | null;
+  };
+}
+
 export interface PlanRevisionRequest {
   schema_version: "1.0";
   revision_id: string;
@@ -215,8 +264,25 @@ export interface PlanningTaskSnapshot {
     checkpoint_id: string;
     next_nodes: string[];
     state: {
+      workflow_version: "stateful-planning-checkpoint-v1" | "product-planning-graph-v2";
       status: string;
-      vertical_slice: VerticalSliceResult;
+      vertical_slice?: VerticalSliceResult | null;
+      specialists?: {
+        status: string;
+        total_model_call_count: number;
+        total_provider_call_count: number;
+        branches: ProductSpecialistBranch[];
+      } | null;
+      materials?: ProductPlanningMaterials | null;
+      plan_agent?: {
+        status: "planned" | "skipped";
+        agent_version: string;
+        prompt_version: string;
+        model: string | null;
+        model_call_count: number;
+      } | null;
+      plan?: TripPlan | null;
+      validation?: PlanValidation | null;
       review_request: HumanReviewRequest | null;
       revision_result: PlanRevisionResult | null;
     };
@@ -334,16 +400,14 @@ function addCalendarDays(date: string, days: number): string {
 
 export function buildPlanningTaskRequest(values: PlannerFormValues) {
   const requestId = `web-request-${crypto.randomUUID().replaceAll("-", "")}`;
-  const budget = values.budgetLimit.trim()
-    ? {
-        total_limit: values.budgetLimit.trim(),
-        currency: "CNY" as const,
-        scope: "party_total" as const,
-        period: "whole_trip" as const,
-        included_categories: ["transport", "food", "admission", "activity"],
-        hard_limit: true,
-      }
-    : null;
+  const budget = {
+    total_limit: values.budgetLimit.trim(),
+    currency: "CNY" as const,
+    scope: "party_total" as const,
+    period: "whole_trip" as const,
+    included_categories: ["transport", "food", "admission", "activity"],
+    hard_limit: false,
+  };
 
   return {
     schema_version: "1.0",
@@ -360,6 +424,7 @@ export function buildPlanningTaskRequest(values: PlannerFormValues) {
         adults: values.adults,
         children: 0,
         seniors: 0,
+        rooms: 1,
       },
       budget,
       travel_styles: ["历史文化", "轻步行"],

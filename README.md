@@ -4,7 +4,7 @@
 
 当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、开放式景点/餐饮 Explore Agent、住宿区域筛选 Stay Agent、确定性预算/基础计划 Validator、北京三日 Gate 2 最小纵向切片、基于 SQLite checkpoint 的可恢复主编排与原生 HITL、Explore/Stay/主动天气三分支并行编排、有界路线矩阵和确定性预算材料层、把这些专业信息包合成为同构完整 `TripPlan` 草案的 schema-constrained Plan Agent、阻止不可靠草案定稿的 Hard Validators、消费 typed issue 的有界 Repair Router，以及 Weather Provider 风险主动触发的局部修复协调器。模型路径都有真实 DeepSeek/LangSmith 隔离评测；纵向切片、恢复、fan-out、材料层、Plan Agent、Hard Validators、Repair Router 与 Weather Repair 都有 fixture 可重放证据。
 
-产品调用层已提供 FastAPI 异步规划任务、任务快照、来自真实 LangGraph 节点提交的可回放 SSE，以及四类人工审核决定的 checkpoint resume。Next.js 工作台完成“提交结构化约束 → 显示真实事件 → 展示行程、预算校验、坐标与来源 → 人工批准/确认冲突/结构化局部修改/取消 → 展示审核结果与计划版本”的浏览器闭环。`request_revision` 现在要求用户明确选择目标日期和延后幅度，同时提交目标/保护 item 集合与基准版本；同一 checkpoint 内的确定性 revision node 复用 Provider/Planner 结果、重新校验并生成真正的 v2。Playwright 使用真实 fixture 后端覆盖正常批准、费用事实缺失、v2 局部修改和移动端四条路径。当前 API 仍没有把较新的 specialist/Plan/Repair/Weather 组件接成同一条产品任务 Graph；v2 只覆盖目标日整体延后，不等同于开放式自然语言重规划或完整 Hard Validator/Repair Router 接线。协议见 [`docs/api/planning-task-api.md`](docs/api/planning-task-api.md)，前端边界见 [`frontend/README.md`](frontend/README.md)。
+产品调用层已切换到 Product Graph V2：一次 FastAPI 任务依次提交 `run_specialists → build_materials → run_plan_agent → validate_hard_plan → HITL`，将 Explore、Stay、主动 Weather、路线/预算材料、Plan Agent 和 Hard Validator 接入同一条带 SQLite checkpoint 的产品链路。任务快照、可回放 SSE、四类人工审核决定、PlanVersion 与结构化局部修改继续复用原协议；revision node 复用上游事实并重新执行 Hard Validator。Next.js 工作台会展示真实分支/节点状态、天气对排程的影响、住宿与费用事实边界、审核结果和版本差异。Playwright 使用真实 fixture 后端覆盖正常批准、费用事实缺失、v2 局部修改和移动端四条路径。Repair Router 与 Weather Repair 仍是独立能力，尚未接入产品总图；v2 也不等同于开放式自然语言重规划。协议见 [`docs/api/planning-task-api.md`](docs/api/planning-task-api.md)，前端边界见 [`frontend/README.md`](frontend/README.md)。
 
 ## 技术基线
 
@@ -82,7 +82,7 @@ pnpm test:e2e
 
 ## Gate 0 smoke scenarios
 
-`evals/cases/smoke/` 固化了 3 条端到端规格场景：正常北京三日游、确定性预算冲突、天气工具主动发现风险。它们定义跨组件输入、注入条件和必须/禁止行为；底层能力分别由版本化组件评测覆盖，但当前仍没有产品 API 把三条场景完整串联。
+`evals/cases/smoke/` 固化了 3 条端到端规格场景：正常北京三日游、确定性预算冲突、天气工具主动发现风险。它们定义跨组件输入、注入条件和必须/禁止行为；Product Graph V2 已在北京两日 fixture 浏览器链路中验证主动天气查询与 Hard Validator，但三条 smoke 仍是更广的规格级基线，不等同于全部 live 产品能力。
 
 ```powershell
 Set-Location backend
@@ -187,7 +187,7 @@ uv run pytest tests/test_explore_agent.py tests/test_explore_agent_evaluation.py
 uv run python -m scripts.run_explore_agent_eval --live
 ```
 
-候选目录是显式 fixture，且该 6-case 套件用于提示词开发后回归，不是未触碰 holdout；这些指标不能写成实时推荐准确率或泛化能力。Explore Agent 已进入独立 specialist fan-out，但尚未接入最终 `TripPlan` 的路线、预算与排程阶段。
+候选目录是显式 fixture，且该 6-case 套件用于提示词开发后回归，不是未触碰 holdout；这些指标不能写成实时推荐准确率或泛化能力。Explore Agent 现已通过 specialist fan-out 和材料层进入 Product Graph V2 的路线、预算与排程阶段。
 
 ## Stay Agent
 
@@ -201,7 +201,7 @@ uv run pytest tests/test_stay_agent.py tests/test_stay_agent_evaluation.py --no-
 uv run python -m scripts.run_stay_agent_eval --live
 ```
 
-Stay Agent 不提供酒店价格或预订：高德住宿 POI 只用于候选位置/区域，输出价格字段为空、availability 为 `unknown`、booking 为 `false`。评测使用显式 fixture 目录并属于开发集回归，不是 OTA 数据质量、实时可订性或推荐准确率。Stay Agent 已进入独立 specialist fan-out，但尚未接入最终 `TripPlan` 的路线、预算与排程阶段。
+Stay Agent 不提供酒店价格或预订：高德住宿 POI 只用于候选位置/区域，输出价格字段为空、availability 为 `unknown`、booking 为 `false`。评测使用显式 fixture 目录并属于开发集回归，不是 OTA 数据质量、实时可订性或推荐准确率。Stay Agent 现已通过 specialist fan-out 进入 Product Graph V2，并作为路线矩阵的住宿位置锚点。
 
 ## 确定性预算与基础计划校验
 
@@ -239,7 +239,7 @@ uv run python -m scripts.run_checkpoint_hitl_eval
 uv run pytest tests/test_stateful_planning.py --no-cov
 ```
 
-原始 checkpoint 报告为 2/2 cases、20/20 checks、2/2 runtime reconstructions，恢复阶段 provider/model 调用均为 0。正常批准和冲突确认仍明确记录 v1→v1 零变更；结构化修改则校验 base version、目标/保护 scope，只改变一个目标日期并生成 v2。当前 revision executor 只运行 `deterministic-plan-validator-v1`，不会声称拥有尚未接线的路线、营业时间或完整 Hard Validator 证据。SQLite 仍只是 Graph checkpoint 的本地恢复证据，不是生产级多进程并发、高可用或加密方案；API task/event/decision 元数据尚未持久化。
+原始 checkpoint 报告为 2/2 cases、20/20 checks、2/2 runtime reconstructions，恢复阶段 provider/model 调用均为 0。正常批准和冲突确认仍明确记录 v1→v1 零变更；结构化修改则校验 base version、目标/保护 scope，只改变一个目标日期并生成 v2。该段报告描述旧 Gate 2 checkpoint 基线；Product Graph V2 的 revision 已复用持久化路线/营业证据并重新执行 `hard-trip-plan-validator-v1`。SQLite 仍只是 Graph checkpoint 的本地恢复证据，不是生产级多进程并发、高可用或加密方案；API task/event/decision 元数据尚未持久化。
 
 ## Specialist 并行 fan-out
 
@@ -361,13 +361,21 @@ uv run python -m scripts.run_amap_provider_smoke
 uv run python -m scripts.run_amap_provider_smoke --live
 ```
 
-天气风险由 provider 数据触发并归一化为结构化 severity、时间范围和受影响活动类型，不需要用户先追加“第二天下雨”。Weather Repair Coordinator 已能据此生成局部候选方案；定时刷新与产品任务 Graph 接线仍未实现。
+天气风险由 provider 数据触发并归一化为结构化 severity、时间范围和受影响活动类型，不需要用户先追加“第二天下雨”。Product Graph V2 会在每次规划请求内主动运行天气分支并把风险交给 Plan Agent；本项目定位为规划器，因此不建设定时 WeatherWatch 或通知中心。Weather Repair Coordinator 已能在隔离场景生成局部候选方案，但尚未接入产品总图。
+
+## Product Graph V2
+
+产品任务执行器现在运行 `run_specialists → build_materials → run_plan_agent → validate_hard_plan → prepare_human_review → interrupt`。Explore、Stay 和零模型天气工具并行完成；材料层随后构造有界路线矩阵和预算目标；Plan Agent 只能安排 shortlist candidate ID，代码回填名称、来源和路线；Hard Validator 再检查硬约束、候选覆盖、路线血缘、营业时间证据与预算事实。
+
+fixture 模式使用明确标记的北京合成数据：首日中雨由天气 Provider 主动返回，混合型故宫安排在首日，户外天坛安排到次日。fixture 住宿只充当位置锚点，不包含价格、房态或预订能力。live 模式使用 DeepSeek/LangSmith 与高德官方 MCP/REST adapter；由于当前高德 V1 contract 没有稳定的 typed 营业时间字段，live 结果会由 Hard Validator 显式报告证据缺失，而不会伪造营业时间。
+
+结构化 `shift_day_later` 修改从同一 checkpoint 恢复，不重跑外部 Provider 或模型，并基于已持久化的材料和营业证据重新执行 Hard Validator。Repair Router、Weather Repair、中文 Constraint Agent 入口和开放式增删景点仍未接入这条产品图。
 
 ## 当前边界
 
 - 不提供订票、订房、支付或实时房价；
 - 当前健康页不是旅行规划产品完成度；
 - 当前三节点探针只证明观测链路可接入，不证明模型规划质量；
-- 当前领域契约、PlannerContext 编译器、provider adapter、Single Planner 和基础 Validator 已在 Gate 2 fixture 纵向切片及可恢复 HITL 主编排中连通；Explore、Stay 与主动 Weather 的信息包已经通过路线/预算材料层进入 Plan Agent，并合成为同构完整 `TripPlan` 草案；独立 Hard Validator、Repair Router 与 Weather Repair Coordinator 已实现定稿保护、有界修复、局部作用域和重大变化 HITL 契约，但真实责任节点 executor、产品 API、定时 WeatherWatch 与 Constraint Agent 产品入口仍未接入；
+- Product Graph V2 已在产品 API 中连通 Explore、Stay、主动 Weather、路线/预算材料、Plan Agent、Hard Validator、checkpoint HITL 和结构化 revision；Repair Router、Weather Repair Coordinator、真实责任节点 executor 与 Constraint Agent 产品入口仍未接入；定时 WeatherWatch 已从计划中取消；
 - 高德 live fixture 是 2026-08-20 的点时样本，不是当前天气、实时酒店价格或生产 SLA；
 - 后续功能必须通过真实 provider contract、固定评测和可回放 trace 验证后再写入项目成果。

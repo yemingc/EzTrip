@@ -441,6 +441,6 @@ async def evaluate_weather_repair_suite(
                 "major 仅生成 pending_confirmation 方案; "
                 "API 级暂停、恢复与用户操作将在任务图阶段接线。"
             ),
-            "定时 WeatherWatch 刷新频率属于后续任务, 本阶段入口接收最新 Provider 风险快照。",
+            "产品按生成或修改请求接收最新 Provider 风险快照; 定时 WeatherWatch 已不在 V1 范围。",
         ),
     )

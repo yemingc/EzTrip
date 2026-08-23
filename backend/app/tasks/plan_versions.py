@@ -3,12 +3,16 @@ import json
 from datetime import date, datetime
 
 from app.domain.planning import PlanVersion
+from app.planning.product_contracts import ProductPlanningSnapshot
+from app.planning.specialist_contracts import SpecialistName
 from app.planning.stateful_contracts import StatefulPlanningSnapshot
 from app.tasks.contracts import (
     PlanningTaskPlanDiff,
     PlanningTaskReviewDecisionRequest,
     PlanningTaskReviewOutcome,
 )
+
+PlanningResultSnapshot = StatefulPlanningSnapshot | ProductPlanningSnapshot
 
 
 def _sha256(payload: object) -> str:
@@ -22,12 +26,69 @@ def _sha256(payload: object) -> str:
 
 
 def build_initial_plan_version(
-    snapshot: StatefulPlanningSnapshot,
+    snapshot: PlanningResultSnapshot,
     *,
     created_at: datetime,
 ) -> PlanVersion:
-    state = snapshot.state
-    vertical_slice = state.vertical_slice
+    if isinstance(snapshot, ProductPlanningSnapshot):
+        product_state = snapshot.state
+        if (
+            product_state.plan is None
+            or product_state.materials is None
+            or product_state.plan_agent is None
+        ):
+            raise ValueError("initial product plan version requires completed planning stages")
+        plan = product_state.plan
+        plan_digest = _sha256(plan.model_dump(mode="json"))
+        tool_snapshot_digest = _sha256(
+            {
+                "specialists": product_state.specialists.model_dump(mode="json")
+                if product_state.specialists is not None
+                else None,
+                "route_matrix": product_state.materials.route_matrix.model_dump(mode="json"),
+                "opening_hours": product_state.opening_hours.model_dump(mode="json")
+                if product_state.opening_hours is not None
+                else None,
+            }
+        )
+        model_versions: dict[str, str] = {}
+        prompt_versions: dict[str, str] = {}
+        if product_state.specialists is not None:
+            for branch in product_state.specialists.branches:
+                if branch.specialist == SpecialistName.EXPLORE and branch.explore_result:
+                    model_versions["explore_query"] = branch.explore_result.query_model
+                    model_versions["explore_selection"] = branch.explore_result.selection_model
+                    prompt_versions["explore_query"] = branch.explore_result.query_prompt_version
+                    prompt_versions["explore_selection"] = (
+                        branch.explore_result.selection_prompt_version
+                    )
+                if branch.specialist == SpecialistName.STAY and branch.stay_result:
+                    model_versions["stay_query"] = branch.stay_result.query_model
+                    model_versions["stay_selection"] = branch.stay_result.selection_model
+                    prompt_versions["stay_query"] = branch.stay_result.query_prompt_version
+                    prompt_versions["stay_selection"] = branch.stay_result.selection_prompt_version
+        if product_state.plan_agent.model is not None:
+            model_versions["plan"] = product_state.plan_agent.model
+        prompt_versions["plan"] = product_state.plan_agent.prompt_version
+        return PlanVersion(
+            version_id=f"plan-version-{plan_digest[:16]}",
+            plan=plan,
+            version_number=1,
+            created_at=created_at,
+            input_constraint_sha256=_sha256(
+                product_state.request.constraints.model_dump(mode="json")
+            ),
+            tool_snapshot_ids=(f"tool-snapshot-{tool_snapshot_digest[:16]}",),
+            model_versions=model_versions,
+            prompt_versions=prompt_versions,
+            change_summary=(
+                "由 Explore、Stay、Weather、Route/Budget、Plan 与 Hard Validator 生成初始草案。",
+            ),
+            changed_dates=tuple(day.date for day in plan.days),
+        )
+
+    stateful_state = snapshot.state
+    vertical_slice = stateful_state.vertical_slice
     if vertical_slice is None:
         raise ValueError("initial plan version requires a vertical slice result")
     plan = vertical_slice.plan
@@ -40,7 +101,7 @@ def build_initial_plan_version(
         plan=plan,
         version_number=1,
         created_at=created_at,
-        input_constraint_sha256=_sha256(state.request.constraints.model_dump(mode="json")),
+        input_constraint_sha256=_sha256(stateful_state.request.constraints.model_dump(mode="json")),
         tool_snapshot_ids=(f"tool-snapshot-{tool_snapshot_digest[:16]}",),
         model_versions={"planner": vertical_slice.planner.model},
         prompt_versions={"planner": vertical_slice.planner.prompt_version},
@@ -50,7 +111,7 @@ def build_initial_plan_version(
 
 
 def build_revised_plan_version(
-    snapshot: StatefulPlanningSnapshot,
+    snapshot: PlanningResultSnapshot,
     previous: PlanVersion,
     *,
     created_at: datetime,
@@ -75,14 +136,14 @@ def build_revised_plan_version(
         change_summary=(
             f"按用户确认的结构化请求将 {revision.request.target_date.isoformat()} "
             f"全部活动延后 {revision.request.shift_minutes} 分钟。",
-            "复用原 Provider/Planner 产物并重新执行 deterministic-plan-validator-v1。",
+            f"复用原 Provider/Planner 产物并重新执行 {revision.validation.validator_version}。",
         ),
         changed_dates=revision.diff.changed_dates,
     )
 
 
 def build_review_outcome(
-    snapshot: StatefulPlanningSnapshot,
+    snapshot: PlanningResultSnapshot,
     decision: PlanningTaskReviewDecisionRequest,
     versions: tuple[PlanVersion, ...],
 ) -> PlanningTaskReviewOutcome:

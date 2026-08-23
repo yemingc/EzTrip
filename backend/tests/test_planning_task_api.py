@@ -33,7 +33,11 @@ def build_fixture_payload() -> PlanningTaskCreateRequest:
             "end_date": case.request.start_date.replace(day=3),
             "constraints": ConstraintSet(
                 items=tuple(
-                    item for item in case.request.constraints.items if item.value != "首都博物馆"
+                    item.model_copy(update={"value": "故宫博物院"})
+                    if item.value == "故宫"
+                    else item
+                    for item in case.request.constraints.items
+                    if item.value != "首都博物馆"
                 )
             ),
         }
@@ -84,19 +88,28 @@ async def request_until_awaiting_input(tmp_path: Path) -> None:
         assert stream_response.headers["content-type"].startswith("text/event-stream")
         assert stream_response.headers["cache-control"] == "no-cache"
         events = parse_sse_events(stream_response.text)
-        assert [event["sequence"] for event in events] == [1, 2, 3, 4, 5]
+        assert [event["sequence"] for event in events] == list(range(1, 9))
         assert [event["kind"] for event in events] == [
             "task_created",
             "task_started",
             "graph_node_completed",
             "graph_node_completed",
+            "graph_node_completed",
+            "graph_node_completed",
+            "graph_node_completed",
             "task_awaiting_input",
         ]
-        assert [event.get("node") for event in events[2:4]] == [
-            "run_vertical_slice",
+        assert [event.get("node") for event in events[2:7]] == [
+            "run_specialists",
+            "build_materials",
+            "run_plan_agent",
+            "validate_hard_plan",
             "prepare_human_review",
         ]
-        assert [event.get("state_status") for event in events[2:4]] == [
+        assert [event.get("state_status") for event in events[2:7]] == [
+            "planning",
+            "planning",
+            "planning",
             "plan_ready",
             "awaiting_human_review",
         ]
@@ -105,11 +118,37 @@ async def request_until_awaiting_input(tmp_path: Path) -> None:
         assert snapshot_response.status_code == 200
         snapshot = snapshot_response.json()
         assert snapshot["status"] == "awaiting_input"
-        assert snapshot["event_count"] == 5
+        assert snapshot["event_count"] == 8
+        assert snapshot["result"]["state"]["workflow_version"] == "product-planning-graph-v2"
         assert snapshot["result"]["state"]["status"] == "awaiting_human_review"
         assert snapshot["result"]["state"]["review_request"]["review_id"] == events[-1]["review_id"]
+        product_state = snapshot["result"]["state"]
+        assert product_state["specialists"]["status"] == "complete"
+        assert [item["status"] for item in product_state["specialists"]["branches"]] == [
+            "succeeded",
+            "succeeded",
+            "succeeded",
+        ]
+        assert product_state["materials"]["status"] == "ready"
+        assert product_state["plan_agent"]["status"] == "planned"
+        assert product_state["validation"]["validator_version"] == ("hard-trip-plan-validator-v1")
+        assert product_state["plan"]["weather_risks"][0]["risk_type"] == "rain"
+        scheduled = {
+            item["title"]: day["date"]
+            for day in product_state["plan"]["days"]
+            for item in day["items"]
+        }
+        assert scheduled["故宫博物院"] == product_state["plan"]["start_date"]
+        assert scheduled["天坛公园"] == product_state["plan"]["end_date"]
         assert len(snapshot["plan_versions"]) == 1
         assert snapshot["plan_versions"][0]["version_number"] == 1
+        assert set(snapshot["plan_versions"][0]["model_versions"]) == {
+            "explore_query",
+            "explore_selection",
+            "stay_query",
+            "stay_selection",
+            "plan",
+        }
         assert snapshot["review_outcome"] is None
 
         replay_response = await client.get(
@@ -117,7 +156,7 @@ async def request_until_awaiting_input(tmp_path: Path) -> None:
             headers={"Last-Event-ID": str(events[2]["event_id"])},
         )
         replayed = parse_sse_events(replay_response.text)
-        assert [event["sequence"] for event in replayed] == [4, 5]
+        assert [event["sequence"] for event in replayed] == [4, 5, 6, 7, 8]
 
         mismatch_response = await client.get(
             f"{accepted['events_url']}?after=2",
@@ -207,9 +246,9 @@ async def request_review_until_completed(tmp_path: Path) -> None:
             == "review-decision-idempotency-conflict"
         )
 
-        resumed_events_response = await client.get(f"{accepted['events_url']}?after=5")
+        resumed_events_response = await client.get(f"{accepted['events_url']}?after=8")
         resumed_events = parse_sse_events(resumed_events_response.text)
-        assert [event["sequence"] for event in resumed_events] == [6, 7, 8, 9]
+        assert [event["sequence"] for event in resumed_events] == [9, 10, 11, 12]
         assert [event["kind"] for event in resumed_events] == [
             "task_review_submitted",
             "graph_node_completed",
@@ -230,7 +269,7 @@ async def request_review_until_completed(tmp_path: Path) -> None:
         snapshot_response = await client.get(accepted["task_url"])
         snapshot = snapshot_response.json()
         assert snapshot["status"] == "succeeded"
-        assert snapshot["event_count"] == 9
+        assert snapshot["event_count"] == 12
         assert snapshot["result"]["state"]["status"] == "approved_draft"
         assert len(snapshot["plan_versions"]) == 1
         version = snapshot["plan_versions"][0]
@@ -352,9 +391,9 @@ async def request_structured_revision_until_v2(tmp_path: Path) -> None:
         )
         assert decision_response.status_code == 202
 
-        resumed_response = await client.get(f"{accepted['events_url']}?after=5")
+        resumed_response = await client.get(f"{accepted['events_url']}?after=8")
         resumed = parse_sse_events(resumed_response.text)
-        assert [event["sequence"] for event in resumed] == [6, 7, 8, 9, 10]
+        assert [event["sequence"] for event in resumed] == [9, 10, 11, 12, 13]
         assert [event["kind"] for event in resumed] == [
             "task_review_submitted",
             "graph_node_completed",

@@ -9,6 +9,10 @@ from app.domain.money import CostItem
 from app.domain.planning import PlanVersion
 from app.domain.request import TripRequest
 from app.domain.sources import DataMode
+from app.planning.product_contracts import (
+    ProductPlanningNodeName,
+    ProductPlanningSnapshot,
+)
 from app.planning.revision_contracts import PlanRevisionRequest
 from app.planning.stateful_contracts import (
     HumanReviewAction,
@@ -74,7 +78,7 @@ class PlanningTaskEvent(DomainModel):
     task_status: PlanningTaskStatus
     occurred_at: AwareDatetime
     message: NonEmptyText
-    node: StatefulPlanningNodeName | None = None
+    node: StatefulPlanningNodeName | ProductPlanningNodeName | None = None
     state_status: PlanningThreadStatus | None = None
     review_id: Identifier | None = None
     review_action: HumanReviewAction | None = None
@@ -149,7 +153,7 @@ class PlanningTaskSnapshot(DomainModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     event_count: int = Field(ge=1)
-    result: StatefulPlanningSnapshot | None = None
+    result: StatefulPlanningSnapshot | ProductPlanningSnapshot | None = None
     failure: PlanningTaskFailure | None = None
     plan_versions: tuple[PlanVersion, ...] = ()
     review_outcome: PlanningTaskReviewOutcome | None = None

@@ -627,6 +627,20 @@
           "title": "PlanningThreadStatus",
           "type": "string"
         },
+        "ProductPlanningNodeName": {
+          "enum": [
+            "run_specialists",
+            "build_materials",
+            "run_plan_agent",
+            "validate_hard_plan",
+            "prepare_human_review",
+            "human_review",
+            "apply_review_decision",
+            "apply_plan_revision"
+          ],
+          "title": "ProductPlanningNodeName",
+          "type": "string"
+        },
         "StatefulPlanningNodeName": {
           "enum": [
             "run_vertical_slice",
@@ -694,10 +708,14 @@
               "$ref": "#/$defs/StatefulPlanningNodeName"
             },
             {
+              "$ref": "#/$defs/ProductPlanningNodeName"
+            },
+            {
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "title": "Node"
         },
         "state_status": {
           "anyOf": [
@@ -785,6 +803,221 @@
             "free_time"
           ],
           "title": "ActivityKind",
+          "type": "string"
+        },
+        "BudgetAllocation": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "allocator_version": {
+              "const": "budget-allocator-v1",
+              "default": "budget-allocator-v1",
+              "title": "Allocator Version",
+              "type": "string"
+            },
+            "policy_version": {
+              "const": "cn-city-trip-weights-v1",
+              "default": "cn-city-trip-weights-v1",
+              "title": "Policy Version",
+              "type": "string"
+            },
+            "request_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Request Id",
+              "type": "string"
+            },
+            "context_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Context Id",
+              "type": "string"
+            },
+            "input_request_sha256": {
+              "pattern": "^[a-f0-9]{64}$",
+              "title": "Input Request Sha256",
+              "type": "string"
+            },
+            "status": {
+              "$ref": "#/$defs/BudgetAllocationStatus"
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/BudgetAllocationReason"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "total_limit": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Total Limit"
+            },
+            "currency": {
+              "const": "CNY",
+              "default": "CNY",
+              "title": "Currency",
+              "type": "string"
+            },
+            "hard_limit": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Hard Limit"
+            },
+            "included_categories": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/BudgetCategory"
+              },
+              "title": "Included Categories",
+              "type": "array"
+            },
+            "excluded_categories": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/BudgetCategory"
+              },
+              "title": "Excluded Categories",
+              "type": "array"
+            },
+            "allocations": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/BudgetAllocationItem"
+              },
+              "maxItems": 6,
+              "title": "Allocations",
+              "type": "array"
+            }
+          },
+          "required": [
+            "request_id",
+            "context_id",
+            "input_request_sha256",
+            "status"
+          ],
+          "title": "BudgetAllocation",
+          "type": "object"
+        },
+        "BudgetAllocationItem": {
+          "additionalProperties": false,
+          "properties": {
+            "category": {
+              "$ref": "#/$defs/BudgetCategory"
+            },
+            "policy_weight": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0.0,
+                  "maximum": 1.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,2}|(?=[\\d.]{1,7}0*$)\\d{0,2}\\.\\d{0,4}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Policy Weight"
+            },
+            "target_amount": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Target Amount"
+            },
+            "quantity_basis": {
+              "$ref": "#/$defs/BudgetQuantityBasis"
+            },
+            "reference_quantity": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Reference Quantity"
+            },
+            "target_per_unit": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Target Per Unit"
+            }
+          },
+          "required": [
+            "category",
+            "policy_weight",
+            "target_amount",
+            "quantity_basis",
+            "reference_quantity",
+            "target_per_unit"
+          ],
+          "title": "BudgetAllocationItem",
+          "type": "object"
+        },
+        "BudgetAllocationReason": {
+          "enum": [
+            "missing_budget",
+            "missing_rooms"
+          ],
+          "title": "BudgetAllocationReason",
+          "type": "string"
+        },
+        "BudgetAllocationStatus": {
+          "enum": [
+            "allocated",
+            "blocked",
+            "not_requested"
+          ],
+          "title": "BudgetAllocationStatus",
           "type": "string"
         },
         "BudgetAssessmentStatus": {
@@ -962,6 +1195,16 @@
           ],
           "title": "BudgetPlanningContext",
           "type": "object"
+        },
+        "BudgetQuantityBasis": {
+          "enum": [
+            "room_night",
+            "party_day",
+            "traveler_trip",
+            "party_trip"
+          ],
+          "title": "BudgetQuantityBasis",
+          "type": "string"
         },
         "BudgetValidationSummary": {
           "additionalProperties": false,
@@ -1249,6 +1492,129 @@
           "title": "CandidateSearchQuery",
           "type": "object"
         },
+        "CandidateStay": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Candidate Id",
+              "type": "string"
+            },
+            "name": {
+              "minLength": 1,
+              "title": "Name",
+              "type": "string"
+            },
+            "city": {
+              "minLength": 1,
+              "title": "City",
+              "type": "string"
+            },
+            "district": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "District"
+            },
+            "address": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Address"
+            },
+            "location": {
+              "$ref": "#/$defs/GeoPoint"
+            },
+            "area_name": {
+              "minLength": 1,
+              "title": "Area Name",
+              "type": "string"
+            },
+            "tags": {
+              "default": [],
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "Tags",
+              "type": "array"
+            },
+            "nightly_price_estimate": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/MoneyRange"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "price_basis": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/StayPriceBasis"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "price_source": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/SourceReference"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "availability_status": {
+              "const": "unknown",
+              "default": "unknown",
+              "title": "Availability Status",
+              "type": "string"
+            },
+            "booking_supported": {
+              "const": false,
+              "default": false,
+              "title": "Booking Supported",
+              "type": "boolean"
+            },
+            "source": {
+              "$ref": "#/$defs/SourceReference"
+            }
+          },
+          "required": [
+            "candidate_id",
+            "name",
+            "city",
+            "location",
+            "area_name",
+            "source"
+          ],
+          "title": "CandidateStay",
+          "type": "object"
+        },
         "ClarificationKind": {
           "enum": [
             "unsupported_destination",
@@ -1517,6 +1883,317 @@
             "primary_provider_supported"
           ],
           "title": "DestinationContext",
+          "type": "object"
+        },
+        "ExploreAgentResult": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "agent_version": {
+              "const": "explore-agent-v1",
+              "default": "explore-agent-v1",
+              "title": "Agent Version",
+              "type": "string"
+            },
+            "query_prompt_version": {
+              "const": "explore-query-strategy-v1",
+              "default": "explore-query-strategy-v1",
+              "title": "Query Prompt Version",
+              "type": "string"
+            },
+            "selection_prompt_version": {
+              "const": "explore-candidate-selection-v1",
+              "default": "explore-candidate-selection-v1",
+              "title": "Selection Prompt Version",
+              "type": "string"
+            },
+            "request_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Request Id",
+              "type": "string"
+            },
+            "context_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Context Id",
+              "type": "string"
+            },
+            "candidate_set_sha256": {
+              "pattern": "^[a-f0-9]{64}$",
+              "title": "Candidate Set Sha256",
+              "type": "string"
+            },
+            "queries": {
+              "items": {
+                "$ref": "#/$defs/ExploreSearchQuery"
+              },
+              "maxItems": 4,
+              "minItems": 1,
+              "title": "Queries",
+              "type": "array"
+            },
+            "observations": {
+              "items": {
+                "$ref": "#/$defs/ExploreCandidateObservation"
+              },
+              "maxItems": 12,
+              "minItems": 1,
+              "title": "Observations",
+              "type": "array"
+            },
+            "recommendations": {
+              "items": {
+                "$ref": "#/$defs/ExploreRecommendation"
+              },
+              "maxItems": 6,
+              "minItems": 1,
+              "title": "Recommendations",
+              "type": "array"
+            },
+            "query_model": {
+              "minLength": 1,
+              "title": "Query Model",
+              "type": "string"
+            },
+            "selection_model": {
+              "minLength": 1,
+              "title": "Selection Model",
+              "type": "string"
+            },
+            "query_latency_ms": {
+              "minimum": 0,
+              "title": "Query Latency Ms",
+              "type": "integer"
+            },
+            "selection_latency_ms": {
+              "minimum": 0,
+              "title": "Selection Latency Ms",
+              "type": "integer"
+            },
+            "query_usage": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/ModelTokenUsage"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "selection_usage": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/ModelTokenUsage"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            }
+          },
+          "required": [
+            "request_id",
+            "context_id",
+            "candidate_set_sha256",
+            "queries",
+            "observations",
+            "recommendations",
+            "query_model",
+            "selection_model",
+            "query_latency_ms",
+            "selection_latency_ms"
+          ],
+          "title": "ExploreAgentResult",
+          "type": "object"
+        },
+        "ExploreCandidateObservation": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate": {
+              "$ref": "#/$defs/CandidatePOI"
+            },
+            "query_ids": {
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "maxItems": 4,
+              "minItems": 1,
+              "title": "Query Ids",
+              "type": "array"
+            }
+          },
+          "required": [
+            "candidate",
+            "query_ids"
+          ],
+          "title": "ExploreCandidateObservation",
+          "type": "object"
+        },
+        "ExploreCandidateSelectionProposal": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Candidate Id",
+              "type": "string"
+            },
+            "rank": {
+              "maximum": 6,
+              "minimum": 1,
+              "title": "Rank",
+              "type": "integer"
+            },
+            "reason": {
+              "maxLength": 160,
+              "minLength": 1,
+              "title": "Reason",
+              "type": "string"
+            },
+            "evidence": {
+              "items": {
+                "$ref": "#/$defs/ExploreEvidenceReference"
+              },
+              "maxItems": 4,
+              "minItems": 1,
+              "title": "Evidence",
+              "type": "array"
+            }
+          },
+          "required": [
+            "candidate_id",
+            "rank",
+            "reason",
+            "evidence"
+          ],
+          "title": "ExploreCandidateSelectionProposal",
+          "type": "object"
+        },
+        "ExploreEvidenceKind": {
+          "enum": [
+            "query_match",
+            "category",
+            "district",
+            "environment",
+            "tag"
+          ],
+          "title": "ExploreEvidenceKind",
+          "type": "string"
+        },
+        "ExploreEvidenceReference": {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "$ref": "#/$defs/ExploreEvidenceKind"
+            },
+            "value": {
+              "minLength": 1,
+              "title": "Value",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ],
+          "title": "ExploreEvidenceReference",
+          "type": "object"
+        },
+        "ExploreQueryKind": {
+          "enum": [
+            "attraction",
+            "dining"
+          ],
+          "title": "ExploreQueryKind",
+          "type": "string"
+        },
+        "ExploreRecommendation": {
+          "additionalProperties": false,
+          "properties": {
+            "proposal": {
+              "$ref": "#/$defs/ExploreCandidateSelectionProposal"
+            },
+            "candidate": {
+              "$ref": "#/$defs/CandidatePOI"
+            },
+            "query_ids": {
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "maxItems": 4,
+              "minItems": 1,
+              "title": "Query Ids",
+              "type": "array"
+            }
+          },
+          "required": [
+            "proposal",
+            "candidate",
+            "query_ids"
+          ],
+          "title": "ExploreRecommendation",
+          "type": "object"
+        },
+        "ExploreSearchQuery": {
+          "additionalProperties": false,
+          "properties": {
+            "query_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Query Id",
+              "type": "string"
+            },
+            "kind": {
+              "$ref": "#/$defs/ExploreQueryKind"
+            },
+            "keywords": {
+              "maxLength": 40,
+              "minLength": 1,
+              "title": "Keywords",
+              "type": "string"
+            },
+            "reason": {
+              "maxLength": 160,
+              "minLength": 1,
+              "title": "Reason",
+              "type": "string"
+            },
+            "context_refs": {
+              "default": [],
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "maxItems": 4,
+              "title": "Context Refs",
+              "type": "array"
+            }
+          },
+          "required": [
+            "query_id",
+            "kind",
+            "keywords",
+            "reason"
+          ],
+          "title": "ExploreSearchQuery",
           "type": "object"
         },
         "GeoPoint": {
@@ -1955,6 +2632,100 @@
           "title": "MoneyRange",
           "type": "object"
         },
+        "OpeningHoursEvidence": {
+          "additionalProperties": false,
+          "properties": {
+            "evidence_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Evidence Id",
+              "type": "string"
+            },
+            "candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Candidate Id",
+              "type": "string"
+            },
+            "service_date": {
+              "format": "date",
+              "title": "Service Date",
+              "type": "string"
+            },
+            "opens_at": {
+              "format": "date-time",
+              "title": "Opens At",
+              "type": "string"
+            },
+            "closes_at": {
+              "format": "date-time",
+              "title": "Closes At",
+              "type": "string"
+            },
+            "source": {
+              "$ref": "#/$defs/SourceReference"
+            }
+          },
+          "required": [
+            "evidence_id",
+            "candidate_id",
+            "service_date",
+            "opens_at",
+            "closes_at",
+            "source"
+          ],
+          "title": "OpeningHoursEvidence",
+          "type": "object"
+        },
+        "OpeningHoursEvidenceBundle": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "evidence_version": {
+              "const": "opening-hours-evidence-v1",
+              "default": "opening-hours-evidence-v1",
+              "title": "Evidence Version",
+              "type": "string"
+            },
+            "request_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Request Id",
+              "type": "string"
+            },
+            "data_mode": {
+              "enum": [
+                "live",
+                "fixture"
+              ],
+              "title": "Data Mode",
+              "type": "string"
+            },
+            "items": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/OpeningHoursEvidence"
+              },
+              "maxItems": 40,
+              "title": "Items",
+              "type": "array"
+            }
+          },
+          "required": [
+            "request_id",
+            "data_mode"
+          ],
+          "title": "OpeningHoursEvidenceBundle",
+          "type": "object"
+        },
         "Party": {
           "additionalProperties": false,
           "properties": {
@@ -2070,6 +2841,243 @@
           ],
           "title": "PartyPlanningContext",
           "type": "object"
+        },
+        "PlanAgentDecision": {
+          "additionalProperties": false,
+          "properties": {
+            "proposal": {
+              "$ref": "#/$defs/PlannerPlacementProposal"
+            },
+            "item": {
+              "$ref": "#/$defs/ItineraryItem"
+            },
+            "route_edge_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Route Edge Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "proposal",
+            "item",
+            "route_edge_id"
+          ],
+          "title": "PlanAgentDecision",
+          "type": "object"
+        },
+        "PlanAgentRunResult": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "agent_version": {
+              "const": "multi-agent-plan-v1",
+              "default": "multi-agent-plan-v1",
+              "title": "Agent Version",
+              "type": "string"
+            },
+            "prompt_version": {
+              "const": "route-weather-budget-schedule-v1",
+              "default": "route-weather-budget-schedule-v1",
+              "title": "Prompt Version",
+              "type": "string"
+            },
+            "request_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Request Id",
+              "type": "string"
+            },
+            "context_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Context Id",
+              "type": "string"
+            },
+            "input_material_sha256": {
+              "pattern": "^[a-f0-9]{64}$",
+              "title": "Input Material Sha256",
+              "type": "string"
+            },
+            "material_status": {
+              "$ref": "#/$defs/PlanningMaterialStatus"
+            },
+            "budget_status": {
+              "$ref": "#/$defs/BudgetAllocationStatus"
+            },
+            "status": {
+              "$ref": "#/$defs/PlanAgentRunStatus"
+            },
+            "skip_reason": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/PlanAgentSkipReason"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "input_poi_candidate_ids": {
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "maxItems": 4,
+              "title": "Input Poi Candidate Ids",
+              "type": "array"
+            },
+            "primary_stay_candidate_id": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Primary Stay Candidate Id"
+            },
+            "input_route_edge_count": {
+              "maximum": 20,
+              "minimum": 0,
+              "title": "Input Route Edge Count",
+              "type": "integer"
+            },
+            "input_weather_risk_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Input Weather Risk Ids",
+              "type": "array"
+            },
+            "model": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Model"
+            },
+            "latency_ms": {
+              "minimum": 0,
+              "title": "Latency Ms",
+              "type": "integer"
+            },
+            "usage": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/ModelTokenUsage"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "model_call_count": {
+              "maximum": 1,
+              "minimum": 0,
+              "title": "Model Call Count",
+              "type": "integer"
+            },
+            "decisions": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/PlanAgentDecision"
+              },
+              "maxItems": 4,
+              "title": "Decisions",
+              "type": "array"
+            },
+            "route_edge_ids_used": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "maxItems": 4,
+              "title": "Route Edge Ids Used",
+              "type": "array"
+            },
+            "plan": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/TripPlan"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "validation": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/PlanValidationReport"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            }
+          },
+          "required": [
+            "request_id",
+            "context_id",
+            "input_material_sha256",
+            "material_status",
+            "budget_status",
+            "status",
+            "input_poi_candidate_ids",
+            "input_route_edge_count",
+            "latency_ms",
+            "model_call_count"
+          ],
+          "title": "PlanAgentRunResult",
+          "type": "object"
+        },
+        "PlanAgentRunStatus": {
+          "enum": [
+            "planned",
+            "skipped"
+          ],
+          "title": "PlanAgentRunStatus",
+          "type": "string"
+        },
+        "PlanAgentSkipReason": {
+          "enum": [
+            "materials_not_ready"
+          ],
+          "title": "PlanAgentSkipReason",
+          "type": "string"
         },
         "PlanRevisionDiff": {
           "additionalProperties": false,
@@ -2795,6 +3803,14 @@
           "title": "PlannerReadiness",
           "type": "string"
         },
+        "PlanningCandidateKind": {
+          "enum": [
+            "poi",
+            "stay"
+          ],
+          "title": "PlanningCandidateKind",
+          "type": "string"
+        },
         "PlanningClarification": {
           "additionalProperties": false,
           "properties": {
@@ -2863,6 +3879,103 @@
           "title": "PlanningClarification",
           "type": "object"
         },
+        "PlanningMaterialBundle": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "bundle_version": {
+              "const": "planning-materials-v1",
+              "default": "planning-materials-v1",
+              "title": "Bundle Version",
+              "type": "string"
+            },
+            "request_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Request Id",
+              "type": "string"
+            },
+            "context_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Context Id",
+              "type": "string"
+            },
+            "data_mode": {
+              "enum": [
+                "live",
+                "fixture"
+              ],
+              "title": "Data Mode",
+              "type": "string"
+            },
+            "status": {
+              "$ref": "#/$defs/PlanningMaterialStatus"
+            },
+            "issues": {
+              "items": {
+                "$ref": "#/$defs/PlanningMaterialIssueCode"
+              },
+              "title": "Issues",
+              "type": "array"
+            },
+            "planner_context": {
+              "$ref": "#/$defs/PlannerContext"
+            },
+            "specialist_result": {
+              "$ref": "#/$defs/SpecialistFanoutResult"
+            },
+            "shortlist": {
+              "$ref": "#/$defs/PlanningShortlist"
+            },
+            "route_matrix": {
+              "$ref": "#/$defs/RouteMatrix"
+            },
+            "budget_allocation": {
+              "$ref": "#/$defs/BudgetAllocation"
+            }
+          },
+          "required": [
+            "request_id",
+            "context_id",
+            "data_mode",
+            "status",
+            "issues",
+            "planner_context",
+            "specialist_result",
+            "shortlist",
+            "route_matrix",
+            "budget_allocation"
+          ],
+          "title": "PlanningMaterialBundle",
+          "type": "object"
+        },
+        "PlanningMaterialIssueCode": {
+          "enum": [
+            "specialist_incomplete",
+            "route_matrix_incomplete",
+            "budget_not_allocated",
+            "stay_anchor_missing"
+          ],
+          "title": "PlanningMaterialIssueCode",
+          "type": "string"
+        },
+        "PlanningMaterialStatus": {
+          "enum": [
+            "ready",
+            "partial",
+            "blocked"
+          ],
+          "title": "PlanningMaterialStatus",
+          "type": "string"
+        },
         "PlanningNodeEvent": {
           "additionalProperties": false,
           "properties": {
@@ -2906,6 +4019,63 @@
           ],
           "title": "PlanningNodeOutcome",
           "type": "string"
+        },
+        "PlanningShortlist": {
+          "additionalProperties": false,
+          "properties": {
+            "policy_version": {
+              "const": "planning-shortlist-v1",
+              "default": "planning-shortlist-v1",
+              "title": "Policy Version",
+              "type": "string"
+            },
+            "poi_candidates": {
+              "items": {
+                "$ref": "#/$defs/CandidatePOI"
+              },
+              "maxItems": 4,
+              "title": "Poi Candidates",
+              "type": "array"
+            },
+            "primary_stay": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/CandidateStay"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "omitted_poi_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Omitted Poi Ids",
+              "type": "array"
+            },
+            "omitted_stay_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Omitted Stay Ids",
+              "type": "array"
+            }
+          },
+          "required": [
+            "poi_candidates"
+          ],
+          "title": "PlanningShortlist",
+          "type": "object"
         },
         "PlanningTaskFailure": {
           "additionalProperties": false,
@@ -3148,6 +4318,246 @@
           "title": "PlanningWorkflowStatus",
           "type": "string"
         },
+        "ProductPlanningData": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "workflow_version": {
+              "const": "product-planning-graph-v2",
+              "default": "product-planning-graph-v2",
+              "title": "Workflow Version",
+              "type": "string"
+            },
+            "thread_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Thread Id",
+              "type": "string"
+            },
+            "request": {
+              "$ref": "#/$defs/TripRequest"
+            },
+            "cost_items": {
+              "items": {
+                "$ref": "#/$defs/CostItem"
+              },
+              "title": "Cost Items",
+              "type": "array"
+            },
+            "data_mode": {
+              "enum": [
+                "live",
+                "fixture"
+              ],
+              "title": "Data Mode",
+              "type": "string"
+            },
+            "status": {
+              "$ref": "#/$defs/PlanningThreadStatus",
+              "default": "planning"
+            },
+            "specialists": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/SpecialistFanoutResult"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "materials": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/PlanningMaterialBundle"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "plan_agent": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/PlanAgentRunResult"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "plan": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/TripPlan"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "opening_hours": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/OpeningHoursEvidenceBundle"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "validation": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/PlanValidationReport"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "review_request": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/HumanReviewRequest"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "review_decision": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/HumanReviewDecision"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "revision_result": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/PlanRevisionResult"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "events": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/ProductPlanningEvent"
+              },
+              "title": "Events",
+              "type": "array"
+            }
+          },
+          "required": [
+            "thread_id",
+            "request",
+            "cost_items",
+            "data_mode"
+          ],
+          "title": "ProductPlanningData",
+          "type": "object"
+        },
+        "ProductPlanningEvent": {
+          "additionalProperties": false,
+          "properties": {
+            "node": {
+              "$ref": "#/$defs/ProductPlanningNodeName"
+            },
+            "outcome": {
+              "$ref": "#/$defs/StatefulPlanningNodeOutcome"
+            },
+            "detail": {
+              "minLength": 1,
+              "title": "Detail",
+              "type": "string"
+            }
+          },
+          "required": [
+            "node",
+            "outcome",
+            "detail"
+          ],
+          "title": "ProductPlanningEvent",
+          "type": "object"
+        },
+        "ProductPlanningNodeName": {
+          "enum": [
+            "run_specialists",
+            "build_materials",
+            "run_plan_agent",
+            "validate_hard_plan",
+            "prepare_human_review",
+            "human_review",
+            "apply_review_decision",
+            "apply_plan_revision"
+          ],
+          "title": "ProductPlanningNodeName",
+          "type": "string"
+        },
+        "ProductPlanningSnapshot": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "thread_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Thread Id",
+              "type": "string"
+            },
+            "checkpoint_id": {
+              "minLength": 1,
+              "title": "Checkpoint Id",
+              "type": "string"
+            },
+            "next_nodes": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "Next Nodes",
+              "type": "array"
+            },
+            "state": {
+              "$ref": "#/$defs/ProductPlanningData"
+            }
+          },
+          "required": [
+            "thread_id",
+            "checkpoint_id",
+            "next_nodes",
+            "state"
+          ],
+          "title": "ProductPlanningSnapshot",
+          "type": "object"
+        },
         "ProviderErrorCategory": {
           "enum": [
             "timeout",
@@ -3247,6 +4657,51 @@
           "title": "RiskSeverity",
           "type": "string"
         },
+        "RouteEdgeFailure": {
+          "additionalProperties": false,
+          "properties": {
+            "category": {
+              "$ref": "#/$defs/RouteFailureCategory"
+            },
+            "error_code": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Error Code",
+              "type": "string"
+            },
+            "retryable": {
+              "title": "Retryable",
+              "type": "boolean"
+            },
+            "provider_category": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/ProviderErrorCategory"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            }
+          },
+          "required": [
+            "category",
+            "error_code",
+            "retryable"
+          ],
+          "title": "RouteEdgeFailure",
+          "type": "object"
+        },
+        "RouteEdgeStatus": {
+          "enum": [
+            "succeeded",
+            "failed"
+          ],
+          "title": "RouteEdgeStatus",
+          "type": "string"
+        },
         "RouteEndpoint": {
           "additionalProperties": false,
           "properties": {
@@ -3280,6 +4735,14 @@
           ],
           "title": "RouteEndpoint",
           "type": "object"
+        },
+        "RouteFailureCategory": {
+          "enum": [
+            "provider",
+            "dependency"
+          ],
+          "title": "RouteFailureCategory",
+          "type": "string"
         },
         "RouteLeg": {
           "additionalProperties": false,
@@ -3326,6 +4789,238 @@
           ],
           "title": "RouteLeg",
           "type": "object"
+        },
+        "RouteMatrix": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "matrix_version": {
+              "const": "route-matrix-v1",
+              "default": "route-matrix-v1",
+              "title": "Matrix Version",
+              "type": "string"
+            },
+            "request_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Request Id",
+              "type": "string"
+            },
+            "context_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Context Id",
+              "type": "string"
+            },
+            "data_mode": {
+              "enum": [
+                "live",
+                "fixture"
+              ],
+              "title": "Data Mode",
+              "type": "string"
+            },
+            "status": {
+              "$ref": "#/$defs/RouteMatrixStatus"
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/RouteMatrixReason"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "route_mode": {
+              "const": "transit",
+              "default": "transit",
+              "title": "Route Mode",
+              "type": "string"
+            },
+            "poi_candidate_ids": {
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "maxItems": 4,
+              "title": "Poi Candidate Ids",
+              "type": "array"
+            },
+            "primary_stay_id": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Primary Stay Id"
+            },
+            "edges": {
+              "items": {
+                "$ref": "#/$defs/RouteMatrixEdge"
+              },
+              "maxItems": 20,
+              "title": "Edges",
+              "type": "array"
+            },
+            "expected_edge_count": {
+              "maximum": 20,
+              "minimum": 0,
+              "title": "Expected Edge Count",
+              "type": "integer"
+            },
+            "succeeded_edge_count": {
+              "maximum": 20,
+              "minimum": 0,
+              "title": "Succeeded Edge Count",
+              "type": "integer"
+            },
+            "failed_edge_count": {
+              "maximum": 20,
+              "minimum": 0,
+              "title": "Failed Edge Count",
+              "type": "integer"
+            },
+            "provider_call_count": {
+              "maximum": 20,
+              "minimum": 0,
+              "title": "Provider Call Count",
+              "type": "integer"
+            },
+            "max_concurrency": {
+              "maximum": 8,
+              "minimum": 1,
+              "title": "Max Concurrency",
+              "type": "integer"
+            },
+            "latency_ms": {
+              "minimum": 0,
+              "title": "Latency Ms",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "request_id",
+            "context_id",
+            "data_mode",
+            "status",
+            "poi_candidate_ids",
+            "edges",
+            "expected_edge_count",
+            "succeeded_edge_count",
+            "failed_edge_count",
+            "provider_call_count",
+            "max_concurrency",
+            "latency_ms"
+          ],
+          "title": "RouteMatrix",
+          "type": "object"
+        },
+        "RouteMatrixEdge": {
+          "additionalProperties": false,
+          "properties": {
+            "edge_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Edge Id",
+              "type": "string"
+            },
+            "origin_candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Origin Candidate Id",
+              "type": "string"
+            },
+            "origin_kind": {
+              "$ref": "#/$defs/PlanningCandidateKind"
+            },
+            "destination_candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Destination Candidate Id",
+              "type": "string"
+            },
+            "destination_kind": {
+              "$ref": "#/$defs/PlanningCandidateKind"
+            },
+            "status": {
+              "$ref": "#/$defs/RouteEdgeStatus"
+            },
+            "route": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/RouteLeg"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "failure": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/RouteEdgeFailure"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            }
+          },
+          "required": [
+            "edge_id",
+            "origin_candidate_id",
+            "origin_kind",
+            "destination_candidate_id",
+            "destination_kind",
+            "status"
+          ],
+          "title": "RouteMatrixEdge",
+          "type": "object"
+        },
+        "RouteMatrixReason": {
+          "enum": [
+            "capability_blocked",
+            "no_explore_candidates",
+            "insufficient_candidate_pair"
+          ],
+          "title": "RouteMatrixReason",
+          "type": "string"
+        },
+        "RouteMatrixStatus": {
+          "enum": [
+            "complete",
+            "partial",
+            "failed",
+            "blocked",
+            "unavailable",
+            "not_required"
+          ],
+          "title": "RouteMatrixStatus",
+          "type": "string"
         },
         "RouteMode": {
           "enum": [
@@ -3479,6 +5174,273 @@
           ],
           "title": "SourceReference",
           "type": "object"
+        },
+        "SpecialistBranchResult": {
+          "additionalProperties": false,
+          "properties": {
+            "specialist": {
+              "$ref": "#/$defs/SpecialistName"
+            },
+            "status": {
+              "$ref": "#/$defs/SpecialistBranchStatus"
+            },
+            "elapsed_ms": {
+              "minimum": 0,
+              "title": "Elapsed Ms",
+              "type": "integer"
+            },
+            "model_call_count": {
+              "maximum": 2,
+              "minimum": 0,
+              "title": "Model Call Count",
+              "type": "integer"
+            },
+            "provider_call_count": {
+              "maximum": 4,
+              "minimum": 0,
+              "title": "Provider Call Count",
+              "type": "integer"
+            },
+            "model_usages": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/ModelTokenUsage"
+              },
+              "maxItems": 2,
+              "title": "Model Usages",
+              "type": "array"
+            },
+            "explore_result": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/ExploreAgentResult"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "stay_result": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/StayAgentResult"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "weather_risks": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/WeatherRisk"
+              },
+              "title": "Weather Risks",
+              "type": "array"
+            },
+            "skip_reason": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/SpecialistSkipReason"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "failure": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/SpecialistFailure"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            }
+          },
+          "required": [
+            "specialist",
+            "status",
+            "elapsed_ms",
+            "model_call_count",
+            "provider_call_count"
+          ],
+          "title": "SpecialistBranchResult",
+          "type": "object"
+        },
+        "SpecialistBranchStatus": {
+          "enum": [
+            "succeeded",
+            "skipped",
+            "failed"
+          ],
+          "title": "SpecialistBranchStatus",
+          "type": "string"
+        },
+        "SpecialistFailure": {
+          "additionalProperties": false,
+          "properties": {
+            "specialist": {
+              "$ref": "#/$defs/SpecialistName"
+            },
+            "category": {
+              "$ref": "#/$defs/SpecialistFailureCategory"
+            },
+            "error_code": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Error Code",
+              "type": "string"
+            },
+            "retryable": {
+              "title": "Retryable",
+              "type": "boolean"
+            },
+            "provider_category": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/ProviderErrorCategory"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            }
+          },
+          "required": [
+            "specialist",
+            "category",
+            "error_code",
+            "retryable"
+          ],
+          "title": "SpecialistFailure",
+          "type": "object"
+        },
+        "SpecialistFailureCategory": {
+          "enum": [
+            "provider",
+            "protocol",
+            "dependency"
+          ],
+          "title": "SpecialistFailureCategory",
+          "type": "string"
+        },
+        "SpecialistFanoutResult": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "workflow_version": {
+              "const": "specialist-fanout-v1",
+              "default": "specialist-fanout-v1",
+              "title": "Workflow Version",
+              "type": "string"
+            },
+            "request_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Request Id",
+              "type": "string"
+            },
+            "context_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Context Id",
+              "type": "string"
+            },
+            "data_mode": {
+              "enum": [
+                "live",
+                "fixture"
+              ],
+              "title": "Data Mode",
+              "type": "string"
+            },
+            "status": {
+              "$ref": "#/$defs/SpecialistFanoutStatus"
+            },
+            "planner_context": {
+              "$ref": "#/$defs/PlannerContext"
+            },
+            "branches": {
+              "items": {
+                "$ref": "#/$defs/SpecialistBranchResult"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "title": "Branches",
+              "type": "array"
+            },
+            "total_model_call_count": {
+              "maximum": 4,
+              "minimum": 0,
+              "title": "Total Model Call Count",
+              "type": "integer"
+            },
+            "total_provider_call_count": {
+              "maximum": 9,
+              "minimum": 0,
+              "title": "Total Provider Call Count",
+              "type": "integer"
+            },
+            "fanout_latency_ms": {
+              "minimum": 0,
+              "title": "Fanout Latency Ms",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "request_id",
+            "context_id",
+            "data_mode",
+            "status",
+            "planner_context",
+            "branches",
+            "total_model_call_count",
+            "total_provider_call_count",
+            "fanout_latency_ms"
+          ],
+          "title": "SpecialistFanoutResult",
+          "type": "object"
+        },
+        "SpecialistFanoutStatus": {
+          "enum": [
+            "complete",
+            "partial",
+            "blocked",
+            "failed"
+          ],
+          "title": "SpecialistFanoutStatus",
+          "type": "string"
+        },
+        "SpecialistName": {
+          "enum": [
+            "explore",
+            "stay",
+            "weather"
+          ],
+          "title": "SpecialistName",
+          "type": "string"
+        },
+        "SpecialistSkipReason": {
+          "enum": [
+            "capability_blocked"
+          ],
+          "title": "SpecialistSkipReason",
+          "type": "string"
         },
         "StatefulPlanningData": {
           "additionalProperties": false,
@@ -3671,6 +5633,320 @@
             "state"
           ],
           "title": "StatefulPlanningSnapshot",
+          "type": "object"
+        },
+        "StayAgentResult": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "agent_version": {
+              "const": "stay-agent-v1",
+              "default": "stay-agent-v1",
+              "title": "Agent Version",
+              "type": "string"
+            },
+            "query_prompt_version": {
+              "const": "stay-query-strategy-v1",
+              "default": "stay-query-strategy-v1",
+              "title": "Query Prompt Version",
+              "type": "string"
+            },
+            "selection_prompt_version": {
+              "const": "stay-candidate-selection-v1",
+              "default": "stay-candidate-selection-v1",
+              "title": "Selection Prompt Version",
+              "type": "string"
+            },
+            "request_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Request Id",
+              "type": "string"
+            },
+            "context_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Context Id",
+              "type": "string"
+            },
+            "candidate_set_sha256": {
+              "pattern": "^[a-f0-9]{64}$",
+              "title": "Candidate Set Sha256",
+              "type": "string"
+            },
+            "queries": {
+              "items": {
+                "$ref": "#/$defs/StaySearchQuery"
+              },
+              "maxItems": 3,
+              "minItems": 1,
+              "title": "Queries",
+              "type": "array"
+            },
+            "observations": {
+              "items": {
+                "$ref": "#/$defs/StayCandidateObservation"
+              },
+              "maxItems": 9,
+              "minItems": 1,
+              "title": "Observations",
+              "type": "array"
+            },
+            "recommendations": {
+              "items": {
+                "$ref": "#/$defs/StayRecommendation"
+              },
+              "maxItems": 6,
+              "minItems": 1,
+              "title": "Recommendations",
+              "type": "array"
+            },
+            "query_model": {
+              "minLength": 1,
+              "title": "Query Model",
+              "type": "string"
+            },
+            "selection_model": {
+              "minLength": 1,
+              "title": "Selection Model",
+              "type": "string"
+            },
+            "query_latency_ms": {
+              "minimum": 0,
+              "title": "Query Latency Ms",
+              "type": "integer"
+            },
+            "selection_latency_ms": {
+              "minimum": 0,
+              "title": "Selection Latency Ms",
+              "type": "integer"
+            },
+            "query_usage": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/ModelTokenUsage"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "selection_usage": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/ModelTokenUsage"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            }
+          },
+          "required": [
+            "request_id",
+            "context_id",
+            "candidate_set_sha256",
+            "queries",
+            "observations",
+            "recommendations",
+            "query_model",
+            "selection_model",
+            "query_latency_ms",
+            "selection_latency_ms"
+          ],
+          "title": "StayAgentResult",
+          "type": "object"
+        },
+        "StayCandidateObservation": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate": {
+              "$ref": "#/$defs/CandidateStay"
+            },
+            "query_ids": {
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "maxItems": 3,
+              "minItems": 1,
+              "title": "Query Ids",
+              "type": "array"
+            }
+          },
+          "required": [
+            "candidate",
+            "query_ids"
+          ],
+          "title": "StayCandidateObservation",
+          "type": "object"
+        },
+        "StayCandidateSelectionProposal": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Candidate Id",
+              "type": "string"
+            },
+            "rank": {
+              "maximum": 6,
+              "minimum": 1,
+              "title": "Rank",
+              "type": "integer"
+            },
+            "reason": {
+              "maxLength": 160,
+              "minLength": 1,
+              "title": "Reason",
+              "type": "string"
+            },
+            "evidence": {
+              "items": {
+                "$ref": "#/$defs/StayEvidenceReference"
+              },
+              "maxItems": 4,
+              "minItems": 1,
+              "title": "Evidence",
+              "type": "array"
+            }
+          },
+          "required": [
+            "candidate_id",
+            "rank",
+            "reason",
+            "evidence"
+          ],
+          "title": "StayCandidateSelectionProposal",
+          "type": "object"
+        },
+        "StayEvidenceKind": {
+          "enum": [
+            "query_match",
+            "area_name",
+            "district",
+            "tag"
+          ],
+          "title": "StayEvidenceKind",
+          "type": "string"
+        },
+        "StayEvidenceReference": {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "$ref": "#/$defs/StayEvidenceKind"
+            },
+            "value": {
+              "minLength": 1,
+              "title": "Value",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ],
+          "title": "StayEvidenceReference",
+          "type": "object"
+        },
+        "StayPriceBasis": {
+          "enum": [
+            "user_input",
+            "fixture_estimate",
+            "historical_estimate"
+          ],
+          "title": "StayPriceBasis",
+          "type": "string"
+        },
+        "StayRecommendation": {
+          "additionalProperties": false,
+          "properties": {
+            "proposal": {
+              "$ref": "#/$defs/StayCandidateSelectionProposal"
+            },
+            "candidate": {
+              "$ref": "#/$defs/CandidateStay"
+            },
+            "query_ids": {
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "maxItems": 3,
+              "minItems": 1,
+              "title": "Query Ids",
+              "type": "array"
+            }
+          },
+          "required": [
+            "proposal",
+            "candidate",
+            "query_ids"
+          ],
+          "title": "StayRecommendation",
+          "type": "object"
+        },
+        "StaySearchQuery": {
+          "additionalProperties": false,
+          "properties": {
+            "query_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Query Id",
+              "type": "string"
+            },
+            "target_area": {
+              "maxLength": 40,
+              "minLength": 1,
+              "title": "Target Area",
+              "type": "string"
+            },
+            "keywords": {
+              "maxLength": 40,
+              "minLength": 1,
+              "title": "Keywords",
+              "type": "string"
+            },
+            "reason": {
+              "maxLength": 160,
+              "minLength": 1,
+              "title": "Reason",
+              "type": "string"
+            },
+            "context_refs": {
+              "default": [],
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "maxItems": 4,
+              "title": "Context Refs",
+              "type": "array"
+            }
+          },
+          "required": [
+            "query_id",
+            "target_area",
+            "keywords",
+            "reason"
+          ],
+          "title": "StaySearchQuery",
           "type": "object"
         },
         "TripPlan": {
@@ -4164,10 +6440,14 @@
               "$ref": "#/$defs/StatefulPlanningSnapshot"
             },
             {
+              "$ref": "#/$defs/ProductPlanningSnapshot"
+            },
+            {
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "title": "Result"
         },
         "failure": {
           "anyOf": [

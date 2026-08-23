@@ -16,7 +16,12 @@ test("submits a real fixture planning task and renders its evidence", async ({ p
   await expect(results).toContainText("故宫博物院");
   await expect(results).toContainText("天坛公园");
   await expect(results).toContainText("Fixture 数据");
-  await expect(results).toContainText("当前产品 API 工作流尚未注入天气风险");
+  await expect(results).toContainText("Product Graph V2");
+  await expect(results).toContainText("explore");
+  await expect(results).toContainText("stay");
+  await expect(results).toContainText("weather");
+  await expect(results).toContainText("首日优先室内或混合型活动");
+  await expect(results).toContainText("价格与可订状态未验证，不提供预订");
 
   const approve = page.getByRole("button", { name: "批准草案" });
   await expect(approve).toBeEnabled();
@@ -37,21 +42,19 @@ test("submits a real fixture planning task and renders its evidence", async ({ p
 test("does not present missing cost facts as a zero-cost trip", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByLabel("整趟预算（可选）").fill("2000");
+  await page.getByLabel("整趟预算目标").fill("2000");
   await page.getByTestId("submit-planning-task").click();
 
   const results = page.getByTestId("planning-results");
   await expect(results).toBeVisible({ timeout: 20_000 });
   await expect(results).toContainText("费用事实缺失，不等于 0 元");
   await expect(results).toContainText("待补：交通、餐饮、门票、活动");
-  await expect(results).toContainText("存在硬冲突");
-  await expect(page.getByRole("button", { name: "批准草案" })).toHaveCount(0);
-
-  const acknowledge = page.getByRole("button", { name: "确认已知冲突" });
-  await expect(acknowledge).toBeEnabled();
-  await acknowledge.click();
+  await expect(results).toContainText("校验有提醒");
+  const approve = page.getByRole("button", { name: "批准草案" });
+  await expect(approve).toBeEnabled();
+  await approve.click();
   await expect(results).toContainText("审核已完成");
-  await expect(results).toContainText("已确认冲突");
+  await expect(results).toContainText("已批准草案");
 });
 
 test("applies a structured day-scoped revision and renders plan version v2", async ({ page }) => {
@@ -70,7 +73,7 @@ test("applies a structured day-scoped revision and renders plan version v2", asy
   await expect(results).toContainText("v2 修改草案 · 尚未再次审核");
   await expect(results).toContainText("v1 → v2");
   await expect(results).toContainText("计划已修改 · 1 个受影响日期");
-  await expect(results).toContainText("11:00 — 13:00");
+  await expect(results).toContainText("11:00 — 13:30");
 
   await page.screenshot({
     path: "test-results/eztrip-structured-revision-v2.png",

@@ -155,17 +155,28 @@ export function PlanningResults({
   const [revisionShiftMinutes, setRevisionShiftMinutes] = useState(120);
   const state = snapshot.result?.state;
   const verticalSlice = state?.vertical_slice;
-  if (!state || !verticalSlice) {
+  const productPlan = state?.plan;
+  const productValidation = state?.validation;
+  if (!state || (!verticalSlice && (!productPlan || !productValidation))) {
     return null;
   }
 
   const latestVersion = snapshot.plan_versions.at(-1);
   const revisionResult = state.revision_result;
-  const plan = latestVersion?.plan ?? verticalSlice.plan;
-  const validation = revisionResult?.validation ?? verticalSlice.validation;
+  const basePlan = productPlan ?? verticalSlice?.plan;
+  const baseValidation = productValidation ?? verticalSlice?.validation;
+  if (!basePlan || !baseValidation) {
+    return null;
+  }
+  const plan = latestVersion?.plan ?? basePlan;
+  const validation = revisionResult?.validation ?? baseValidation;
   const review = state.review_request;
   const reviewOutcome = snapshot.review_outcome;
-  const candidates = verticalSlice.upstream.candidates;
+  const candidates =
+    state.materials?.shortlist.poi_candidates ?? verticalSlice?.upstream.candidates ?? [];
+  const specialists = state.specialists;
+  const materials = state.materials;
+  const stay = materials?.shortlist.primary_stay;
   const budget = validation.budget;
   const hasBudget = budget.status !== "not_requested";
   const displayCity = plan.destination_city.replace(/市$/, "");
@@ -204,6 +215,54 @@ export function PlanningResults({
           </span>
         </div>
       </div>
+
+      {state.workflow_version === "product-planning-graph-v2" && specialists && materials ? (
+        <article
+          className="mb-5 rounded-[1.75rem] border border-emerald-900/10 bg-emerald-950 p-5 text-white shadow-sm sm:p-6"
+          data-testid="product-graph-summary"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-300">
+                Product Graph V2
+              </p>
+              <h3 className="mt-2 text-lg font-semibold">一次请求内完成多 Agent 协作</h3>
+            </div>
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-emerald-100">
+              {specialists.total_model_call_count} 次模型调用 · {specialists.total_provider_call_count} 次工具调用
+            </span>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {specialists.branches.map((branch) => (
+              <div className="rounded-2xl bg-white/7 p-4" key={branch.specialist}>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300">
+                  {branch.specialist}
+                </p>
+                <p className="mt-2 text-sm font-semibold">{branch.status}</p>
+              </div>
+            ))}
+            <div className="rounded-2xl bg-white/7 p-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300">
+                Route / Budget
+              </p>
+              <p className="mt-2 text-sm font-semibold">
+                {materials.route_matrix.succeeded_edge_count}/{materials.route_matrix.expected_edge_count} 路线
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white/7 p-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300">
+                Hard Validator
+              </p>
+              <p className="mt-2 text-sm font-semibold">{validation.status}</p>
+            </div>
+          </div>
+          <p className="mt-4 text-xs leading-5 text-emerald-100/65">
+            {stay
+              ? `住宿锚点：${stay.name}（${stay.area_name}）；价格与可订状态未验证，不提供预订。`
+              : "当前没有可用住宿锚点；系统不会伪造酒店推荐。"}
+          </p>
+        </article>
+      ) : null}
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.7fr)_minmax(320px,.75fr)]">
         <article className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
@@ -441,7 +500,9 @@ export function PlanningResults({
                 <p className="text-2xl font-semibold tracking-tight">
                   {hasBudget && budget.total_limit !== null ? formatMoney(budget.total_limit) : "未设置"}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">整趟行程硬预算</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {materials?.budget_allocation.hard_limit ? "整趟行程硬预算" : "整趟行程规划目标"}
+                </p>
               </div>
               <span className={`status-pill status-${budget.status}`}>
                 {budget.status === "not_requested"
@@ -479,7 +540,7 @@ export function PlanningResults({
               </div>
             ) : (
               <p className="mt-3 text-xs leading-5 text-slate-500">
-                当前产品 API 工作流尚未注入天气风险；这不代表旅行日期天气良好。天气 Agent 将在后续完整编排中接入。
+                天气工具本次没有返回风险；这不等于旅行日期一定天气良好，出发前仍应复核。
               </p>
             )}
           </article>
