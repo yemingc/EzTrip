@@ -1,0 +1,1094 @@
+{
+  "$defs": {
+    "ComparisonArm": {
+      "enum": [
+        "single_agent_tools",
+        "product_graph_no_hard_gate",
+        "product_graph_bounded_repair"
+      ],
+      "title": "ComparisonArm",
+      "type": "string"
+    },
+    "LiveArmTrialResult": {
+      "additionalProperties": false,
+      "properties": {
+        "arm": {
+          "$ref": "#/$defs/ComparisonArm"
+        },
+        "execution_succeeded": {
+          "title": "Execution Succeeded",
+          "type": "boolean"
+        },
+        "outcome": {
+          "$ref": "#/$defs/LiveTrialOutcome"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        },
+        "selected_poi_candidate_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Selected Poi Candidate Ids",
+          "type": "array"
+        },
+        "selected_stay_candidate_id": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Selected Stay Candidate Id"
+        },
+        "initial_plan_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Initial Plan Sha256"
+        },
+        "final_plan_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Final Plan Sha256"
+        },
+        "initial_error_codes": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Initial Error Codes",
+          "type": "array"
+        },
+        "final_error_codes": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Final Error Codes",
+          "type": "array"
+        },
+        "final_can_finalize": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Final Can Finalize"
+        },
+        "repair_actions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RepairAction"
+          },
+          "title": "Repair Actions",
+          "type": "array"
+        },
+        "repair_stop_reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RepairStopReason"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "selected_poi_count": {
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Selected Poi Count",
+          "type": "integer"
+        },
+        "allowed_poi_count": {
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Allowed Poi Count",
+          "type": "integer"
+        },
+        "required_poi_group_count": {
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Required Poi Group Count",
+          "type": "integer"
+        },
+        "matched_poi_group_count": {
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Matched Poi Group Count",
+          "type": "integer"
+        },
+        "stay_selection_allowed": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stay Selection Allowed"
+        },
+        "scheduled_candidate_count": {
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Scheduled Candidate Count",
+          "type": "integer"
+        },
+        "grounded_candidate_count": {
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Grounded Candidate Count",
+          "type": "integer"
+        },
+        "traceable_candidate_count": {
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Traceable Candidate Count",
+          "type": "integer"
+        },
+        "route_backed_candidate_count": {
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Route Backed Candidate Count",
+          "type": "integer"
+        },
+        "logical_model_call_indices": {
+          "default": [],
+          "items": {
+            "type": "integer"
+          },
+          "title": "Logical Model Call Indices",
+          "type": "array"
+        },
+        "logical_model_call_count": {
+          "maximum": 7,
+          "minimum": 0,
+          "title": "Logical Model Call Count",
+          "type": "integer"
+        },
+        "token_usage_complete": {
+          "title": "Token Usage Complete",
+          "type": "boolean"
+        },
+        "prompt_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prompt Tokens"
+        },
+        "completion_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Completion Tokens"
+        },
+        "total_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total Tokens"
+        },
+        "model_latency_ms": {
+          "minimum": 0,
+          "title": "Model Latency Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "arm",
+        "execution_succeeded",
+        "outcome",
+        "selected_poi_count",
+        "allowed_poi_count",
+        "required_poi_group_count",
+        "matched_poi_group_count",
+        "scheduled_candidate_count",
+        "grounded_candidate_count",
+        "traceable_candidate_count",
+        "route_backed_candidate_count",
+        "logical_model_call_count",
+        "token_usage_complete",
+        "model_latency_ms"
+      ],
+      "title": "LiveArmTrialResult",
+      "type": "object"
+    },
+    "LiveCallOwner": {
+      "enum": [
+        "single_agent",
+        "product_shared_initial",
+        "product_repair"
+      ],
+      "title": "LiveCallOwner",
+      "type": "string"
+    },
+    "LiveCallPhase": {
+      "enum": [
+        "base",
+        "repair"
+      ],
+      "title": "LiveCallPhase",
+      "type": "string"
+    },
+    "LiveComparisonArmSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "arm": {
+          "$ref": "#/$defs/ComparisonArm"
+        },
+        "trial_count": {
+          "const": 6,
+          "default": 6,
+          "title": "Trial Count",
+          "type": "integer"
+        },
+        "execution_succeeded_trial_count": {
+          "maximum": 6,
+          "minimum": 0,
+          "title": "Execution Succeeded Trial Count",
+          "type": "integer"
+        },
+        "finalizable_trial_count": {
+          "maximum": 6,
+          "minimum": 0,
+          "title": "Finalizable Trial Count",
+          "type": "integer"
+        },
+        "finalization_rate": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+              "type": "string"
+            }
+          ],
+          "title": "Finalization Rate"
+        },
+        "selected_poi_count": {
+          "minimum": 0,
+          "title": "Selected Poi Count",
+          "type": "integer"
+        },
+        "allowed_poi_count": {
+          "minimum": 0,
+          "title": "Allowed Poi Count",
+          "type": "integer"
+        },
+        "labelled_relevance_rate": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+              "type": "string"
+            }
+          ],
+          "title": "Labelled Relevance Rate"
+        },
+        "required_poi_group_count": {
+          "minimum": 0,
+          "title": "Required Poi Group Count",
+          "type": "integer"
+        },
+        "matched_poi_group_count": {
+          "minimum": 0,
+          "title": "Matched Poi Group Count",
+          "type": "integer"
+        },
+        "group_coverage_rate": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+              "type": "string"
+            }
+          ],
+          "title": "Group Coverage Rate"
+        },
+        "allowed_stay_trial_count": {
+          "maximum": 6,
+          "minimum": 0,
+          "title": "Allowed Stay Trial Count",
+          "type": "integer"
+        },
+        "grounding_rate": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+              "type": "string"
+            }
+          ],
+          "title": "Grounding Rate"
+        },
+        "route_lineage_rate": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+              "type": "string"
+            }
+          ],
+          "title": "Route Lineage Rate"
+        },
+        "logical_model_call_count": {
+          "minimum": 0,
+          "title": "Logical Model Call Count",
+          "type": "integer"
+        },
+        "exact_plan_consistency_case_count": {
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Exact Plan Consistency Case Count",
+          "type": "integer"
+        },
+        "comparable_consistency_case_count": {
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Comparable Consistency Case Count",
+          "type": "integer"
+        },
+        "p50_cumulative_model_latency_ms": {
+          "minimum": 0,
+          "title": "P50 Cumulative Model Latency Ms",
+          "type": "integer"
+        },
+        "p95_cumulative_model_latency_ms": {
+          "minimum": 0,
+          "title": "P95 Cumulative Model Latency Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "arm",
+        "execution_succeeded_trial_count",
+        "finalizable_trial_count",
+        "finalization_rate",
+        "selected_poi_count",
+        "allowed_poi_count",
+        "labelled_relevance_rate",
+        "required_poi_group_count",
+        "matched_poi_group_count",
+        "group_coverage_rate",
+        "allowed_stay_trial_count",
+        "grounding_rate",
+        "route_lineage_rate",
+        "logical_model_call_count",
+        "exact_plan_consistency_case_count",
+        "comparable_consistency_case_count",
+        "p50_cumulative_model_latency_ms",
+        "p95_cumulative_model_latency_ms"
+      ],
+      "title": "LiveComparisonArmSummary",
+      "type": "object"
+    },
+    "LiveComparisonPairedDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "from_arm": {
+          "$ref": "#/$defs/ComparisonArm"
+        },
+        "to_arm": {
+          "$ref": "#/$defs/ComparisonArm"
+        },
+        "shared_evaluable_trial_count": {
+          "maximum": 6,
+          "minimum": 0,
+          "title": "Shared Evaluable Trial Count",
+          "type": "integer"
+        },
+        "improved_trial_count": {
+          "maximum": 6,
+          "minimum": 0,
+          "title": "Improved Trial Count",
+          "type": "integer"
+        },
+        "worsened_trial_count": {
+          "maximum": 6,
+          "minimum": 0,
+          "title": "Worsened Trial Count",
+          "type": "integer"
+        },
+        "unchanged_trial_count": {
+          "maximum": 6,
+          "minimum": 0,
+          "title": "Unchanged Trial Count",
+          "type": "integer"
+        },
+        "finalization_rate_delta": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": -1.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,4}0*$",
+              "type": "string"
+            }
+          ],
+          "title": "Finalization Rate Delta"
+        }
+      },
+      "required": [
+        "from_arm",
+        "to_arm",
+        "shared_evaluable_trial_count",
+        "improved_trial_count",
+        "worsened_trial_count",
+        "unchanged_trial_count",
+        "finalization_rate_delta"
+      ],
+      "title": "LiveComparisonPairedDelta",
+      "type": "object"
+    },
+    "LiveComparisonTrialResult": {
+      "additionalProperties": false,
+      "properties": {
+        "trial_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Trial Id",
+          "type": "string"
+        },
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "repetition": {
+          "maximum": 2,
+          "minimum": 1,
+          "title": "Repetition",
+          "type": "integer"
+        },
+        "trace_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Trace Id"
+        },
+        "input_catalog_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Input Catalog Sha256",
+          "type": "string"
+        },
+        "product_initial_plan_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Product Initial Plan Sha256"
+        },
+        "product_initial_draft_shared": {
+          "const": true,
+          "default": true,
+          "title": "Product Initial Draft Shared",
+          "type": "boolean"
+        },
+        "external_provider_call_count": {
+          "const": 0,
+          "default": 0,
+          "title": "External Provider Call Count",
+          "type": "integer"
+        },
+        "fixture_provider_read_count": {
+          "minimum": 0,
+          "title": "Fixture Provider Read Count",
+          "type": "integer"
+        },
+        "physical_model_call_indices": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Physical Model Call Indices",
+          "type": "array"
+        },
+        "wall_clock_ms": {
+          "minimum": 0,
+          "title": "Wall Clock Ms",
+          "type": "integer"
+        },
+        "arms": {
+          "items": {
+            "$ref": "#/$defs/LiveArmTrialResult"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "title": "Arms",
+          "type": "array"
+        }
+      },
+      "required": [
+        "trial_id",
+        "case_id",
+        "repetition",
+        "input_catalog_sha256",
+        "fixture_provider_read_count",
+        "physical_model_call_indices",
+        "wall_clock_ms",
+        "arms"
+      ],
+      "title": "LiveComparisonTrialResult",
+      "type": "object"
+    },
+    "LiveExecutionMode": {
+      "enum": [
+        "fixture_contract",
+        "live"
+      ],
+      "title": "LiveExecutionMode",
+      "type": "string"
+    },
+    "LiveModelCallRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "call_index": {
+          "maximum": 54,
+          "minimum": 1,
+          "title": "Call Index",
+          "type": "integer"
+        },
+        "trial_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Trial Id",
+          "type": "string"
+        },
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "repetition": {
+          "maximum": 2,
+          "minimum": 1,
+          "title": "Repetition",
+          "type": "integer"
+        },
+        "owner": {
+          "$ref": "#/$defs/LiveCallOwner"
+        },
+        "phase": {
+          "$ref": "#/$defs/LiveCallPhase"
+        },
+        "node": {
+          "$ref": "#/$defs/LiveModelNode"
+        },
+        "model": {
+          "minLength": 1,
+          "title": "Model",
+          "type": "string"
+        },
+        "max_completion_tokens": {
+          "maximum": 1200,
+          "minimum": 1,
+          "title": "Max Completion Tokens",
+          "type": "integer"
+        },
+        "status": {
+          "$ref": "#/$defs/LiveModelCallStatus"
+        },
+        "latency_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Latency Ms"
+        },
+        "usage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelTokenUsage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Code"
+        }
+      },
+      "required": [
+        "call_index",
+        "trial_id",
+        "case_id",
+        "repetition",
+        "owner",
+        "phase",
+        "node",
+        "model",
+        "max_completion_tokens",
+        "status"
+      ],
+      "title": "LiveModelCallRecord",
+      "type": "object"
+    },
+    "LiveModelCallStatus": {
+      "enum": [
+        "started",
+        "succeeded",
+        "failed"
+      ],
+      "title": "LiveModelCallStatus",
+      "type": "string"
+    },
+    "LiveModelNode": {
+      "enum": [
+        "single_selection",
+        "single_plan",
+        "explore_query",
+        "explore_selection",
+        "stay_query",
+        "stay_selection",
+        "product_plan"
+      ],
+      "title": "LiveModelNode",
+      "type": "string"
+    },
+    "LiveTrialOutcome": {
+      "enum": [
+        "finalizable_without_repair",
+        "repaired",
+        "waiting_for_user",
+        "unresolved",
+        "execution_failed"
+      ],
+      "title": "LiveTrialOutcome",
+      "type": "string"
+    },
+    "ModelTokenUsage": {
+      "additionalProperties": false,
+      "properties": {
+        "prompt_tokens": {
+          "minimum": 0,
+          "title": "Prompt Tokens",
+          "type": "integer"
+        },
+        "completion_tokens": {
+          "minimum": 0,
+          "title": "Completion Tokens",
+          "type": "integer"
+        },
+        "total_tokens": {
+          "minimum": 0,
+          "title": "Total Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens"
+      ],
+      "title": "ModelTokenUsage",
+      "type": "object"
+    },
+    "RepairAction": {
+      "enum": [
+        "none",
+        "rerun_constraint",
+        "rerun_explore",
+        "rerun_stay",
+        "rerun_route",
+        "replan_day",
+        "recalculate_budget",
+        "ask_user"
+      ],
+      "title": "RepairAction",
+      "type": "string"
+    },
+    "RepairStopReason": {
+      "enum": [
+        "finalizable",
+        "user_confirmation_required",
+        "unrepairable_issue",
+        "retry_limit_reached"
+      ],
+      "title": "RepairStopReason",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "suite": {
+      "const": "live-system-comparison-pilot-v1",
+      "default": "live-system-comparison-pilot-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "runner_version": {
+      "const": "live-system-comparison-runner-v1",
+      "default": "live-system-comparison-runner-v1",
+      "title": "Runner Version",
+      "type": "string"
+    },
+    "run_kind": {
+      "const": "repeated_development_pilot",
+      "default": "repeated_development_pilot",
+      "title": "Run Kind",
+      "type": "string"
+    },
+    "model": {
+      "const": "deepseek-v4-pro",
+      "default": "deepseek-v4-pro",
+      "title": "Model",
+      "type": "string"
+    },
+    "temperature": {
+      "const": 0,
+      "default": 0,
+      "title": "Temperature",
+      "type": "integer"
+    },
+    "evaluator_version": {
+      "const": "hard-trip-plan-validator-v1",
+      "default": "hard-trip-plan-validator-v1",
+      "title": "Evaluator Version",
+      "type": "string"
+    },
+    "dataset_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Dataset Sha256",
+      "type": "string"
+    },
+    "started_at": {
+      "format": "date-time",
+      "title": "Started At",
+      "type": "string"
+    },
+    "completed_at": {
+      "format": "date-time",
+      "title": "Completed At",
+      "type": "string"
+    },
+    "case_count": {
+      "const": 3,
+      "default": 3,
+      "title": "Case Count",
+      "type": "integer"
+    },
+    "repetitions_per_case": {
+      "const": 2,
+      "default": 2,
+      "title": "Repetitions Per Case",
+      "type": "integer"
+    },
+    "trial_count": {
+      "const": 6,
+      "default": 6,
+      "title": "Trial Count",
+      "type": "integer"
+    },
+    "execution_mode": {
+      "$ref": "#/$defs/LiveExecutionMode"
+    },
+    "live_calls_performed": {
+      "title": "Live Calls Performed",
+      "type": "boolean"
+    },
+    "langsmith_tracing_enabled": {
+      "title": "Langsmith Tracing Enabled",
+      "type": "boolean"
+    },
+    "external_provider_call_count": {
+      "const": 0,
+      "default": 0,
+      "title": "External Provider Call Count",
+      "type": "integer"
+    },
+    "amap_call_count": {
+      "const": 0,
+      "default": 0,
+      "title": "Amap Call Count",
+      "type": "integer"
+    },
+    "max_model_calls": {
+      "const": 54,
+      "default": 54,
+      "title": "Max Model Calls",
+      "type": "integer"
+    },
+    "physical_model_call_count": {
+      "maximum": 54,
+      "minimum": 1,
+      "title": "Physical Model Call Count",
+      "type": "integer"
+    },
+    "succeeded_model_call_count": {
+      "maximum": 54,
+      "minimum": 0,
+      "title": "Succeeded Model Call Count",
+      "type": "integer"
+    },
+    "failed_model_call_count": {
+      "maximum": 54,
+      "minimum": 0,
+      "title": "Failed Model Call Count",
+      "type": "integer"
+    },
+    "max_completion_tokens": {
+      "const": 55800,
+      "default": 55800,
+      "title": "Max Completion Tokens",
+      "type": "integer"
+    },
+    "completion_token_reservation": {
+      "maximum": 55800,
+      "minimum": 1,
+      "title": "Completion Token Reservation",
+      "type": "integer"
+    },
+    "token_usage_complete": {
+      "title": "Token Usage Complete",
+      "type": "boolean"
+    },
+    "actual_prompt_tokens": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Actual Prompt Tokens"
+    },
+    "actual_completion_tokens": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Actual Completion Tokens"
+    },
+    "actual_total_tokens": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Actual Total Tokens"
+    },
+    "generalization_claim_allowed": {
+      "const": false,
+      "default": false,
+      "title": "Generalization Claim Allowed",
+      "type": "boolean"
+    },
+    "model_quality_claim_scope": {
+      "const": "three_case_point_in_time_paired_observation",
+      "default": "three_case_point_in_time_paired_observation",
+      "title": "Model Quality Claim Scope",
+      "type": "string"
+    },
+    "calls": {
+      "items": {
+        "$ref": "#/$defs/LiveModelCallRecord"
+      },
+      "maxItems": 54,
+      "minItems": 1,
+      "title": "Calls",
+      "type": "array"
+    },
+    "trials": {
+      "items": {
+        "$ref": "#/$defs/LiveComparisonTrialResult"
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "title": "Trials",
+      "type": "array"
+    },
+    "arms": {
+      "items": {
+        "$ref": "#/$defs/LiveComparisonArmSummary"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "title": "Arms",
+      "type": "array"
+    },
+    "paired_deltas": {
+      "items": {
+        "$ref": "#/$defs/LiveComparisonPairedDelta"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "title": "Paired Deltas",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Limitations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "dataset_sha256",
+    "started_at",
+    "completed_at",
+    "execution_mode",
+    "live_calls_performed",
+    "langsmith_tracing_enabled",
+    "physical_model_call_count",
+    "succeeded_model_call_count",
+    "failed_model_call_count",
+    "completion_token_reservation",
+    "token_usage_complete",
+    "calls",
+    "trials",
+    "arms",
+    "paired_deltas",
+    "limitations"
+  ],
+  "title": "LiveComparisonPilotReport",
+  "type": "object"
+}

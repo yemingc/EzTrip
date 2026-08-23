@@ -373,6 +373,15 @@ def _opening_hours(
     )
 
 
+def build_clean_comparison_opening_hours(
+    request: TripRequest,
+    plan: TripPlan,
+) -> OpeningHoursEvidenceBundle:
+    """Build the frozen clean opening-evidence view used by comparison runners."""
+
+    return _opening_hours(request, plan, ComparisonScenario.CLEAN)
+
+
 def _inject_budget_floor(
     case: ComparisonEvalCase,
     request: TripRequest,
@@ -891,6 +900,7 @@ async def evaluate_system_comparison_fixture() -> SystemComparisonReport:
 __all__ = [
     "COMPARISON_FIXTURE_MODEL",
     "ComparisonFixtureSingleAgentPolicy",
+    "build_clean_comparison_opening_hours",
     "build_comparison_tool_snapshot",
     "evaluate_system_comparison_fixture",
 ]

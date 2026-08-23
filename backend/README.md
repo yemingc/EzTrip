@@ -6,7 +6,7 @@ The product-facing planning API now runs Product Graph V2: parallel Explore/Stay
 
 The 30-case system-comparison inventory is frozen under `evals/cases/comparison`, with a deterministic report committed at `evals/reports/system-comparison-fixture.v1.json`. The full single-Agent arm and Product Graph without the hard gate each finalize 4/28 eligible fixtures; Product Graph with Hard Validator and bounded repair finalizes 20/28. The paired +16 recoveries measure only the validator/repair control path over designed development faults. They do not establish Specialist-model quality or a real-user success rate, and the replay performs no DeepSeek, AMap, or LangSmith calls.
 
-The next repeated-live pilot protocol is frozen under `evals/cases/live-comparison`: three existing development cases, two repetitions each, shared Product initial drafts, sequential trials, and a hard ceiling of 54 model calls / 55,800 completion tokens. It reuses frozen Provider catalogs and plans zero AMap calls. The current preflight only validates local inventory, budget math, and key/tracing presence; it makes no DeepSeek, AMap, or LangSmith requests. No live comparison result is claimed yet.
+The repeated-live pilot under `evals/cases/live-comparison` has now run over three existing development cases with two repetitions each. All 42 base DeepSeek calls succeeded and all three arms finalized 6/6 trials, so this clean-case pilot observed no finalization lift and triggered no repair. Product produced exact-repeat plans for 3/3 cases versus Single at 2/3, while using 30 versus 12 logical calls and higher cumulative model latency. The point-in-time result uses frozen Provider catalogs, six LangSmith trial traces, and zero AMap calls; it is development-set evidence, not a holdout, generalization, real-user-success, or real-time-data claim.
 
 ```powershell
 uv sync --all-groups
@@ -28,6 +28,7 @@ Run the deterministic three-arm system comparison:
 uv run python -m scripts.export_comparison_eval_schemas
 uv run python -m scripts.run_system_comparison_eval
 uv run python -m scripts.plan_live_system_comparison
+uv run python -m scripts.run_live_system_comparison_pilot --live --confirm-max-model-calls 54
 uv run pytest tests/test_comparison_evaluation_contract.py tests/test_system_comparison_evaluation.py --no-cov
 ```
 
