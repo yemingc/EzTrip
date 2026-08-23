@@ -18,6 +18,8 @@ Repair Router fixture 报告验证 9/9 exact action + executed-node routes、9/9
 
 Product Graph V2 另有产品 executor 单测与 API/浏览器回归，验证 Explore、Stay、Route、Budget、Plan 的最小责任链，以及默认营业时间冲突的零模型/零 Provider 同日排程修复。这组证据不改变上面 9-case 隔离报告的历史口径。
 
+EZ-501A 在 `cases/comparison/` 冻结 20 standard + 10 hard 的三组 system comparison 协议。三个 arm 必须共享结构化请求、Provider fixture、完整 `TripPlan` 契约、post-run evaluator 和 live 模型名称。该目录当前是开发集协议，不是结果报告；旧 `single-planner-v1` 因输入和输出范围不同，不能冒充公平单 Agent 对照。
+
 验证命令：
 
 ```powershell
@@ -27,4 +29,5 @@ uv run pytest tests/test_planning_seed_eval.py tests/test_constraint_agent_evalu
 uv run pytest tests/test_specialist_fanout.py tests/test_specialist_fanout_eval.py --no-cov
 uv run pytest tests/test_hard_validator.py tests/test_hard_validator_evaluation.py --no-cov
 uv run pytest tests/test_repair_router.py tests/test_repair_router_evaluation.py --no-cov
+uv run pytest tests/test_comparison_evaluation_contract.py --no-cov
 ```

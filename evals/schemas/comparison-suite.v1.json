@@ -1,0 +1,346 @@
+{
+  "$defs": {
+    "ComparisonArm": {
+      "enum": [
+        "single_agent_tools",
+        "product_graph_no_hard_gate",
+        "product_graph_bounded_repair"
+      ],
+      "title": "ComparisonArm",
+      "type": "string"
+    },
+    "ComparisonDimensions": {
+      "additionalProperties": false,
+      "properties": {
+        "city": {
+          "minLength": 1,
+          "title": "City",
+          "type": "string"
+        },
+        "trip_days": {
+          "maximum": 5,
+          "minimum": 2,
+          "title": "Trip Days",
+          "type": "integer"
+        },
+        "traveler_profile": {
+          "$ref": "#/$defs/TravelerProfile"
+        },
+        "risk_dimensions": {
+          "items": {
+            "$ref": "#/$defs/ComparisonRiskDimension"
+          },
+          "minItems": 1,
+          "title": "Risk Dimensions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "city",
+        "trip_days",
+        "traveler_profile",
+        "risk_dimensions"
+      ],
+      "title": "ComparisonDimensions",
+      "type": "object"
+    },
+    "ComparisonEvalCase": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "tier": {
+          "$ref": "#/$defs/SeedTier"
+        },
+        "source_plan_case_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Source Plan Case Id",
+          "type": "string"
+        },
+        "scenario": {
+          "$ref": "#/$defs/ComparisonScenario"
+        },
+        "dimensions": {
+          "$ref": "#/$defs/ComparisonDimensions"
+        },
+        "expected": {
+          "$ref": "#/$defs/ComparisonExpectation"
+        },
+        "boundary_notes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Boundary Notes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "title",
+        "tier",
+        "source_plan_case_id",
+        "scenario",
+        "dimensions",
+        "expected",
+        "boundary_notes"
+      ],
+      "title": "ComparisonEvalCase",
+      "type": "object"
+    },
+    "ComparisonExpectation": {
+      "additionalProperties": false,
+      "properties": {
+        "initial_error_codes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Initial Error Codes",
+          "type": "array"
+        },
+        "full_outcome": {
+          "$ref": "#/$defs/ComparisonOutcome"
+        },
+        "final_can_finalize": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Final Can Finalize"
+        },
+        "repair_actions": {
+          "items": {
+            "$ref": "#/$defs/RepairAction"
+          },
+          "title": "Repair Actions",
+          "type": "array"
+        },
+        "stop_reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RepairStopReason"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "initial_error_codes",
+        "full_outcome",
+        "final_can_finalize",
+        "repair_actions"
+      ],
+      "title": "ComparisonExpectation",
+      "type": "object"
+    },
+    "ComparisonFairnessContract": {
+      "additionalProperties": false,
+      "properties": {
+        "same_structured_request": {
+          "const": true,
+          "title": "Same Structured Request",
+          "type": "boolean"
+        },
+        "same_provider_fixture": {
+          "const": true,
+          "title": "Same Provider Fixture",
+          "type": "boolean"
+        },
+        "same_output_trip_plan_contract": {
+          "const": true,
+          "title": "Same Output Trip Plan Contract",
+          "type": "boolean"
+        },
+        "same_post_run_evaluator": {
+          "const": true,
+          "title": "Same Post Run Evaluator",
+          "type": "boolean"
+        },
+        "same_model_name_for_live_run": {
+          "const": true,
+          "title": "Same Model Name For Live Run",
+          "type": "boolean"
+        },
+        "shared_case_eligibility_denominator": {
+          "const": true,
+          "title": "Shared Case Eligibility Denominator",
+          "type": "boolean"
+        },
+        "development_regression_not_holdout": {
+          "const": true,
+          "title": "Development Regression Not Holdout",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "same_structured_request",
+        "same_provider_fixture",
+        "same_output_trip_plan_contract",
+        "same_post_run_evaluator",
+        "same_model_name_for_live_run",
+        "shared_case_eligibility_denominator",
+        "development_regression_not_holdout"
+      ],
+      "title": "ComparisonFairnessContract",
+      "type": "object"
+    },
+    "ComparisonOutcome": {
+      "enum": [
+        "finalizable_without_repair",
+        "repaired",
+        "waiting_for_user",
+        "unresolved",
+        "blocked_before_plan"
+      ],
+      "title": "ComparisonOutcome",
+      "type": "string"
+    },
+    "ComparisonRiskDimension": {
+      "enum": [
+        "grounding",
+        "hard_constraint",
+        "route",
+        "opening_hours",
+        "budget",
+        "provider_failure",
+        "capability_boundary",
+        "repair_scope",
+        "hitl"
+      ],
+      "title": "ComparisonRiskDimension",
+      "type": "string"
+    },
+    "ComparisonScenario": {
+      "enum": [
+        "clean",
+        "missing_route",
+        "tight_transfer",
+        "outside_opening_window",
+        "missing_opening_evidence",
+        "poi_cross_city",
+        "stay_cross_city",
+        "route_source_mismatch",
+        "candidate_source_mismatch",
+        "hard_budget_incomplete",
+        "budget_floor_exceeded",
+        "scheduled_avoid",
+        "missing_must_visit",
+        "route_provider_timeout",
+        "unsupported_city",
+        "opening_window_no_fit"
+      ],
+      "title": "ComparisonScenario",
+      "type": "string"
+    },
+    "RepairAction": {
+      "enum": [
+        "none",
+        "rerun_constraint",
+        "rerun_explore",
+        "rerun_stay",
+        "rerun_route",
+        "replan_day",
+        "recalculate_budget",
+        "ask_user"
+      ],
+      "title": "RepairAction",
+      "type": "string"
+    },
+    "RepairStopReason": {
+      "enum": [
+        "finalizable",
+        "user_confirmation_required",
+        "unrepairable_issue",
+        "retry_limit_reached"
+      ],
+      "title": "RepairStopReason",
+      "type": "string"
+    },
+    "SeedTier": {
+      "enum": [
+        "standard",
+        "hard"
+      ],
+      "title": "SeedTier",
+      "type": "string"
+    },
+    "TravelerProfile": {
+      "enum": [
+        "adults",
+        "couple",
+        "family_with_child",
+        "unsupported_boundary"
+      ],
+      "title": "TravelerProfile",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "suite": {
+      "const": "system-comparison-v1",
+      "default": "system-comparison-v1",
+      "title": "Suite",
+      "type": "string"
+    },
+    "version": {
+      "const": 1,
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "dataset_role": {
+      "const": "development_regression",
+      "default": "development_regression",
+      "title": "Dataset Role",
+      "type": "string"
+    },
+    "arms": {
+      "items": {
+        "$ref": "#/$defs/ComparisonArm"
+      },
+      "title": "Arms",
+      "type": "array"
+    },
+    "fairness": {
+      "$ref": "#/$defs/ComparisonFairnessContract"
+    },
+    "cases": {
+      "items": {
+        "$ref": "#/$defs/ComparisonEvalCase"
+      },
+      "maxItems": 30,
+      "minItems": 30,
+      "title": "Cases",
+      "type": "array"
+    }
+  },
+  "required": [
+    "arms",
+    "fairness",
+    "cases"
+  ],
+  "title": "ComparisonEvalSuite",
+  "type": "object"
+}

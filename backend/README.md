@@ -4,6 +4,8 @@ Gate 0 FastAPI service plus the first offline Gate 2 vertical slice, recoverable
 
 The product-facing planning API now runs Product Graph V2: parallel Explore/Stay/proactive-Weather specialists feed deterministic route/budget materials, a schema-constrained Plan Agent, the full Hard Validator, a bounded responsibility-node Repair Router, checkpoint-backed HITL, and structured PlanVersion revision. Product repair can selectively rerun Explore, Stay, Route, Budget, or Plan while preserving unaffected artifacts and reporting delegated call counts. Task metadata and SSE logs remain process-local, and the separate Weather Repair Coordinator is not yet connected to this product Graph. EzTrip is an on-demand planner, so scheduled WeatherWatch is intentionally out of V1 scope. See [the planning task API protocol](../docs/api/planning-task-api.md).
 
+The 30-case system-comparison inventory is frozen under `evals/cases/comparison`. It defines fair shared inputs, output contract, and post-run evaluator for a full single-Agent arm, Product Graph without the hard gate, and Product Graph with bounded repair. This increment is a protocol and schema only; it does not claim comparative gains or perform live calls.
+
 ```powershell
 uv sync --all-groups
 uv run uvicorn app.main:app --reload
