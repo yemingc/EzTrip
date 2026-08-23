@@ -1,73 +1,78 @@
+import { TripPlannerWorkspace } from "@/components/trip-planner-workspace";
+
+function dateAfterToday(days: number) {
+  const result = new Date();
+  result.setUTCDate(result.getUTCDate() + days);
+  return result.toISOString().slice(0, 10);
+}
+
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#dff4ed,_#f7f5ed_45%,_#edf2f7)] px-6 py-10 text-slate-950 sm:px-10 lg:px-16">
-      <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-6xl flex-col justify-between rounded-[2rem] border border-white/80 bg-white/70 p-7 shadow-[0_30px_80px_rgba(15,23,42,0.12)] backdrop-blur sm:p-10 lg:p-14">
-        <header className="flex items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <span className="grid size-11 place-items-center rounded-2xl bg-emerald-950 text-sm font-bold tracking-wide text-white">
-              EZ
-            </span>
-            <div>
-              <p className="text-lg font-semibold tracking-tight">EzTrip</p>
-              <p className="text-xs text-slate-500">Multi-Agent Travel Ops</p>
-            </div>
-          </div>
-          <span className="rounded-full border border-emerald-900/15 bg-emerald-50 px-4 py-2 text-xs font-medium text-emerald-900">
-            Gate 0 · 工程骨架
+    <main className="min-h-screen overflow-hidden bg-[#f4f3ed] text-slate-950">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[680px] bg-[radial-gradient(circle_at_12%_10%,rgba(16,185,129,.16),transparent_28%),radial-gradient(circle_at_82%_0%,rgba(14,116,144,.10),transparent_26%)]" />
+
+      <header className="relative mx-auto flex max-w-[1480px] items-center justify-between gap-4 px-4 py-5 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-3">
+          <span className="grid size-11 place-items-center rounded-2xl bg-emerald-950 text-sm font-black tracking-[-0.04em] text-white shadow-lg shadow-emerald-950/15">
+            EZ
           </span>
-        </header>
-
-        <section className="grid gap-12 py-16 lg:grid-cols-[1.25fr_0.75fr] lg:items-end">
           <div>
-            <p className="mb-5 text-sm font-semibold uppercase tracking-[0.22em] text-emerald-800">
-              Plan · Validate · Recover
-            </p>
-            <h1 className="max-w-4xl text-5xl font-semibold leading-[1.06] tracking-[-0.045em] sm:text-6xl lg:text-7xl">
-              旅行计划不只要生成，
-              <span className="text-emerald-800">还要经得起变化。</span>
-            </h1>
-            <p className="mt-7 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
-              面向中国用户的多 Agent 旅行规划项目。把景点、酒店、天气、预算与行程约束汇入同一条可观测工作流，并在天气或预算变化时主动发现影响、解释冲突并重排。
-            </p>
+            <p className="text-lg font-semibold tracking-[-0.03em]">EzTrip</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.19em] text-slate-400">Multi-Agent Travel Ops</p>
           </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="hidden rounded-full border border-emerald-900/10 bg-white/60 px-3 py-2 text-[11px] font-medium text-slate-600 backdrop-blur sm:inline-flex">
+            Planning API v1
+          </span>
+          <a
+            className="rounded-full bg-slate-950 px-4 py-2 text-[11px] font-semibold text-white transition hover:bg-emerald-950"
+            href="#planner"
+          >
+            打开工作台
+          </a>
+        </div>
+      </header>
 
-          <div className="rounded-3xl bg-slate-950 p-6 text-slate-100 shadow-2xl shadow-slate-900/15">
-            <div className="mb-7 flex items-center justify-between">
-              <p className="text-sm font-medium">系统状态</p>
-              <span className="flex items-center gap-2 text-xs text-emerald-300">
-                <span className="size-2 rounded-full bg-emerald-400" />
-                Foundation ready
-              </span>
+      <section className="relative mx-auto grid max-w-[1480px] gap-8 px-4 pb-10 pt-10 sm:px-6 sm:pt-14 lg:grid-cols-[minmax(0,1.3fr)_minmax(340px,.7fr)] lg:px-8 lg:pb-14 lg:pt-20">
+        <div>
+          <p className="eyebrow">Plan · Validate · Review</p>
+          <h1 className="mt-5 max-w-4xl text-5xl font-semibold leading-[1.02] tracking-[-0.055em] sm:text-6xl lg:text-[5.25rem]">
+            一份旅行计划，
+            <span className="text-emerald-800">一条完整证据链。</span>
+          </h1>
+          <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
+            面向中国用户的多 Agent 旅行规划助手。把景点事实、行程草案、预算规则与人工审核组织进可观测工作流，并明确区分实时数据、测试数据和未知信息。
+          </p>
+        </div>
+
+        <div className="self-end rounded-[1.75rem] border border-white/70 bg-white/62 p-5 shadow-[0_20px_60px_rgba(15,23,42,.07)] backdrop-blur sm:p-6">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold">本阶段真实能力</p>
+            <span className="flex items-center gap-2 text-[11px] font-semibold text-emerald-800">
+              <span className="size-2 rounded-full bg-emerald-500" />
+              EZ-402
+            </span>
+          </div>
+          <dl className="mt-5 space-y-4 text-xs">
+            <div className="flex items-start justify-between gap-6 border-b border-slate-200/70 pb-4">
+              <dt className="text-slate-500">任务进度</dt>
+              <dd className="text-right font-semibold">真实 SSE 事件</dd>
             </div>
-            <dl className="space-y-5 text-sm">
-              <div className="flex justify-between border-b border-white/10 pb-4">
-                <dt className="text-slate-400">API contract</dt>
-                <dd>FastAPI</dd>
-              </div>
-              <div className="flex justify-between border-b border-white/10 pb-4">
-                <dt className="text-slate-400">Workflow target</dt>
-                <dd>LangGraph</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-slate-400">State store</dt>
-                <dd>PostgreSQL</dd>
-              </div>
-            </dl>
-          </div>
-        </section>
+            <div className="flex items-start justify-between gap-6 border-b border-slate-200/70 pb-4">
+              <dt className="text-slate-500">景点来源</dt>
+              <dd className="text-right font-semibold">高德协议 Fixture</dd>
+            </div>
+            <div className="flex items-start justify-between gap-6">
+              <dt className="text-slate-500">最终确认</dt>
+              <dd className="text-right font-semibold text-amber-700">等待 EZ-403 接通</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
 
-        <section className="grid gap-4 border-t border-slate-200 pt-7 md:grid-cols-3">
-          {[
-            ["真实数据边界", "区分实时 API、沙盒数据与模型推断，避免把生成内容包装成事实。"],
-            ["确定性硬约束", "预算、营业时间和空间可达性由可测试的规则校验。"],
-            ["可观测修复", "保留 Agent 决策、工具调用和重排前后的证据链。"],
-          ].map(([title, description]) => (
-            <article key={title} className="rounded-2xl border border-slate-200/80 bg-white/75 p-5">
-              <h2 className="font-semibold">{title}</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
-            </article>
-          ))}
-        </section>
+      <div id="planner">
+        <TripPlannerWorkspace defaultStartDate={dateAfterToday(7)} />
       </div>
     </main>
   );
