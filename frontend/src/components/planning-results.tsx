@@ -24,6 +24,32 @@ const categoryLabels: Record<BudgetCategory, string> = {
   other: "其他",
 };
 
+const repairActionLabels: Record<string, string> = {
+  rerun_constraint: "重新解析约束",
+  rerun_explore: "重新搜索景点",
+  rerun_stay: "重新推荐住宿",
+  rerun_route: "重新计算路线",
+  replan_day: "重排行程日",
+  recalculate_budget: "重新计算预算",
+  ask_user: "请求用户确认",
+  none: "无需修复",
+};
+
+const repairNodeLabels: Record<string, string> = {
+  constraint: "Constraint",
+  explore: "Explore",
+  stay: "Stay",
+  weather: "Weather",
+  route: "Route",
+  plan: "Plan",
+  budget: "Budget",
+  validator: "Validator",
+};
+
+const repairIssueLabels: Record<string, string> = {
+  "opening_hours.schedule_outside_verified_window": "营业时间冲突",
+};
+
 function formatDate(date: string) {
   return new Intl.DateTimeFormat("zh-CN", {
     month: "long",
@@ -176,6 +202,7 @@ export function PlanningResults({
     state.materials?.shortlist.poi_candidates ?? verticalSlice?.upstream.candidates ?? [];
   const specialists = state.specialists;
   const materials = state.materials;
+  const repair = state.repair;
   const stay = materials?.shortlist.primary_stay;
   const budget = validation.budget;
   const hasBudget = budget.status !== "not_requested";
@@ -261,6 +288,73 @@ export function PlanningResults({
               ? `住宿锚点：${stay.name}（${stay.area_name}）；价格与可订状态未验证，不提供预订。`
               : "当前没有可用住宿锚点；系统不会伪造酒店推荐。"}
           </p>
+        </article>
+      ) : null}
+
+      {repair ? (
+        <article
+          className="mb-5 rounded-[1.75rem] border border-cyan-200 bg-cyan-50/75 p-5 shadow-sm sm:p-6"
+          data-testid="product-repair-summary"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="eyebrow">Bounded repair trace</p>
+              <h3 className="mt-2 text-lg font-semibold text-slate-950">有界自动修复</h3>
+              <p className="mt-2 max-w-3xl text-xs leading-5 text-slate-600">
+                硬校验发现可修复错误后，只重跑对应责任节点；未受影响的 Agent 与工具结果继续复用。
+              </p>
+            </div>
+            <span className="rounded-full border border-cyan-200 bg-white px-3 py-1.5 text-xs font-semibold text-cyan-900">
+              {repair.attempts.length} 次修复 · {repair.outcome}
+            </span>
+          </div>
+
+          {repair.attempts.length ? (
+            <div className="mt-5 grid gap-3">
+              {repair.attempts.map((attempt) => (
+                <div
+                  className="rounded-2xl border border-cyan-100 bg-white/90 p-4"
+                  key={`${attempt.attempt_index}-${attempt.repair_action}`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-slate-950">
+                      #{attempt.attempt_index} {repairActionLabels[attempt.repair_action] ?? attempt.repair_action}
+                      <span className="ml-2 font-mono text-[11px] font-normal text-slate-400">
+                        {attempt.repair_action}
+                      </span>
+                    </p>
+                    <span className="text-[11px] font-medium text-cyan-900">
+                      {attempt.model_call_count} 次模型调用 · {attempt.provider_call_count} 次工具调用
+                    </span>
+                  </div>
+                  <div className="mt-3 grid gap-3 text-xs leading-5 text-slate-600 sm:grid-cols-2">
+                    <p>
+                      <span className="font-semibold text-slate-900">实际执行：</span>
+                      {attempt.executed_nodes.map((node) => repairNodeLabels[node] ?? node).join("、") || "无"}
+                    </p>
+                    <p>
+                      <span className="font-semibold text-slate-900">复用结果：</span>
+                      {attempt.reused_nodes.map((node) => repairNodeLabels[node] ?? node).join("、") || "无"}
+                    </p>
+                  </div>
+                  {attempt.resolved_issue_codes.length ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {attempt.resolved_issue_codes.map((code) => (
+                        <span
+                          className="rounded-full bg-emerald-100 px-3 py-1.5 text-[11px] font-semibold text-emerald-900"
+                          key={code}
+                        >
+                          {repairIssueLabels[code] ?? code}已修复
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-slate-600">本次计划无需进入修复循环。</p>
+          )}
         </article>
       ) : null}
 

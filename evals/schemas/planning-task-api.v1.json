@@ -633,6 +633,7 @@
             "build_materials",
             "run_plan_agent",
             "validate_hard_plan",
+            "run_repair",
             "prepare_human_review",
             "human_review",
             "apply_review_decision",
@@ -4428,6 +4429,17 @@
               ],
               "default": null
             },
+            "repair": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/RepairRouterResult"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
             "review_request": {
               "anyOf": [
                 {
@@ -4508,6 +4520,7 @@
             "build_materials",
             "run_plan_agent",
             "validate_hard_plan",
+            "run_repair",
             "prepare_human_review",
             "human_review",
             "apply_review_decision",
@@ -4631,6 +4644,413 @@
             "ask_user"
           ],
           "title": "RepairAction",
+          "type": "string"
+        },
+        "RepairArtifactHashes": {
+          "additionalProperties": false,
+          "properties": {
+            "materials_sha256": {
+              "pattern": "^[a-f0-9]{64}$",
+              "title": "Materials Sha256",
+              "type": "string"
+            },
+            "plan_sha256": {
+              "pattern": "^[a-f0-9]{64}$",
+              "title": "Plan Sha256",
+              "type": "string"
+            },
+            "opening_hours_sha256": {
+              "pattern": "^[a-f0-9]{64}$",
+              "title": "Opening Hours Sha256",
+              "type": "string"
+            }
+          },
+          "required": [
+            "materials_sha256",
+            "plan_sha256",
+            "opening_hours_sha256"
+          ],
+          "title": "RepairArtifactHashes",
+          "type": "object"
+        },
+        "RepairAttemptTrace": {
+          "additionalProperties": false,
+          "properties": {
+            "attempt_index": {
+              "minimum": 1,
+              "title": "Attempt Index",
+              "type": "integer"
+            },
+            "action_attempt": {
+              "maximum": 2,
+              "minimum": 1,
+              "title": "Action Attempt",
+              "type": "integer"
+            },
+            "repair_action": {
+              "$ref": "#/$defs/RepairAction"
+            },
+            "responsible_node": {
+              "$ref": "#/$defs/ResponsibleNode"
+            },
+            "trigger_issue_codes": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Trigger Issue Codes",
+              "type": "array"
+            },
+            "execution_status": {
+              "$ref": "#/$defs/RepairExecutionStatus"
+            },
+            "executed_nodes": {
+              "items": {
+                "$ref": "#/$defs/ResponsibleNode"
+              },
+              "title": "Executed Nodes",
+              "type": "array"
+            },
+            "reused_nodes": {
+              "items": {
+                "$ref": "#/$defs/ResponsibleNode"
+              },
+              "title": "Reused Nodes",
+              "type": "array"
+            },
+            "before_error_codes": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "Before Error Codes",
+              "type": "array"
+            },
+            "after_error_codes": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "After Error Codes",
+              "type": "array"
+            },
+            "resolved_issue_codes": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "Resolved Issue Codes",
+              "type": "array"
+            },
+            "introduced_issue_codes": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "Introduced Issue Codes",
+              "type": "array"
+            },
+            "before_hashes": {
+              "$ref": "#/$defs/RepairArtifactHashes"
+            },
+            "after_hashes": {
+              "$ref": "#/$defs/RepairArtifactHashes"
+            },
+            "plan_diff": {
+              "$ref": "#/$defs/RepairPlanDiff"
+            },
+            "model_call_count": {
+              "minimum": 0,
+              "title": "Model Call Count",
+              "type": "integer"
+            },
+            "provider_call_count": {
+              "minimum": 0,
+              "title": "Provider Call Count",
+              "type": "integer"
+            },
+            "error_code": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Error Code"
+            }
+          },
+          "required": [
+            "attempt_index",
+            "action_attempt",
+            "repair_action",
+            "responsible_node",
+            "trigger_issue_codes",
+            "execution_status",
+            "executed_nodes",
+            "reused_nodes",
+            "before_error_codes",
+            "after_error_codes",
+            "resolved_issue_codes",
+            "introduced_issue_codes",
+            "before_hashes",
+            "after_hashes",
+            "plan_diff",
+            "model_call_count",
+            "provider_call_count"
+          ],
+          "title": "RepairAttemptTrace",
+          "type": "object"
+        },
+        "RepairExecutionStatus": {
+          "enum": [
+            "succeeded",
+            "failed"
+          ],
+          "title": "RepairExecutionStatus",
+          "type": "string"
+        },
+        "RepairOutcome": {
+          "enum": [
+            "already_finalizable",
+            "repaired",
+            "waiting_for_user",
+            "unresolved"
+          ],
+          "title": "RepairOutcome",
+          "type": "string"
+        },
+        "RepairPlanDiff": {
+          "additionalProperties": false,
+          "properties": {
+            "changed_dates": {
+              "default": [],
+              "items": {
+                "format": "date",
+                "type": "string"
+              },
+              "title": "Changed Dates",
+              "type": "array"
+            },
+            "added_candidate_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Added Candidate Ids",
+              "type": "array"
+            },
+            "removed_candidate_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "title": "Removed Candidate Ids",
+              "type": "array"
+            },
+            "total_cost_minimum_before": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Total Cost Minimum Before"
+            },
+            "total_cost_minimum_after": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Total Cost Minimum After"
+            },
+            "total_cost_maximum_before": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Total Cost Maximum Before"
+            },
+            "total_cost_maximum_after": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                  "type": "string"
+                }
+              ],
+              "title": "Total Cost Maximum After"
+            }
+          },
+          "required": [
+            "total_cost_minimum_before",
+            "total_cost_minimum_after",
+            "total_cost_maximum_before",
+            "total_cost_maximum_after"
+          ],
+          "title": "RepairPlanDiff",
+          "type": "object"
+        },
+        "RepairRetryCount": {
+          "additionalProperties": false,
+          "properties": {
+            "repair_action": {
+              "$ref": "#/$defs/RepairAction"
+            },
+            "attempt_count": {
+              "maximum": 2,
+              "minimum": 1,
+              "title": "Attempt Count",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "repair_action",
+            "attempt_count"
+          ],
+          "title": "RepairRetryCount",
+          "type": "object"
+        },
+        "RepairRouterResult": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "router_version": {
+              "const": "repair-router-v1",
+              "default": "repair-router-v1",
+              "title": "Router Version",
+              "type": "string"
+            },
+            "request_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Request Id",
+              "type": "string"
+            },
+            "outcome": {
+              "$ref": "#/$defs/RepairOutcome"
+            },
+            "stop_reason": {
+              "$ref": "#/$defs/RepairStopReason"
+            },
+            "initial_report": {
+              "$ref": "#/$defs/PlanValidationReport"
+            },
+            "final_report": {
+              "$ref": "#/$defs/PlanValidationReport"
+            },
+            "final_materials": {
+              "$ref": "#/$defs/PlanningMaterialBundle"
+            },
+            "final_plan": {
+              "$ref": "#/$defs/TripPlan"
+            },
+            "final_opening_hours": {
+              "$ref": "#/$defs/OpeningHoursEvidenceBundle"
+            },
+            "attempts": {
+              "items": {
+                "$ref": "#/$defs/RepairAttemptTrace"
+              },
+              "maxItems": 12,
+              "title": "Attempts",
+              "type": "array"
+            },
+            "retry_counts": {
+              "items": {
+                "$ref": "#/$defs/RepairRetryCount"
+              },
+              "maxItems": 6,
+              "title": "Retry Counts",
+              "type": "array"
+            },
+            "pending_error_codes": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "Pending Error Codes",
+              "type": "array"
+            },
+            "requires_user_confirmation": {
+              "title": "Requires User Confirmation",
+              "type": "boolean"
+            },
+            "total_model_call_count": {
+              "minimum": 0,
+              "title": "Total Model Call Count",
+              "type": "integer"
+            },
+            "total_provider_call_count": {
+              "minimum": 0,
+              "title": "Total Provider Call Count",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "request_id",
+            "outcome",
+            "stop_reason",
+            "initial_report",
+            "final_report",
+            "final_materials",
+            "final_plan",
+            "final_opening_hours",
+            "attempts",
+            "retry_counts",
+            "pending_error_codes",
+            "requires_user_confirmation",
+            "total_model_call_count",
+            "total_provider_call_count"
+          ],
+          "title": "RepairRouterResult",
+          "type": "object"
+        },
+        "RepairStopReason": {
+          "enum": [
+            "finalizable",
+            "user_confirmation_required",
+            "unrepairable_issue",
+            "retry_limit_reached"
+          ],
+          "title": "RepairStopReason",
           "type": "string"
         },
         "ResponsibleNode": {

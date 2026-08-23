@@ -12,6 +12,7 @@ from app.domain.request import TripRequest
 from app.domain.sources import DataMode
 from app.domain.validation import PlanValidationReport
 from app.planning.material_contracts import PlanningMaterialBundle
+from app.planning.repair_contracts import RepairRouterResult
 from app.planning.revision_contracts import PlanRevisionResult
 from app.planning.specialist_contracts import SpecialistFanoutResult
 from app.planning.stateful_contracts import (
@@ -27,6 +28,7 @@ class ProductPlanningNodeName(StrEnum):
     BUILD_MATERIALS = "build_materials"
     RUN_PLAN_AGENT = "run_plan_agent"
     VALIDATE_HARD_PLAN = "validate_hard_plan"
+    RUN_REPAIR = "run_repair"
     PREPARE_HUMAN_REVIEW = "prepare_human_review"
     HUMAN_REVIEW = "human_review"
     APPLY_REVIEW_DECISION = "apply_review_decision"
@@ -66,6 +68,7 @@ class ProductPlanningData(DomainModel):
     plan: TripPlan | None = None
     opening_hours: OpeningHoursEvidenceBundle | None = None
     validation: PlanValidationReport | None = None
+    repair: RepairRouterResult | None = None
     review_request: HumanReviewRequest | None = None
     review_decision: HumanReviewDecision | None = None
     revision_result: PlanRevisionResult | None = None
@@ -129,13 +132,28 @@ class ProductPlanningData(DomainModel):
 
         if self.status == PlanningThreadStatus.PLANNING:
             if completed_stages >= 4 or any(
-                (self.review_request, self.review_decision, self.revision_result)
+                (self.repair, self.review_request, self.review_decision, self.revision_result)
             ):
                 raise ValueError("planning status may only contain incomplete product stages")
             return self
 
         if completed_stages != 4 or self.validation is None or self.plan is None:
             raise ValueError("post-planning state requires a hard-validated product plan")
+        pipeline_prefix: tuple[ProductPlanningNodeName, ...] = stage_nodes
+        if self.repair is not None:
+            if (
+                self.repair.request_id != self.request.request_id
+                or self.repair.final_materials != self.materials
+                or self.repair.final_plan != self.plan
+                or self.repair.final_opening_hours != self.opening_hours
+                or self.repair.final_report != self.validation
+            ):
+                raise ValueError("product repair result must preserve final planning artifacts")
+            pipeline_prefix = (*stage_nodes, ProductPlanningNodeName.RUN_REPAIR)
+        if event_nodes[: len(pipeline_prefix)] != pipeline_prefix:
+            raise ValueError("product repair events must preserve planning lineage")
+        if self.repair is None and ProductPlanningNodeName.RUN_REPAIR in event_nodes:
+            raise ValueError("product repair events require a repair result")
         if self.status == PlanningThreadStatus.PLAN_READY:
             if any((self.review_request, self.review_decision, self.revision_result)):
                 raise ValueError("plan_ready state cannot contain review data")
@@ -152,8 +170,8 @@ class ProductPlanningData(DomainModel):
         ):
             raise ValueError("human review must preserve hard validation evidence")
 
-        review_prefix = (*stage_nodes, ProductPlanningNodeName.PREPARE_HUMAN_REVIEW)
-        if event_nodes[:5] != review_prefix:
+        review_prefix = (*pipeline_prefix, ProductPlanningNodeName.PREPARE_HUMAN_REVIEW)
+        if event_nodes[: len(review_prefix)] != review_prefix:
             raise ValueError("product review events must preserve stage lineage")
         if self.status == PlanningThreadStatus.AWAITING_HUMAN_REVIEW:
             if self.review_decision is not None or self.revision_result is not None:

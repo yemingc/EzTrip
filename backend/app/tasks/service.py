@@ -13,6 +13,8 @@ from app.planning.minimal_graph import PlanningGraphProtocolError
 from app.planning.plan_revision import PlanRevisionProtocolError
 from app.planning.product_contracts import ProductPlanningProgress, ProductPlanningSnapshot
 from app.planning.product_graph import ProductPlanningProtocolError
+from app.planning.product_repair import ProductRepairProtocolError
+from app.planning.repair_router import RepairRouterProtocolError
 from app.planning.specialist_fanout import (
     SpecialistFanoutConfigurationError,
     SpecialistFanoutProtocolError,
@@ -291,6 +293,8 @@ class PlanningTaskService:
                 PlanRevisionProtocolError,
                 PlanAgentProtocolError,
                 ProductPlanningProtocolError,
+                ProductRepairProtocolError,
+                RepairRouterProtocolError,
                 SinglePlannerProtocolError,
                 SpecialistFanoutProtocolError,
                 StatefulPlanningProtocolError,

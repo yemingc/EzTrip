@@ -64,4 +64,4 @@ uv run pytest tests/test_stateful_planning.py --no-cov
 
 这些数字只证明固定 fixture 下的状态机、磁盘恢复、HITL 策略和无昂贵步骤重放。它们不代表实时数据、模型行程质量、生产恢复 SLA，也未覆盖前端审核界面、用户认证、进程强杀、并发 resume、分布式 worker、加密或保留期。
 
-EZ-403B 另有专项/API/浏览器测试验证目标日延后、保护日不变、v2 lineage、事件 6–10、过期基准拒绝以及恢复阶段 0 Provider/Planner 调用；这些证据不改变上面 EZ-201 两案例报告的历史口径，也不代表完整 Repair Router 已进入产品 Graph。
+EZ-403B 另有专项/API/浏览器测试验证目标日延后、保护日不变、v2 lineage、过期基准拒绝以及恢复阶段 0 Provider/Planner 调用；这些证据不改变上面 EZ-201 两案例报告的历史口径。后续 EZ-405B 已把首次草案的 Repair Router 接入 Product Graph，但窄 `shift_day_later` revision 仍只重跑 Hard Validator，不自动重入修复循环。

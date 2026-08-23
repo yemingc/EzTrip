@@ -48,6 +48,7 @@ const nodeLabels: Record<string, string> = {
   build_materials: "合并路线与预算材料",
   run_plan_agent: "生成多 Agent 行程草案",
   validate_hard_plan: "执行硬约束校验",
+  run_repair: "执行有界局部修复",
   prepare_human_review: "生成审核请求",
   human_review: "人工审核",
   apply_review_decision: "应用审核决定",

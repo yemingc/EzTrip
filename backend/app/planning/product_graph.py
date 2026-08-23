@@ -28,6 +28,8 @@ from app.planning.product_contracts import (
     ProductPlanningProgress,
     ProductPlanningSnapshot,
 )
+from app.planning.product_repair import ProductRepairExecutor, ProductRepairPipeline
+from app.planning.repair_router import run_repair_router
 from app.planning.specialist_contracts import SpecialistFanoutResult
 from app.planning.stateful_contracts import (
     Clock,
@@ -53,7 +55,7 @@ class DuplicateProductPlanningThreadError(ProductPlanningProtocolError):
     """Raised when a caller tries to replace an existing product checkpoint."""
 
 
-class ProductPlanningPipeline(Protocol):
+class ProductPlanningPipeline(ProductRepairPipeline, Protocol):
     async def run_specialists(
         self,
         request: TripRequest,
@@ -273,6 +275,52 @@ def build_product_planning_graph(
             )
         }
 
+    async def run_repair_node(
+        graph_state: ProductPlanningGraphState,
+    ) -> dict[str, Any]:
+        state = _require_state(graph_state)
+        if (
+            state.status != PlanningThreadStatus.PLAN_READY
+            or state.materials is None
+            or state.plan is None
+            or state.opening_hours is None
+            or state.validation is None
+            or state.validation.can_finalize
+            or state.repair is not None
+        ):
+            raise ProductPlanningProtocolError(
+                "product repair requires a conflicted hard-validated plan"
+            )
+        repair = await run_repair_router(
+            state.request,
+            state.plan,
+            state.materials,
+            state.opening_hours,
+            ProductRepairExecutor(pipeline),
+        )
+        event = ProductPlanningEvent(
+            node=ProductPlanningNodeName.RUN_REPAIR,
+            outcome=StatefulPlanningNodeOutcome.REVISED,
+            detail=(
+                f"Repair Router 完成 {len(repair.attempts)} 次有界尝试; "
+                f"结果为 {repair.outcome.value}。"
+            ),
+        )
+        return {
+            "state": _state_update(
+                _evolve_state(
+                    state,
+                    specialists=repair.final_materials.specialist_result,
+                    materials=repair.final_materials,
+                    plan=repair.final_plan,
+                    opening_hours=repair.final_opening_hours,
+                    validation=repair.final_report,
+                    repair=repair,
+                    events=(*state.events, event),
+                )
+            )
+        }
+
     def prepare_human_review_node(
         graph_state: ProductPlanningGraphState,
     ) -> dict[str, Any]:
@@ -405,12 +453,21 @@ def build_product_planning_graph(
             return ProductPlanningNodeName.APPLY_PLAN_REVISION.value
         return END
 
+    def route_after_hard_validation(graph_state: ProductPlanningGraphState) -> str:
+        state = _require_state(graph_state)
+        if state.validation is None:
+            raise ProductPlanningProtocolError("hard validation route requires a report")
+        if state.validation.can_finalize:
+            return ProductPlanningNodeName.PREPARE_HUMAN_REVIEW.value
+        return ProductPlanningNodeName.RUN_REPAIR.value
+
     workflow = StateGraph(ProductPlanningGraphState)
     nodes: tuple[tuple[ProductPlanningNodeName, object], ...] = (
         (ProductPlanningNodeName.RUN_SPECIALISTS, run_specialists_node),
         (ProductPlanningNodeName.BUILD_MATERIALS, build_materials_node),
         (ProductPlanningNodeName.RUN_PLAN_AGENT, run_plan_agent_node),
         (ProductPlanningNodeName.VALIDATE_HARD_PLAN, validate_hard_plan_node),
+        (ProductPlanningNodeName.RUN_REPAIR, run_repair_node),
         (ProductPlanningNodeName.PREPARE_HUMAN_REVIEW, prepare_human_review_node),
         (ProductPlanningNodeName.HUMAN_REVIEW, human_review_node),
         (ProductPlanningNodeName.APPLY_REVIEW_DECISION, apply_review_decision_node),
@@ -431,8 +488,18 @@ def build_product_planning_graph(
         ProductPlanningNodeName.RUN_PLAN_AGENT.value,
         ProductPlanningNodeName.VALIDATE_HARD_PLAN.value,
     )
-    workflow.add_edge(
+    workflow.add_conditional_edges(
         ProductPlanningNodeName.VALIDATE_HARD_PLAN.value,
+        route_after_hard_validation,
+        {
+            ProductPlanningNodeName.RUN_REPAIR.value: ProductPlanningNodeName.RUN_REPAIR.value,
+            ProductPlanningNodeName.PREPARE_HUMAN_REVIEW.value: (
+                ProductPlanningNodeName.PREPARE_HUMAN_REVIEW.value
+            ),
+        },
+    )
+    workflow.add_edge(
+        ProductPlanningNodeName.RUN_REPAIR.value,
         ProductPlanningNodeName.PREPARE_HUMAN_REVIEW.value,
     )
     workflow.add_edge(
@@ -470,7 +537,7 @@ def build_product_run_config(
         metadata["request_id"] = request_id
     return {
         "run_name": PRODUCT_PLANNING_GRAPH_NAME,
-        "tags": ["ez-405", "product-graph-v2", "multi-agent", "hitl"],
+        "tags": ["ez-405b", "product-graph-v2", "bounded-repair", "multi-agent", "hitl"],
         "metadata": metadata,
         "configurable": {"thread_id": thread_id},
     }

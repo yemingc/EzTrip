@@ -2,7 +2,7 @@
 
 Gate 0 FastAPI service plus the first offline Gate 2 vertical slice, recoverable HITL wrapper, specialist fan-out, deterministic planning-material layer, schema-constrained multi-Agent Plan Agent, deterministic Hard Validators, a bounded Repair Router, and provider-triggered local Weather Repair. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, schema-constrained Constraint/Explore/Stay Agents, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, a SQLite-checkpointed main Graph using native LangGraph interrupt/resume, an independent parallel Explore/Stay/proactive-Weather information-gathering Graph, a bounded route matrix plus auditable budget allocator, a Plan Agent that consumes those materials into the shared `TripPlan` contract, a zero-model finalization gate, deterministic issue-directed retry/HITL routing with artifact-reuse guards, and a zero-model Weather Repair Coordinator that grades validated proposals before auto-apply or HITL.
 
-The product-facing planning API now runs Product Graph V2: parallel Explore/Stay/proactive-Weather specialists feed deterministic route/budget materials, a schema-constrained Plan Agent, the full Hard Validator, checkpoint-backed HITL, and structured PlanVersion revision. Task metadata and SSE logs remain process-local, and the bounded Repair Router/Weather Repair executors are not yet connected to this product Graph. EzTrip is an on-demand planner, so scheduled WeatherWatch is intentionally out of V1 scope. See [the planning task API protocol](../docs/api/planning-task-api.md).
+The product-facing planning API now runs Product Graph V2: parallel Explore/Stay/proactive-Weather specialists feed deterministic route/budget materials, a schema-constrained Plan Agent, the full Hard Validator, a bounded responsibility-node Repair Router, checkpoint-backed HITL, and structured PlanVersion revision. Product repair can selectively rerun Explore, Stay, Route, Budget, or Plan while preserving unaffected artifacts and reporting delegated call counts. Task metadata and SSE logs remain process-local, and the separate Weather Repair Coordinator is not yet connected to this product Graph. EzTrip is an on-demand planner, so scheduled WeatherWatch is intentionally out of V1 scope. See [the planning task API protocol](../docs/api/planning-task-api.md).
 
 ```powershell
 uv sync --all-groups
@@ -104,7 +104,7 @@ uv run pytest tests/test_explore_agent.py tests/test_explore_agent_evaluation.py
 uv run python -m scripts.run_explore_agent_eval --live
 ```
 
-The four-node subgraph asks the model for attraction/dining search strategies, calls only the injected POI provider, then asks the model to rank provider candidate IDs with typed evidence. Deterministic code owns IDs, facts, source lineage, deduplication and evidence validation. The six-case live report is a prompt-development regression result over fixture catalogs, not a real-time recommendation-accuracy or holdout score, and the subgraph is not yet connected to the stateful main orchestration.
+The four-node subgraph asks the model for attraction/dining search strategies, calls only the injected POI provider, then asks the model to rank provider candidate IDs with typed evidence. Deterministic code owns IDs, facts, source lineage, deduplication and evidence validation. The six-case live report is a prompt-development regression result over fixture catalogs, not a real-time recommendation-accuracy or holdout score. Explore now participates in Product Graph V2 specialist fan-out and can be selectively rerun by product repair.
 
 Run the Stay Agent tests offline or explicitly refresh its live development-set baseline:
 
@@ -113,7 +113,7 @@ uv run pytest tests/test_stay_agent.py tests/test_stay_agent_evaluation.py --no-
 uv run python -m scripts.run_stay_agent_eval --live
 ```
 
-The four-node subgraph asks the model for accommodation-area search strategies, calls only the injected `StaySearchProvider`, then ranks Provider candidate IDs with typed evidence. Code owns candidate facts and rejects blocked contexts before model/Provider calls. The typed AMap adapter converts only hotel-classified POIs and leaves price empty, availability unknown and booking disabled. The six-case fixture-catalog report is a development regression result, not evidence of real-time hotel price, availability or recommendation quality; the subgraph is not yet connected to the stateful main orchestration.
+The four-node subgraph asks the model for accommodation-area search strategies, calls only the injected `StaySearchProvider`, then ranks Provider candidate IDs with typed evidence. Code owns candidate facts and rejects blocked contexts before model/Provider calls. The typed AMap adapter converts only hotel-classified POIs and leaves price empty, availability unknown and booking disabled. The six-case fixture-catalog report is a development regression result, not evidence of real-time hotel price, availability or recommendation quality. Stay now participates in Product Graph V2 specialist fan-out and can be selectively rerun by product repair.
 
 Run the deterministic plan validator and regenerate its committed example:
 
@@ -122,7 +122,7 @@ uv run pytest tests/test_plan_validator.py --no-cov
 uv run python -m scripts.export_plan_validation_example
 ```
 
-The base validator cross-checks request/plan identity, city and dates, duplicate candidates, recommendation source modes, and budget scope. Budget totals are recomputed from `Decimal` `CostItem` values; missing included categories remain incomplete instead of becoming zero-cost assumptions. Hard errors block finalization through typed `ValidationIssue` results. The downstream Hard Validator described below adds route feasibility, must/avoid, candidate city/lineage, and opening-hours evidence; the Repair Router then consumes those issues, while a product-ready itinerary remains later work.
+The base validator cross-checks request/plan identity, city and dates, duplicate candidates, recommendation source modes, and budget scope. Budget totals are recomputed from `Decimal` `CostItem` values; missing included categories remain incomplete instead of becoming zero-cost assumptions. Hard errors block finalization through typed `ValidationIssue` results. The downstream Hard Validator described below adds route feasibility, must/avoid, candidate city/lineage, and opening-hours evidence; Product Graph V2 passes those issues to Repair Router before HITL.
 
 Run the complete offline Beijing three-day Gate 2 vertical slice:
 
@@ -194,7 +194,7 @@ uv run python -m scripts.run_repair_router_eval
 uv run pytest tests/test_repair_router.py tests/test_repair_router_evaluation.py --no-cov
 ```
 
-The deterministic Router automatically processes errors only, groups them by typed repair action, prioritizes upstream actions, stops `ASK_USER` before any Agent call, and caps each action at two attempts. Executors must declare executed nodes; semantic fingerprints reject changes to reused Constraint/Explore/Stay/Weather/Route/Budget/Plan artifacts. The committed fixture report records 9/9 exact action/node routes, retry bounds, reuse checks, and deterministic replays with zero Router model calls. Fixture executors simulate responsibility-node outputs; live Agent/Provider repair execution is not yet connected to the product task Graph.
+The deterministic Router automatically processes errors only, groups them by typed repair action, prioritizes upstream actions, stops `ASK_USER` before any Agent call, and caps each action at two attempts. Executors must declare executed nodes; semantic fingerprints reject changes to reused Constraint/Explore/Stay/Weather/Route/Budget/Plan artifacts. The committed isolated fixture report records 9/9 exact action/node routes, retry bounds, reuse checks, and deterministic replays with zero Router model calls. Product Graph V2 now injects a real executor for Explore, Stay, Route, Budget, and Plan repair chains. Its default fixture resolves an opening-hours conflict with a deterministic same-day Plan repair and zero delegated model/provider calls; live quality remains provider- and model-dependent.
 
 Run the proactive Weather Repair regression:
 

@@ -70,6 +70,15 @@ def build_initial_plan_version(
         if product_state.plan_agent.model is not None:
             model_versions["plan"] = product_state.plan_agent.model
         prompt_versions["plan"] = product_state.plan_agent.prompt_version
+        repair_summary: tuple[str, ...] = ()
+        if product_state.repair is not None:
+            actions = ", ".join(item.repair_action.value for item in product_state.repair.attempts)
+            repair_summary = (
+                f"Repair Router 执行 {len(product_state.repair.attempts)} 次有界修复"
+                f"({actions or '无自动动作'}), 结果为 {product_state.repair.outcome.value}。",
+                f"修复阶段新增 {product_state.repair.total_model_call_count} 次模型调用与 "
+                f"{product_state.repair.total_provider_call_count} 次 Provider 调用。",
+            )
         return PlanVersion(
             version_id=f"plan-version-{plan_digest[:16]}",
             plan=plan,
@@ -83,6 +92,7 @@ def build_initial_plan_version(
             prompt_versions=prompt_versions,
             change_summary=(
                 "由 Explore、Stay、Weather、Route/Budget、Plan 与 Hard Validator 生成初始草案。",
+                *repair_summary,
             ),
             changed_dates=tuple(day.date for day in plan.days),
         )
