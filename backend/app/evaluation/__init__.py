@@ -10,6 +10,25 @@ from app.evaluation.checkpoint_contracts import (
     CheckpointHitlSuite,
     checkpoint_hitl_dataset_sha256,
 )
+from app.evaluation.comparison import (
+    COMPARISON_SUITE_PATH,
+    ComparisonEvaluationError,
+    comparison_dataset_sha256,
+    load_comparison_suite,
+)
+from app.evaluation.comparison_contracts import (
+    COMPARISON_ARMS,
+    ComparisonArm,
+    ComparisonDimensions,
+    ComparisonEvalCase,
+    ComparisonEvalSuite,
+    ComparisonExpectation,
+    ComparisonFairnessContract,
+    ComparisonOutcome,
+    ComparisonRiskDimension,
+    ComparisonScenario,
+    TravelerProfile,
+)
 from app.evaluation.constraint_agent import (
     constraint_agent_dataset_sha256,
     evaluate_constraint_agent_case,
@@ -195,6 +214,8 @@ from app.evaluation.weather_repair_contracts import (
 )
 
 __all__ = [
+    "COMPARISON_ARMS",
+    "COMPARISON_SUITE_PATH",
     "HARD_VALIDATOR_SUITE_PATH",
     "PLAN_AGENT_SUITE_PATH",
     "REPAIR_ROUTER_SUITE_PATH",
@@ -203,6 +224,16 @@ __all__ = [
     "CheckpointHitlCaseResult",
     "CheckpointHitlReport",
     "CheckpointHitlSuite",
+    "ComparisonArm",
+    "ComparisonDimensions",
+    "ComparisonEvalCase",
+    "ComparisonEvalSuite",
+    "ComparisonEvaluationError",
+    "ComparisonExpectation",
+    "ComparisonFairnessContract",
+    "ComparisonOutcome",
+    "ComparisonRiskDimension",
+    "ComparisonScenario",
     "ConstraintAgentBaselineReport",
     "ConstraintAgentCaseResult",
     "ConstraintAgentExpectationCase",
@@ -279,6 +310,7 @@ __all__ = [
     "StayEvaluationError",
     "StayFixtureCandidateSpec",
     "StayScenarioProvider",
+    "TravelerProfile",
     "VerticalSliceCase",
     "VerticalSliceCaseResult",
     "VerticalSliceGateReport",
@@ -294,6 +326,7 @@ __all__ = [
     "build_plan_agent_materials",
     "build_specialist_scenario_provider",
     "checkpoint_hitl_dataset_sha256",
+    "comparison_dataset_sha256",
     "constraint_agent_dataset_sha256",
     "evaluate_checkpoint_hitl_case",
     "evaluate_checkpoint_hitl_suite",
@@ -323,6 +356,7 @@ __all__ = [
     "explore_agent_dataset_sha256",
     "hard_validator_dataset_sha256",
     "load_checkpoint_hitl_suite",
+    "load_comparison_suite",
     "load_constraint_agent_expectations",
     "load_explore_agent_suite",
     "load_hard_validator_suite",

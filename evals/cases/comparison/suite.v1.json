@@ -1,0 +1,321 @@
+{
+  "suite": "system-comparison-v1",
+  "version": 1,
+  "dataset_role": "development_regression",
+  "arms": [
+    "single_agent_tools",
+    "product_graph_no_hard_gate",
+    "product_graph_bounded_repair"
+  ],
+  "fairness": {
+    "same_structured_request": true,
+    "same_provider_fixture": true,
+    "same_output_trip_plan_contract": true,
+    "same_post_run_evaluator": true,
+    "same_model_name_for_live_run": true,
+    "shared_case_eligibility_denominator": true,
+    "development_regression_not_holdout": true
+  },
+  "cases": [
+    {
+      "case_id": "comparison-standard-beijing-history-clean-v1",
+      "title": "北京历史文化正常链路",
+      "tier": "standard",
+      "source_plan_case_id": "plan-agent-beijing-history-v1",
+      "scenario": "clean",
+      "dimensions": {"city": "北京市", "trip_days": 3, "traveler_profile": "adults", "risk_dimensions": ["grounding"]},
+      "expected": {"initial_error_codes": [], "full_outcome": "finalizable_without_repair", "final_can_finalize": true, "repair_actions": []},
+      "boundary_notes": ["正常案例用于检查完整方案不会为了展示修复而强行进入循环。"]
+    },
+    {
+      "case_id": "comparison-standard-beijing-food-clean-v1",
+      "title": "北京胡同餐饮正常链路",
+      "tier": "standard",
+      "source_plan_case_id": "plan-agent-beijing-food-v1",
+      "scenario": "clean",
+      "dimensions": {"city": "北京市", "trip_days": 2, "traveler_profile": "couple", "risk_dimensions": ["grounding"]},
+      "expected": {"initial_error_codes": [], "full_outcome": "finalizable_without_repair", "final_can_finalize": true, "repair_actions": []},
+      "boundary_notes": ["餐饮候选仍必须使用相同 Provider 快照和完整 TripPlan 契约。"]
+    },
+    {
+      "case_id": "comparison-standard-shanghai-clean-v1",
+      "title": "上海城市风光正常链路",
+      "tier": "standard",
+      "source_plan_case_id": "plan-agent-shanghai-view-food-v1",
+      "scenario": "clean",
+      "dimensions": {"city": "上海市", "trip_days": 2, "traveler_profile": "couple", "risk_dimensions": ["grounding"]},
+      "expected": {"initial_error_codes": [], "full_outcome": "finalizable_without_repair", "final_can_finalize": true, "repair_actions": []},
+      "boundary_notes": ["天气和路线事实必须在三个 arm 间保持一致。"]
+    },
+    {
+      "case_id": "comparison-standard-chengdu-family-clean-v1",
+      "title": "成都亲子正常链路",
+      "tier": "standard",
+      "source_plan_case_id": "plan-agent-chengdu-family-v1",
+      "scenario": "clean",
+      "dimensions": {"city": "成都市", "trip_days": 3, "traveler_profile": "family_with_child", "risk_dimensions": ["grounding", "hard_constraint"]},
+      "expected": {"initial_error_codes": [], "full_outcome": "finalizable_without_repair", "final_can_finalize": true, "repair_actions": []},
+      "boundary_notes": ["熊猫基地必去约束由同一请求提供，不能为某个 arm 单独放宽。"]
+    },
+    {
+      "case_id": "comparison-standard-beijing-history-missing-route-v1",
+      "title": "北京历史路线缺失定向修复",
+      "tier": "standard",
+      "source_plan_case_id": "plan-agent-beijing-history-v1",
+      "scenario": "missing_route",
+      "dimensions": {"city": "北京市", "trip_days": 3, "traveler_profile": "adults", "risk_dimensions": ["route", "repair_scope"]},
+      "expected": {"initial_error_codes": ["route.missing_for_grounded_item"], "full_outcome": "repaired", "final_can_finalize": true, "repair_actions": ["rerun_route"], "stop_reason": "finalizable"},
+      "boundary_notes": ["只允许 Route 与下游 Plan 变化。"]
+    },
+    {
+      "case_id": "comparison-standard-shanghai-missing-route-v1",
+      "title": "上海路线缺失定向修复",
+      "tier": "standard",
+      "source_plan_case_id": "plan-agent-shanghai-view-food-v1",
+      "scenario": "missing_route",
+      "dimensions": {"city": "上海市", "trip_days": 2, "traveler_profile": "couple", "risk_dimensions": ["route", "repair_scope"]},
+      "expected": {"initial_error_codes": ["route.missing_for_grounded_item"], "full_outcome": "repaired", "final_can_finalize": true, "repair_actions": ["rerun_route"], "stop_reason": "finalizable"},
+      "boundary_notes": ["景点、住宿、天气与预算材料必须复用。"]
+    },
+    {
+      "case_id": "comparison-standard-chengdu-missing-route-v1",
+      "title": "成都亲子路线缺失定向修复",
+      "tier": "standard",
+      "source_plan_case_id": "plan-agent-chengdu-family-v1",
+      "scenario": "missing_route",
+      "dimensions": {"city": "成都市", "trip_days": 3, "traveler_profile": "family_with_child", "risk_dimensions": ["route", "repair_scope"]},
+      "expected": {"initial_error_codes": ["route.missing_for_grounded_item"], "full_outcome": "repaired", "final_can_finalize": true, "repair_actions": ["rerun_route"], "stop_reason": "finalizable"},
+      "boundary_notes": ["路线修复不能删除已确认熊猫基地必去项。"]
+    },
+    {
+      "case_id": "comparison-standard-beijing-food-outside-opening-v1",
+      "title": "北京餐饮超出营业窗口",
+      "tier": "standard",
+      "source_plan_case_id": "plan-agent-beijing-food-v1",
+      "scenario": "outside_opening_window",
+      "dimensions": {"city": "北京市", "trip_days": 2, "traveler_profile": "couple", "risk_dimensions": ["opening_hours", "repair_scope"]},
+      "expected": {"initial_error_codes": ["opening_hours.schedule_outside_verified_window"], "full_outcome": "repaired", "final_can_finalize": true, "repair_actions": ["replan_day"], "stop_reason": "finalizable"},
+      "boundary_notes": ["有可容纳活动的同日窗口时使用确定性 Plan 修复。"]
+    },
+    {
+      "case_id": "comparison-standard-shanghai-outside-opening-v1",
+      "title": "上海活动超出营业窗口",
+      "tier": "standard",
+      "source_plan_case_id": "plan-agent-shanghai-view-food-v1",
+      "scenario": "outside_opening_window",
+      "dimensions": {"city": "上海市", "trip_days": 2, "traveler_profile": "couple", "risk_dimensions": ["opening_hours", "repair_scope"]},
+      "expected": {"initial_error_codes": ["opening_hours.schedule_outside_verified_window"], "full_outcome": "repaired", "final_can_finalize": true, "repair_actions": ["replan_day"], "stop_reason": "finalizable"},
+      "boundary_notes": ["修复不能改写候选来源或路线快照。"]
+    },
+    {
+      "case_id": "comparison-standard-chengdu-outside-opening-v1",
+      "title": "成都亲子活动超出营业窗口",
+      "tier": "standard",
+      "source_plan_case_id": "plan-agent-chengdu-family-v1",
+      "scenario": "outside_opening_window",
+      "dimensions": {"city": "成都市", "trip_days": 3, "traveler_profile": "family_with_child", "risk_dimensions": ["opening_hours", "repair_scope"]},
+      "expected": {"initial_error_codes": ["opening_hours.schedule_outside_verified_window"], "full_outcome": "repaired", "final_can_finalize": true, "repair_actions": ["replan_day"], "stop_reason": "finalizable"},
+      "boundary_notes": ["同日时间修复必须保留亲子请求的全部硬约束。"]
+    },
+    {
+      "case_id": "comparison-standard-beijing-history-missing-opening-v1",
+      "title": "北京历史景点缺营业证据",
+      "tier": "standard",
+      "source_plan_case_id": "plan-agent-beijing-history-v1",
+      "scenario": "missing_opening_evidence",
+      "dimensions": {"city": "北京市", "trip_days": 3, "traveler_profile": "adults", "risk_dimensions": ["opening_hours", "repair_scope"]},
+      "expected": {"initial_error_codes": ["opening_hours.evidence_missing"], "full_outcome": "repaired", "final_can_finalize": true, "repair_actions": ["rerun_explore"], "stop_reason": "finalizable"},
+      "boundary_notes": ["缺事实时回到 Explore 责任边界，不由模型补造营业时间。"]
+    },
+    {
+      "case_id": "comparison-standard-shanghai-missing-opening-v1",
+      "title": "上海候选缺营业证据",
+      "tier": "standard",
+      "source_plan_case_id": "plan-agent-shanghai-view-food-v1",
+      "scenario": "missing_opening_evidence",
+      "dimensions": {"city": "上海市", "trip_days": 2, "traveler_profile": "couple", "risk_dimensions": ["opening_hours", "repair_scope"]},
+      "expected": {"initial_error_codes": ["opening_hours.evidence_missing"], "full_outcome": "repaired", "final_can_finalize": true, "repair_actions": ["rerun_explore"], "stop_reason": "finalizable"},
+      "boundary_notes": ["刷新证据后的候选、路线和 Plan 变化必须写入 trace。"]
+    },
+    {
+      "case_id": "comparison-standard-chengdu-missing-opening-v1",
+      "title": "成都候选缺营业证据",
+      "tier": "standard",
+      "source_plan_case_id": "plan-agent-chengdu-family-v1",
+      "scenario": "missing_opening_evidence",
+      "dimensions": {"city": "成都市", "trip_days": 3, "traveler_profile": "family_with_child", "risk_dimensions": ["opening_hours", "repair_scope"]},
+      "expected": {"initial_error_codes": ["opening_hours.evidence_missing"], "full_outcome": "repaired", "final_can_finalize": true, "repair_actions": ["rerun_explore"], "stop_reason": "finalizable"},
+      "boundary_notes": ["缺失证据不是景点全天开放的证明。"]
+    },
+    {
+      "case_id": "comparison-standard-beijing-route-lineage-v1",
+      "title": "北京路线来源漂移",
+      "tier": "standard",
+      "source_plan_case_id": "plan-agent-beijing-history-v1",
+      "scenario": "route_source_mismatch",
+      "dimensions": {"city": "北京市", "trip_days": 3, "traveler_profile": "adults", "risk_dimensions": ["route", "grounding", "repair_scope"]},
+      "expected": {"initial_error_codes": ["route.lineage_mismatch"], "full_outcome": "repaired", "final_can_finalize": true, "repair_actions": ["rerun_route"], "stop_reason": "finalizable"},
+      "boundary_notes": ["路线内容看似可用也必须匹配当前矩阵来源。"]
+    },
+    {
+      "case_id": "comparison-standard-shanghai-route-lineage-v1",
+      "title": "上海路线来源漂移",
+      "tier": "standard",
+      "source_plan_case_id": "plan-agent-shanghai-view-food-v1",
+      "scenario": "route_source_mismatch",
+      "dimensions": {"city": "上海市", "trip_days": 2, "traveler_profile": "couple", "risk_dimensions": ["route", "grounding", "repair_scope"]},
+      "expected": {"initial_error_codes": ["route.lineage_mismatch"], "full_outcome": "repaired", "final_can_finalize": true, "repair_actions": ["rerun_route"], "stop_reason": "finalizable"},
+      "boundary_notes": ["修复后应重新绑定当前 Provider route edge。"]
+    },
+    {
+      "case_id": "comparison-standard-beijing-poi-cross-city-v1",
+      "title": "北京候选错误跨城",
+      "tier": "standard",
+      "source_plan_case_id": "plan-agent-beijing-food-v1",
+      "scenario": "poi_cross_city",
+      "dimensions": {"city": "北京市", "trip_days": 2, "traveler_profile": "couple", "risk_dimensions": ["grounding", "repair_scope"]},
+      "expected": {"initial_error_codes": ["city.poi_candidate_mismatch"], "full_outcome": "repaired", "final_can_finalize": true, "repair_actions": ["rerun_explore"], "stop_reason": "finalizable"},
+      "boundary_notes": ["跨城 POI 属于 Explore 责任，Plan 不能静默改名。"]
+    },
+    {
+      "case_id": "comparison-standard-chengdu-poi-cross-city-v1",
+      "title": "成都候选错误跨城",
+      "tier": "standard",
+      "source_plan_case_id": "plan-agent-chengdu-family-v1",
+      "scenario": "poi_cross_city",
+      "dimensions": {"city": "成都市", "trip_days": 3, "traveler_profile": "family_with_child", "risk_dimensions": ["grounding", "hard_constraint", "repair_scope"]},
+      "expected": {"initial_error_codes": ["city.poi_candidate_mismatch"], "full_outcome": "repaired", "final_can_finalize": true, "repair_actions": ["rerun_explore"], "stop_reason": "finalizable"},
+      "boundary_notes": ["Explore 修复后必须继续满足熊猫基地必去约束。"]
+    },
+    {
+      "case_id": "comparison-standard-shanghai-stay-cross-city-v1",
+      "title": "上海住宿锚点错误跨城",
+      "tier": "standard",
+      "source_plan_case_id": "plan-agent-shanghai-view-food-v1",
+      "scenario": "stay_cross_city",
+      "dimensions": {"city": "上海市", "trip_days": 2, "traveler_profile": "couple", "risk_dimensions": ["grounding", "route", "repair_scope"]},
+      "expected": {"initial_error_codes": ["city.stay_candidate_mismatch"], "full_outcome": "repaired", "final_can_finalize": true, "repair_actions": ["rerun_stay"], "stop_reason": "finalizable"},
+      "boundary_notes": ["住宿错误不应丢弃有效景点和天气结果。"]
+    },
+    {
+      "case_id": "comparison-standard-chengdu-stay-cross-city-v1",
+      "title": "成都住宿锚点错误跨城",
+      "tier": "standard",
+      "source_plan_case_id": "plan-agent-chengdu-family-v1",
+      "scenario": "stay_cross_city",
+      "dimensions": {"city": "成都市", "trip_days": 3, "traveler_profile": "family_with_child", "risk_dimensions": ["grounding", "route", "repair_scope"]},
+      "expected": {"initial_error_codes": ["city.stay_candidate_mismatch"], "full_outcome": "repaired", "final_can_finalize": true, "repair_actions": ["rerun_stay"], "stop_reason": "finalizable"},
+      "boundary_notes": ["Stay 修复允许重建路线与 Plan，但复用 Explore 和 Weather。"]
+    },
+    {
+      "case_id": "comparison-standard-beijing-tight-transfer-v1",
+      "title": "北京日内转场时间不足",
+      "tier": "standard",
+      "source_plan_case_id": "plan-agent-beijing-history-v1",
+      "scenario": "tight_transfer",
+      "dimensions": {"city": "北京市", "trip_days": 3, "traveler_profile": "adults", "risk_dimensions": ["route", "opening_hours", "repair_scope"]},
+      "expected": {"initial_error_codes": ["route.insufficient_transfer_window"], "full_outcome": "repaired", "final_can_finalize": true, "repair_actions": ["replan_day"], "stop_reason": "finalizable"},
+      "boundary_notes": ["已有路线耗时足够时只修排程，不重新搜索路线。"]
+    },
+    {
+      "case_id": "comparison-hard-beijing-candidate-lineage-v1",
+      "title": "北京候选来源血缘损坏",
+      "tier": "hard",
+      "source_plan_case_id": "plan-agent-beijing-history-v1",
+      "scenario": "candidate_source_mismatch",
+      "dimensions": {"city": "北京市", "trip_days": 3, "traveler_profile": "adults", "risk_dimensions": ["grounding", "hard_constraint"]},
+      "expected": {"initial_error_codes": ["source.candidate_lineage_mismatch"], "full_outcome": "unresolved", "final_can_finalize": false, "repair_actions": [], "stop_reason": "unrepairable_issue"},
+      "boundary_notes": ["程序血缘错误不能交给 Agent 自动掩盖。"]
+    },
+    {
+      "case_id": "comparison-hard-shanghai-candidate-lineage-v1",
+      "title": "上海候选来源血缘损坏",
+      "tier": "hard",
+      "source_plan_case_id": "plan-agent-shanghai-view-food-v1",
+      "scenario": "candidate_source_mismatch",
+      "dimensions": {"city": "上海市", "trip_days": 2, "traveler_profile": "couple", "risk_dimensions": ["grounding", "hard_constraint"]},
+      "expected": {"initial_error_codes": ["source.candidate_lineage_mismatch"], "full_outcome": "unresolved", "final_can_finalize": false, "repair_actions": [], "stop_reason": "unrepairable_issue"},
+      "boundary_notes": ["相同不变量错误在不同城市必须得到同一稳定停止结果。"]
+    },
+    {
+      "case_id": "comparison-hard-beijing-budget-incomplete-v1",
+      "title": "北京硬预算缺少价格事实",
+      "tier": "hard",
+      "source_plan_case_id": "plan-agent-beijing-food-v1",
+      "scenario": "hard_budget_incomplete",
+      "dimensions": {"city": "北京市", "trip_days": 2, "traveler_profile": "couple", "risk_dimensions": ["budget", "repair_scope"]},
+      "expected": {"initial_error_codes": ["budget.incomplete_category_coverage"], "full_outcome": "unresolved", "final_can_finalize": false, "repair_actions": ["recalculate_budget", "recalculate_budget"], "stop_reason": "retry_limit_reached"},
+      "boundary_notes": ["预算目标 allocation 不能替代真实 CostItem。"]
+    },
+    {
+      "case_id": "comparison-hard-chengdu-budget-incomplete-v1",
+      "title": "成都亲子硬预算缺少价格事实",
+      "tier": "hard",
+      "source_plan_case_id": "plan-agent-chengdu-family-v1",
+      "scenario": "hard_budget_incomplete",
+      "dimensions": {"city": "成都市", "trip_days": 3, "traveler_profile": "family_with_child", "risk_dimensions": ["budget", "hard_constraint", "repair_scope"]},
+      "expected": {"initial_error_codes": ["budget.incomplete_category_coverage"], "full_outcome": "unresolved", "final_can_finalize": false, "repair_actions": ["recalculate_budget", "recalculate_budget"], "stop_reason": "retry_limit_reached"},
+      "boundary_notes": ["两次失败后停止，不能为了满足预算删除亲子必去项。"]
+    },
+    {
+      "case_id": "comparison-hard-beijing-budget-floor-hitl-v1",
+      "title": "费用下界超过硬预算进入 HITL",
+      "tier": "hard",
+      "source_plan_case_id": "plan-agent-beijing-history-v1",
+      "scenario": "budget_floor_exceeded",
+      "dimensions": {"city": "北京市", "trip_days": 3, "traveler_profile": "adults", "risk_dimensions": ["budget", "hitl"]},
+      "expected": {"initial_error_codes": ["budget.deterministic_floor_exceeds_limit"], "full_outcome": "waiting_for_user", "final_can_finalize": false, "repair_actions": [], "stop_reason": "user_confirmation_required"},
+      "boundary_notes": ["系统不得擅自提高预算或删除硬约束。"]
+    },
+    {
+      "case_id": "comparison-hard-shanghai-scheduled-avoid-v1",
+      "title": "上海行程安排了明确避开地点",
+      "tier": "hard",
+      "source_plan_case_id": "plan-agent-shanghai-view-food-v1",
+      "scenario": "scheduled_avoid",
+      "dimensions": {"city": "上海市", "trip_days": 2, "traveler_profile": "couple", "risk_dimensions": ["hard_constraint", "repair_scope"]},
+      "expected": {"initial_error_codes": ["constraint.hard_avoid_scheduled"], "full_outcome": "unresolved", "final_can_finalize": false, "repair_actions": ["rerun_explore", "rerun_explore"], "stop_reason": "retry_limit_reached"},
+      "boundary_notes": ["固定候选无法替换时必须有界停止而不是静默忽略 avoid。"]
+    },
+    {
+      "case_id": "comparison-hard-chengdu-missing-must-v1",
+      "title": "成都缺少已确认必去地点",
+      "tier": "hard",
+      "source_plan_case_id": "plan-agent-chengdu-family-v1",
+      "scenario": "missing_must_visit",
+      "dimensions": {"city": "成都市", "trip_days": 3, "traveler_profile": "family_with_child", "risk_dimensions": ["hard_constraint", "repair_scope"]},
+      "expected": {"initial_error_codes": ["constraint.hard_must_visit_missing"], "full_outcome": "unresolved", "final_can_finalize": false, "repair_actions": ["rerun_explore", "rerun_explore"], "stop_reason": "retry_limit_reached"},
+      "boundary_notes": ["Provider 没有必去候选时不能把缺失项写进自然语言说明后假装满足。"]
+    },
+    {
+      "case_id": "comparison-hard-beijing-route-timeout-v1",
+      "title": "北京路线 Provider 超时阻断 Plan",
+      "tier": "hard",
+      "source_plan_case_id": "plan-agent-route-timeout-skip-v1",
+      "scenario": "route_provider_timeout",
+      "dimensions": {"city": "北京市", "trip_days": 3, "traveler_profile": "adults", "risk_dimensions": ["provider_failure", "route", "capability_boundary"]},
+      "expected": {"initial_error_codes": [], "full_outcome": "blocked_before_plan", "final_can_finalize": null, "repair_actions": []},
+      "boundary_notes": ["材料 partial 时不得让任一 arm 猜测缺失路线。"]
+    },
+    {
+      "case_id": "comparison-hard-nanjing-unsupported-v1",
+      "title": "未配置南京在模型调用前阻断",
+      "tier": "hard",
+      "source_plan_case_id": "plan-agent-unsupported-city-skip-v1",
+      "scenario": "unsupported_city",
+      "dimensions": {"city": "南京市", "trip_days": 2, "traveler_profile": "unsupported_boundary", "risk_dimensions": ["capability_boundary"]},
+      "expected": {"initial_error_codes": [], "full_outcome": "blocked_before_plan", "final_can_finalize": null, "repair_actions": []},
+      "boundary_notes": ["能力边界必须在三个 arm 中一致，不能只给完整方案额外 fixture。"]
+    },
+    {
+      "case_id": "comparison-hard-beijing-opening-no-fit-v1",
+      "title": "北京营业窗口无法容纳活动",
+      "tier": "hard",
+      "source_plan_case_id": "plan-agent-beijing-food-v1",
+      "scenario": "opening_window_no_fit",
+      "dimensions": {"city": "北京市", "trip_days": 2, "traveler_profile": "couple", "risk_dimensions": ["opening_hours", "repair_scope"]},
+      "expected": {"initial_error_codes": ["opening_hours.schedule_outside_verified_window"], "full_outcome": "unresolved", "final_can_finalize": false, "repair_actions": ["replan_day", "replan_day"], "stop_reason": "retry_limit_reached"},
+      "boundary_notes": ["同日没有可行窗口时不能跨日或缩短活动来规避用户确认。"]
+    }
+  ]
+}
