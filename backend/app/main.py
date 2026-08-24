@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
 from app.core.config import Settings, get_settings
+from app.destinations import DestinationResolutionService
 from app.tasks.executor import ProductGraphPlanningTaskExecutor
 from app.tasks.service import PlanningTaskService
 
@@ -26,8 +27,13 @@ def create_app(
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    destination_resolution_service = DestinationResolutionService(resolved_settings)
+    application.state.destination_resolution_service = destination_resolution_service
     application.state.planning_task_service = planning_task_service or PlanningTaskService(
-        ProductGraphPlanningTaskExecutor(resolved_settings),
+        ProductGraphPlanningTaskExecutor(
+            resolved_settings,
+            destination_resolution_service=destination_resolution_service,
+        ),
         heartbeat_seconds=resolved_settings.planning_sse_heartbeat_seconds,
         timeout_seconds=resolved_settings.planning_task_timeout_seconds,
     )

@@ -1,7 +1,9 @@
 import asyncio
 import json
+from datetime import timedelta
 from pathlib import Path
 
+import pytest
 from httpx import ASGITransport, AsyncClient
 from jsonschema import Draft202012Validator  # type: ignore[import-untyped]
 
@@ -56,6 +58,68 @@ def parse_sse_events(body: str) -> list[dict[str, object]]:
         for line in body.splitlines()
         if line.startswith("data: ")
     ]
+
+
+@pytest.mark.parametrize(
+    ("destination", "days", "expected_pois"),
+    [
+        ("上海", 3, {"上海博物馆", "豫园"}),
+        ("成都", 5, {"金沙遗址博物馆", "成都大熊猫繁育研究基地"}),
+    ],
+)
+def test_fixture_product_flow_uses_dynamic_destination_and_trip_days(
+    tmp_path: Path,
+    destination: str,
+    days: int,
+    expected_pois: set[str],
+) -> None:
+    async def exercise() -> None:
+        settings = Settings(
+            _env_file=None,
+            environment="test",
+            planning_checkpoint_dir=tmp_path,
+            planning_sse_heartbeat_seconds=0.01,
+            planning_task_timeout_seconds=10,
+        )
+        service = PlanningTaskService(
+            StatefulGraphPlanningTaskExecutor(settings),
+            heartbeat_seconds=0.01,
+            timeout_seconds=10,
+        )
+        fixture = build_fixture_payload()
+        request_payload = fixture.request.model_dump(mode="python")
+        request_payload.update(
+            destination_city=destination,
+            destination_adcode=None,
+            raw_text=f"规划一次{destination}{days}日游。",
+            end_date=fixture.request.start_date + timedelta(days=days - 1),
+            constraints=ConstraintSet(),
+        )
+        request = TripRequest.model_validate(request_payload)
+        accepted = await service.submit(
+            fixture.model_copy(
+                update={
+                    "request": request,
+                    "selected_destination_adcode": None,
+                }
+            )
+        )
+        _ = [event async for event in service.stream_events(accepted.task_id)]
+        snapshot = await service.get(accepted.task_id)
+        assert snapshot.status.value == "awaiting_input"
+        assert snapshot.result is not None
+        state = snapshot.result.state
+        assert state.plan is not None
+        assert state.plan.destination_city in {"上海市", "成都市"}
+        assert len(state.plan.days) == days
+        assert {
+            item.title
+            for day in state.plan.days
+            for item in day.items
+            if item.candidate_id is not None
+        } == expected_pois
+
+    asyncio.run(exercise())
 
 
 async def request_until_awaiting_input(tmp_path: Path) -> None:
@@ -522,6 +586,7 @@ def test_planning_task_schema_bundle_and_openapi_do_not_drift() -> None:
 
     openapi = create_app().openapi()
     assert set(openapi["paths"]) >= {
+        "/api/destinations/resolve",
         "/api/planning-tasks",
         "/api/planning-tasks/{task_id}",
         "/api/planning-tasks/{task_id}/events",

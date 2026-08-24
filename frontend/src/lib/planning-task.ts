@@ -443,12 +443,43 @@ export interface PlanRevisionSelection {
   shiftMinutes: number;
 }
 
+export type PlanningDataMode = "fixture" | "live";
+
+export interface CityResolutionCandidate {
+  candidate_id: string;
+  qualified_name: string;
+  planning_city_name: string;
+  administrative_code: string;
+  level: "province" | "city" | "district";
+  province_name: string | null;
+  city_name: string | null;
+  district_name: string | null;
+  center: string | null;
+  source: {
+    provider: string;
+    data_mode: PlanningDataMode;
+    retrieved_at: string;
+  };
+}
+
+export interface DestinationResolution {
+  schema_version: "1.0";
+  resolver_version: "city-resolver-v1";
+  input_name: string;
+  data_mode: PlanningDataMode;
+  status: "resolved" | "ambiguous" | "no_result" | "unsupported";
+  candidates: CityResolutionCandidate[];
+}
+
 export interface PlannerFormValues {
   rawText: string;
   originCity: string;
+  destinationCity: string;
   startDate: string;
+  tripDays: number;
   adults: number;
   budgetLimit: string;
+  dataMode: PlanningDataMode;
 }
 
 const fallbackApiBaseUrl = "http://localhost:8000";
@@ -463,7 +494,10 @@ function addCalendarDays(date: string, days: number): string {
   return result.toISOString().slice(0, 10);
 }
 
-export function buildPlanningTaskRequest(values: PlannerFormValues) {
+export function buildPlanningTaskRequest(
+  values: PlannerFormValues,
+  selectedDestinationAdcode: string,
+) {
   const requestId = `web-request-${crypto.randomUUID().replaceAll("-", "")}`;
   const budget = {
     total_limit: values.budgetLimit.trim(),
@@ -482,9 +516,9 @@ export function buildPlanningTaskRequest(values: PlannerFormValues) {
       locale: "zh-CN",
       raw_text: values.rawText.trim(),
       origin_city: values.originCity.trim() || null,
-      destination_city: "北京市",
+      destination_city: values.destinationCity.trim(),
       start_date: values.startDate,
-      end_date: addCalendarDays(values.startDate, 1),
+      end_date: addCalendarDays(values.startDate, values.tripDays - 1),
       party: {
         adults: values.adults,
         children: 0,
@@ -494,32 +528,12 @@ export function buildPlanningTaskRequest(values: PlannerFormValues) {
       budget,
       travel_styles: ["历史文化", "轻步行"],
       constraints: {
-        items: [
-          {
-            constraint_id: "web-must-visit-palace-museum",
-            kind: "must_visit",
-            value: "故宫博物院",
-            strength: "hard",
-            priority: 5,
-            source: "user_confirmed",
-            applies_to_dates: [],
-            confirmed: true,
-          },
-          {
-            constraint_id: "web-must-visit-temple-of-heaven",
-            kind: "must_visit",
-            value: "天坛公园",
-            strength: "hard",
-            priority: 5,
-            source: "user_confirmed",
-            applies_to_dates: [],
-            confirmed: true,
-          },
-        ],
+        items: [],
       },
     },
+    selected_destination_adcode: selectedDestinationAdcode,
     cost_items: [],
-    data_mode: "fixture" as const,
+    data_mode: values.dataMode,
   };
 }
 
@@ -530,9 +544,19 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
 
   let detail = `请求失败（HTTP ${response.status}）`;
   try {
-    const body = (await response.json()) as { detail?: string | unknown[] };
+    const body = (await response.json()) as {
+      detail?: string | unknown[] | { message?: string };
+    };
     if (typeof body.detail === "string") {
       detail = body.detail;
+    } else if (
+      body.detail &&
+      !Array.isArray(body.detail) &&
+      typeof body.detail === "object" &&
+      "message" in body.detail &&
+      typeof body.detail.message === "string"
+    ) {
+      detail = body.detail.message;
     } else if (body.detail) {
       detail = JSON.stringify(body.detail);
     }
@@ -544,13 +568,29 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
 
 export async function createPlanningTask(
   values: PlannerFormValues,
+  selectedDestinationAdcode: string,
 ): Promise<PlanningTaskAccepted> {
   const response = await fetch(`${apiBaseUrl}/api/planning-tasks`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(buildPlanningTaskRequest(values)),
+    body: JSON.stringify(buildPlanningTaskRequest(values, selectedDestinationAdcode)),
   });
   return parseJsonResponse<PlanningTaskAccepted>(response);
+}
+
+export async function resolveDestination(
+  values: Pick<PlannerFormValues, "destinationCity" | "dataMode">,
+): Promise<DestinationResolution> {
+  const response = await fetch(`${apiBaseUrl}/api/destinations/resolve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      schema_version: "1.0",
+      input_name: values.destinationCity.trim(),
+      data_mode: values.dataMode,
+    }),
+  });
+  return parseJsonResponse<DestinationResolution>(response);
 }
 
 export async function getPlanningTask(

@@ -2,6 +2,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from app.api.routes.destinations import DestinationResolveRequest
+from app.domain.destination import DestinationResolution
 from app.planning.revision_contracts import (
     PlanRevisionDiff,
     PlanRevisionRequest,
@@ -22,6 +24,8 @@ from app.tasks.contracts import (
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 OUTPUT_PATH = REPOSITORY_ROOT / "evals" / "schemas" / "planning-task-api.v1.json"
 SCHEMA_MODELS = (
+    DestinationResolveRequest,
+    DestinationResolution,
     PlanningTaskCreateRequest,
     PlanningTaskAccepted,
     PlanningTaskEvent,

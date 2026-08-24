@@ -75,7 +75,7 @@ def _source(provider: str, provider_id: str) -> SourceReference:
     )
 
 
-def _poi_catalog() -> tuple[CandidatePOI, ...]:
+def _beijing_pois() -> tuple[CandidatePOI, ...]:
     return (
         CandidatePOI(
             candidate_id="product-fixture-palace-museum",
@@ -106,18 +106,120 @@ def _poi_catalog() -> tuple[CandidatePOI, ...]:
     )
 
 
-def _stay_catalog() -> tuple[CandidateStay, ...]:
+def _shanghai_pois() -> tuple[CandidatePOI, ...]:
+    return (
+        CandidatePOI(
+            candidate_id="product-fixture-shanghai-museum",
+            name="上海博物馆",
+            city="上海市",
+            district="黄浦区",
+            address="人民大道201号",
+            location=GeoPoint(latitude=31.2303, longitude=121.4700),
+            categories=("博物馆", "历史文化"),
+            environment=ActivityEnvironment.MIXED,
+            suggested_duration_minutes=150,
+            tags=("历史文化", "雨天可优先室内展馆"),
+            source=_source("eztrip-product-fixture", "SH-MUSEUM"),
+        ),
+        CandidatePOI(
+            candidate_id="product-fixture-yuyuan",
+            name="豫园",
+            city="上海市",
+            district="黄浦区",
+            address="福佑路168号",
+            location=GeoPoint(latitude=31.2272, longitude=121.4921),
+            categories=("园林", "历史街区"),
+            environment=ActivityEnvironment.OUTDOOR,
+            suggested_duration_minutes=150,
+            tags=("历史文化", "户外步行"),
+            source=_source("eztrip-product-fixture", "SH-YUYUAN"),
+        ),
+    )
+
+
+def _chengdu_pois() -> tuple[CandidatePOI, ...]:
+    return (
+        CandidatePOI(
+            candidate_id="product-fixture-jinsha-museum",
+            name="金沙遗址博物馆",
+            city="成都市",
+            district="青羊区",
+            address="金沙遗址路2号",
+            location=GeoPoint(latitude=30.6803, longitude=104.0196),
+            categories=("博物馆", "考古遗址"),
+            environment=ActivityEnvironment.MIXED,
+            suggested_duration_minutes=180,
+            tags=("历史文化", "雨天可优先室内展馆"),
+            source=_source("eztrip-product-fixture", "CD-JINSHA-MUSEUM"),
+        ),
+        CandidatePOI(
+            candidate_id="product-fixture-panda-base",
+            name="成都大熊猫繁育研究基地",
+            city="成都市",
+            district="成华区",
+            address="熊猫大道1375号",
+            location=GeoPoint(latitude=30.7381, longitude=104.1471),
+            categories=("动物园", "亲子"),
+            environment=ActivityEnvironment.OUTDOOR,
+            suggested_duration_minutes=180,
+            tags=("亲子", "户外步行"),
+            source=_source("eztrip-product-fixture", "CD-PANDA-BASE"),
+        ),
+    )
+
+
+POI_CATALOGS = {
+    "北京市": _beijing_pois(),
+    "上海市": _shanghai_pois(),
+    "成都市": _chengdu_pois(),
+}
+
+
+def _stay_catalog(city: str) -> tuple[CandidateStay, ...]:
+    fixture = {
+        "北京市": (
+            "product-fixture-qianmen-stay",
+            "前门示例住宿",
+            "东城区",
+            "前门示例路1号",
+            39.8992,
+            116.3976,
+            "前门片区",
+            "BJ-QIANMEN-STAY",
+        ),
+        "上海市": (
+            "product-fixture-people-square-stay",
+            "人民广场示例住宿",
+            "黄浦区",
+            "人民广场示例路1号",
+            31.2320,
+            121.4752,
+            "人民广场片区",
+            "SH-PEOPLE-SQUARE-STAY",
+        ),
+        "成都市": (
+            "product-fixture-tianfu-square-stay",
+            "天府广场示例住宿",
+            "青羊区",
+            "天府广场示例路1号",
+            30.6570,
+            104.0658,
+            "天府广场片区",
+            "CD-TIANFU-SQUARE-STAY",
+        ),
+    }[city]
+    candidate_id, name, district, address, latitude, longitude, area_name, provider_id = fixture
     return (
         CandidateStay(
-            candidate_id="product-fixture-qianmen-stay",
-            name="前门示例住宿",
-            city="北京市",
-            district="东城区",
-            address="前门示例路1号",
-            location=GeoPoint(latitude=39.8992, longitude=116.3976),
-            area_name="前门片区",
+            candidate_id=candidate_id,
+            name=name,
+            city=city,
+            district=district,
+            address=address,
+            location=GeoPoint(latitude=latitude, longitude=longitude),
+            area_name=area_name,
             tags=("中心城区", "仅为位置锚点"),
-            source=_source("eztrip-product-fixture", "BJ-QIANMEN-STAY"),
+            source=_source("eztrip-product-fixture", provider_id),
         ),
     )
 
@@ -129,10 +231,10 @@ class ProductFixtureProvider:
         self._request = request
 
     async def search_pois(self, request: POISearchRequest) -> tuple[CandidatePOI, ...]:
-        return _poi_catalog()[: request.limit]
+        return POI_CATALOGS[self._request.destination_city][: request.limit]
 
     async def search_stays(self, request: StaySearchRequest) -> tuple[CandidateStay, ...]:
-        return _stay_catalog()[: request.limit]
+        return _stay_catalog(self._request.destination_city)[: request.limit]
 
     async def get_weather_risks(
         self,
@@ -233,12 +335,17 @@ class ProductFixtureExploreModel:
 
 class ProductFixtureStayModel:
     def propose_queries(self, context: PlannerContext) -> StayQueryModelResponse:
+        target_area = {
+            "北京市": "前门片区",
+            "上海市": "人民广场片区",
+            "成都市": "天府广场片区",
+        }[context.destination.normalized_name]
         return StayQueryModelResponse(
             proposal=StayQueryProposalBatch(
                 items=(
                     StayQueryProposal(
-                        target_area="前门片区",
-                        keywords=f"{context.destination.normalized_name}前门住宿",
+                        target_area=target_area,
+                        keywords=f"{context.destination.normalized_name}{target_area.removesuffix('片区')}住宿",
                         reason="选择中心城区住宿位置作为路线锚点。",
                     ),
                 )
@@ -375,7 +482,16 @@ class FixtureProductPlanningPipeline:
                 service_date=day.date,
                 opens_at=datetime.combine(
                     day.date,
-                    time(10) if item.title == "天坛公园" else time(8),
+                    (
+                        time(10)
+                        if item.candidate_id
+                        in {
+                            "product-fixture-temple-of-heaven",
+                            "product-fixture-yuyuan",
+                            "product-fixture-panda-base",
+                        }
+                        else time(8)
+                    ),
                     tzinfo=CHINA_TIMEZONE,
                 ),
                 closes_at=datetime.combine(day.date, time(18), tzinfo=CHINA_TIMEZONE),

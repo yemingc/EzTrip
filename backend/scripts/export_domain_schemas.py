@@ -16,9 +16,11 @@ from app.domain import (
     BudgetValidationSummary,
     CandidatePOI,
     CandidateStay,
+    CityResolutionCandidate,
     ConstraintSet,
     CostItem,
     DayPlan,
+    DestinationResolution,
     MinimalPlanningResult,
     OpeningHoursEvidence,
     OpeningHoursEvidenceBundle,
@@ -44,6 +46,8 @@ DEFAULT_OUTPUT_PATH = REPOSITORY_ROOT / "docs" / "contracts" / "domain-contracts
 
 SCHEMA_MODELS: tuple[type[DomainModel], ...] = (
     TripRequest,
+    CityResolutionCandidate,
+    DestinationResolution,
     PlannerContext,
     MinimalPlanningResult,
     OpeningHoursEvidence,

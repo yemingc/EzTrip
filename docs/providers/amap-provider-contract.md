@@ -6,20 +6,26 @@ EzTrip does not expose AMap MCP payloads to Agent state. The provider boundary a
 
 | Provider operation | Domain output | Deterministic normalization |
 |---|---|---|
+| REST destination resolution | `DestinationResolution` | qualified name, planning city, administrative level, adcode, ambiguity, source hash |
 | POI text search + detail | `tuple[CandidatePOI, ...]` | provider ID, coordinates, categories, indoor/outdoor classification, source hash |
 | MCP weather + REST freshness | `tuple[WeatherRisk, ...]` | rain/snow/heat/cold/wind thresholds, severity, local date range, report time |
 | walking/transit route | `RouteLeg` | endpoint validation, meters, seconds-to-minutes conversion, source hash |
 
-Both live and fixture transports implement the same internal `AmapToolClient` contract. `AmapTravelDataProvider` owns normalization and returns `DataMode.LIVE` or `DataMode.FIXTURE` sources without changing the DTO shape.
+POI, weather, and route live/fixture transports implement the same internal `AmapToolClient`
+contract. `AmapTravelDataProvider` owns their normalization and returns `DataMode.LIVE` or
+`DataMode.FIXTURE` sources without changing the DTO shape. Destination identity has a separate
+`CityResolverProvider`: live mode uses AMap REST geocoding and fixture mode supplies deterministic
+resolution, ambiguity, and unsupported outcomes.
 
 ## Reliability boundary
 
-- A request-scoped live client performs an AMap REST weather preflight before opening the official MCP session. This makes an invalid Key fail before the known non-JSON-RPC MCP error path can wait indefinitely.
+- The product path resolves and validates the destination through AMap REST before opening the official MCP session. Weather freshness is then fetched lazily for the selected adcode instead of probing a hard-coded city during client startup.
 - MCP initialization and every tool call have explicit timeouts.
 - Only `timeout` and `rate_limited` failures are retried. The default is at most two attempts with bounded exponential backoff.
 - Authentication, missing fields, empty results and unrecoverable protocol failures are not silently retried.
 - POI detail IDs and route endpoints must match the request before data can enter the domain layer.
 - MCP and REST weather responses must refer to the requested adcode and cover the same forecast dates.
+- A browser-selected adcode must still exist in the server-side resolver result; the model and client cannot invent or substitute administrative codes.
 - Weather risks are produced by ordinary code thresholds, not inferred by the LLM.
 
 ## Live and fixture modes
@@ -63,7 +69,7 @@ These are point-in-time contract observations, not current travel advice or perf
 
 ## Current limits
 
-- No Agent, Graph workflow or public travel API consumes this provider yet.
-- The committed fixture records one top detail for each of two Beijing POI queries; broader candidate generation needs additional versioned fixture coverage.
+- Product Graph V2 consumes the typed provider in explicit live mode, but live quality remains dependent on AMap coverage and DeepSeek output; CI never exercises that network path.
+- The low-level committed AMap replay fixture records one top detail for each of two Beijing POI queries. The separate product fixture adds deterministic Shanghai and Chengdu scenarios, but neither fixture proves nationwide live quality.
 - V1 exposes walking and transit routes through the domain port. Driving and cycling are intentionally rejected until their response contracts are captured and tested.
 - Hotel candidates, price estimates and inventory are outside this adapter increment. AMap POI data still must not be presented as real-time hotel price or availability.

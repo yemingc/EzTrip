@@ -19,7 +19,7 @@ from app.domain.request import ConstraintStrength, TripRequest
 
 CENT = Decimal("0.01")
 
-CITY_DIRECTORY: dict[str, tuple[str, str]] = {
+FIXTURE_CITY_DIRECTORY: dict[str, tuple[str, str]] = {
     "北京": ("北京市", "110000"),
     "北京市": ("北京市", "110000"),
     "上海": ("上海市", "310000"),
@@ -43,9 +43,19 @@ def _money_reference(total: Decimal, divisor: int) -> Decimal:
     return (total / Decimal(divisor)).quantize(CENT, rounding=ROUND_HALF_UP)
 
 
-def _destination_context(destination_city: str) -> DestinationContext:
+def _destination_context(
+    destination_city: str,
+    destination_adcode: str | None = None,
+) -> DestinationContext:
     input_name = destination_city.strip()
-    resolved = CITY_DIRECTORY.get(input_name)
+    if destination_adcode is not None:
+        return DestinationContext(
+            input_name=input_name,
+            normalized_name=input_name,
+            administrative_code=destination_adcode,
+            primary_provider_supported=True,
+        )
+    resolved = FIXTURE_CITY_DIRECTORY.get(input_name)
     if resolved is None:
         return DestinationContext(
             input_name=input_name,
@@ -95,7 +105,10 @@ def compile_planner_context(request: TripRequest) -> PlannerContext:
     """Compile validated user input into one deterministic planning interpretation."""
 
     request_sha256 = _request_sha256(request)
-    destination = _destination_context(request.destination_city)
+    destination = _destination_context(
+        request.destination_city,
+        request.destination_adcode,
+    )
     budget = _budget_context(request)
 
     confirmed_hard = tuple(
@@ -127,8 +140,8 @@ def compile_planner_context(request: TripRequest) -> PlannerContext:
                 clarification_id="clarify-destination-support",
                 kind=ClarificationKind.UNSUPPORTED_DESTINATION,
                 field_path="destination_city",
-                prompt="当前 V1 尚未配置该城市, 请改选北京、上海或成都。",
-                reason="主地图 provider 没有该城市的已配置行政区代码。",
+                prompt="目标城市尚未完成服务端解析, 请先确认城市候选。",
+                reason="主地图 provider 需要已确认的行政区代码才能查询旅行数据。",
                 affected_capabilities=destination_affected,
                 blocking=True,
             )

@@ -139,7 +139,6 @@ class AmapLiveToolClient:
                 httpx.AsyncClient(timeout=self._settings.amap_mcp_timeout_seconds)
             )
             self._http_client = client
-            self._weather_freshness["110000"] = await self._fetch_weather_from_rest("110000")
             url = build_mcp_url(
                 self._settings.amap_mcp_url,
                 secret.get_secret_value(),

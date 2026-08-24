@@ -7,6 +7,7 @@ from app.agents.plan_agent import run_live_plan_agent
 from app.agents.plan_agent_contracts import PlanAgentRunResult
 from app.agents.stay_agent import run_live_stay_agent
 from app.core.config import Settings
+from app.destinations import DestinationResolutionService
 from app.domain.context import PlannerContext
 from app.domain.opening_hours import OpeningHoursEvidenceBundle
 from app.domain.planning import TripPlan
@@ -137,8 +138,16 @@ class ResumeOnlyProductPipeline:
 
 
 class ProductGraphPlanningTaskExecutor:
-    def __init__(self, settings: Settings) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        *,
+        destination_resolution_service: DestinationResolutionService | None = None,
+    ) -> None:
         self._settings = settings
+        self._destination_resolution_service = (
+            destination_resolution_service or DestinationResolutionService(settings)
+        )
 
     async def execute(
         self,
@@ -148,12 +157,23 @@ class ProductGraphPlanningTaskExecutor:
         checkpoint_path = (
             Path(self._settings.planning_checkpoint_dir) / f"{submission.task_id}.sqlite"
         )
+        selected_destination = await self._destination_resolution_service.resolve_and_select(
+            submission.request.destination_city,
+            data_mode=submission.data_mode,
+            selected_adcode=submission.selected_destination_adcode,
+        )
+        request_payload = submission.request.model_dump(mode="python")
+        request_payload.update(
+            destination_city=selected_destination.planning_city_name,
+            destination_adcode=selected_destination.administrative_code,
+        )
+        resolved_request = TripRequest.model_validate(request_payload)
         if submission.data_mode == DataMode.FIXTURE:
-            fixture_pipeline = FixtureProductPlanningPipeline(submission.request)
+            fixture_pipeline = FixtureProductPlanningPipeline(resolved_request)
             async with open_sqlite_product_runtime(checkpoint_path, fixture_pipeline) as runtime:
                 return await runtime.start_with_progress(
                     submission.task_id,
-                    submission.request,
+                    resolved_request,
                     submission.cost_items,
                     data_mode=DataMode.FIXTURE,
                     on_progress=emit_progress,
@@ -168,7 +188,7 @@ class ProductGraphPlanningTaskExecutor:
             async with open_sqlite_product_runtime(checkpoint_path, live_pipeline) as runtime:
                 return await runtime.start_with_progress(
                     submission.task_id,
-                    submission.request,
+                    resolved_request,
                     submission.cost_items,
                     data_mode=DataMode.LIVE,
                     on_progress=emit_progress,

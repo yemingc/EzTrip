@@ -124,6 +124,11 @@ class TripRequest(DomainModel):
     raw_text: NonEmptyText
     origin_city: NonEmptyText | None = None
     destination_city: NonEmptyText
+    destination_adcode: str | None = Field(
+        default=None,
+        pattern=r"^\d{6}$",
+        exclude_if=lambda value: value is None,
+    )
     start_date: date
     end_date: date
     party: Party
