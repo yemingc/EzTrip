@@ -82,7 +82,7 @@ export interface DayPlan {
   date: string;
   items: ItineraryItem[];
   departure_from_stay_at: string | null;
-  meal_recommendations: MealRecommendation[];
+  meal_recommendations?: MealRecommendation[];
   weather_risk_ids: string[];
 }
 
