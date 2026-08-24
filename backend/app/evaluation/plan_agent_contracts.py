@@ -21,9 +21,9 @@ class PlanAgentExpectation(DomainModel):
 
     @model_validator(mode="after")
     def validate_routing(self) -> "PlanAgentExpectation":
-        should_plan = self.material_status == PlanningMaterialStatus.READY
+        should_plan = self.material_status != PlanningMaterialStatus.BLOCKED
         if should_plan != (self.run_status == PlanAgentRunStatus.PLANNED):
-            raise ValueError("only ready materials may expect a planned result")
+            raise ValueError("ready and partial materials must expect a planned result")
         if self.model_call_count != int(should_plan):
             raise ValueError("expected model calls must follow material readiness")
         if should_plan and self.candidate_count == 0:
@@ -45,11 +45,10 @@ class PlanAgentEvalCase(DomainModel):
     def validate_case(self) -> "PlanAgentEvalCase":
         if not self.case_id.startswith("plan-agent-") or not self.case_id.endswith("-v1"):
             raise ValueError("Plan Agent case_id must encode the suite and version")
-        if self.expected.run_status == PlanAgentRunStatus.PLANNED:
-            if self.request.budget is None or self.request.budget.hard_limit:
-                raise ValueError("planned eval cases require a soft budget truth boundary")
-            if self.route_failure != RouteFailureInjection.NONE:
-                raise ValueError("planned eval cases require complete route materials")
+        if self.expected.run_status == PlanAgentRunStatus.PLANNED and (
+            self.request.budget is None or self.request.budget.hard_limit
+        ):
+            raise ValueError("planned eval cases require a soft budget truth boundary")
         if self.route_failure == RouteFailureInjection.ONE_TIMEOUT and (
             self.expected.material_status != PlanningMaterialStatus.PARTIAL
         ):
@@ -70,8 +69,8 @@ class PlanAgentEvalSuite(DomainModel):
             raise ValueError("Plan Agent case ids must be unique")
         planned = sum(item.expected.run_status == PlanAgentRunStatus.PLANNED for item in self.cases)
         skipped = len(self.cases) - planned
-        if (planned, skipped) != (4, 2):
-            raise ValueError("Plan Agent V1 requires four planned and two skipped cases")
+        if (planned, skipped) != (5, 1):
+            raise ValueError("Plan Agent V1 requires five planned and one blocked case")
         if sum(item.route_failure == RouteFailureInjection.ONE_TIMEOUT for item in self.cases) != 1:
             raise ValueError("Plan Agent V1 requires one route timeout case")
         if (
@@ -135,18 +134,18 @@ class PlanAgentBaselineReport(DomainModel):
     case_count: Literal[6] = 6
     passed_case_count: int = Field(ge=0, le=6)
     case_pass_rate: Decimal = Field(ge=0, le=1, decimal_places=4)
-    planned_case_count: int = Field(ge=0, le=4)
-    skipped_case_count: int = Field(ge=0, le=2)
-    model_call_count: int = Field(ge=0, le=4)
+    planned_case_count: int = Field(ge=0, le=5)
+    skipped_case_count: int = Field(ge=0, le=1)
+    model_call_count: int = Field(ge=0, le=5)
     candidate_count: int = Field(ge=0, le=16)
     scheduled_candidate_count: int = Field(ge=0, le=16)
     grounding_rate: Decimal = Field(ge=0, le=1, decimal_places=4)
     source_traceability_rate: Decimal = Field(ge=0, le=1, decimal_places=4)
     route_lineage_rate: Decimal = Field(ge=0, le=1, decimal_places=4)
     weather_preservation_rate: Decimal = Field(ge=0, le=1, decimal_places=4)
-    zero_cost_claim_case_count: int = Field(ge=0, le=4)
-    skipped_zero_model_call_case_count: int = Field(ge=0, le=2)
-    usage_case_count: int = Field(ge=0, le=4)
+    zero_cost_claim_case_count: int = Field(ge=0, le=5)
+    skipped_zero_model_call_case_count: int = Field(ge=0, le=1)
+    usage_case_count: int = Field(ge=0, le=5)
     total_prompt_tokens: int = Field(ge=0)
     total_completion_tokens: int = Field(ge=0)
     total_tokens: int = Field(ge=0)

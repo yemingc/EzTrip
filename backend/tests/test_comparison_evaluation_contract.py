@@ -30,11 +30,11 @@ def test_comparison_suite_freezes_fair_30_case_inventory() -> None:
         outcome: sum(item.expected.full_outcome == outcome for item in suite.cases)
         for outcome in ComparisonOutcome
     } == {
-        ComparisonOutcome.FINALIZABLE_WITHOUT_REPAIR: 4,
+        ComparisonOutcome.FINALIZABLE_WITHOUT_REPAIR: 5,
         ComparisonOutcome.REPAIRED: 16,
         ComparisonOutcome.WAITING_FOR_USER: 1,
         ComparisonOutcome.UNRESOLVED: 7,
-        ComparisonOutcome.BLOCKED_BEFORE_PLAN: 2,
+        ComparisonOutcome.BLOCKED_BEFORE_PLAN: 1,
     }
     assert len(comparison_dataset_sha256(suite)) == 64
 

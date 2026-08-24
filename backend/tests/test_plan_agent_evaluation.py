@@ -33,17 +33,17 @@ def test_fixture_plan_agent_suite_proves_grounding_material_use_and_zero_call_st
     )
 
     assert report.passed_case_count == report.case_count == 6
-    assert report.planned_case_count == 4
-    assert report.skipped_case_count == 2
-    assert report.model_call_count == 4
-    assert report.candidate_count == report.scheduled_candidate_count == 10
+    assert report.planned_case_count == 5
+    assert report.skipped_case_count == 1
+    assert report.model_call_count == 5
+    assert report.candidate_count == report.scheduled_candidate_count == 13
     assert report.grounding_rate == 1
     assert report.source_traceability_rate == 1
     assert report.route_lineage_rate == 1
     assert report.weather_preservation_rate == 1
-    assert report.zero_cost_claim_case_count == 4
-    assert report.skipped_zero_model_call_case_count == 2
-    assert report.total_tokens == 960
+    assert report.zero_cost_claim_case_count == 5
+    assert report.skipped_zero_model_call_case_count == 1
+    assert report.total_tokens == 1200
 
 
 def test_plan_agent_suite_rejects_a_planned_case_with_hard_budget() -> None:

@@ -6,7 +6,7 @@ import pytest
 from app.domain.money import CostItem
 from app.domain.opening_hours import OpeningHoursEvidenceBundle
 from app.domain.planning import TripPlan
-from app.domain.request import ConstraintSet, TripRequest
+from app.domain.request import ConstraintSet, TripPace, TripRequest
 from app.domain.sources import DataMode
 from app.domain.validation import (
     IssueSeverity,
@@ -19,11 +19,17 @@ from app.evaluation import load_vertical_slice_suite
 from app.evaluation.hard_validator import _mutate_materials, _mutate_plan
 from app.evaluation.hard_validator_contracts import HardMaterialMutation, HardPlanMutation
 from app.planning.hard_validator import validate_hard_trip_plan
-from app.planning.material_contracts import PlanningMaterialBundle
+from app.planning.material_contracts import (
+    PlanningMaterialBundle,
+    PlanningMaterialIssueCode,
+    PlanningMaterialStatus,
+)
 from app.planning.product_graph import open_sqlite_product_runtime
 from app.planning.product_repair import ProductRepairExecutor
 from app.planning.repair_contracts import RepairOutcome
 from app.planning.repair_router import run_repair_router
+from app.planning.specialist_contracts import SpecialistFanoutResult
+from app.planning.stateful_contracts import PlanningThreadStatus
 from app.tasks.product_fixture import FixtureProductPlanningPipeline
 
 
@@ -150,6 +156,62 @@ def test_product_graph_skips_repair_when_hard_validation_is_finalizable(tmp_path
         assert snapshot.state.repair is None
         assert "run_repair" not in nodes
         assert nodes[-1] == "prepare_human_review"
+
+    asyncio.run(scenario())
+
+
+def test_product_graph_keeps_partial_materials_on_the_reviewable_draft_path(
+    tmp_path: Path,
+) -> None:
+    class PartialMaterialsFixturePipeline(FixtureProductPlanningPipeline):
+        async def build_materials(
+            self,
+            specialist_result: SpecialistFanoutResult,
+        ) -> PlanningMaterialBundle:
+            branches = tuple(
+                branch.model_copy(
+                    update={
+                        "explore_result": branch.explore_result.model_copy(
+                            update={"recommendations": branch.explore_result.recommendations[:3]}
+                        )
+                    }
+                )
+                if branch.explore_result is not None
+                else branch
+                for branch in specialist_result.branches
+            )
+            sparse_specialists = SpecialistFanoutResult.model_validate(
+                specialist_result.model_copy(update={"branches": branches}).model_dump(
+                    mode="python"
+                )
+            )
+            return await super().build_materials(sparse_specialists)
+
+    async def scenario() -> None:
+        request, costs = _fixture_request_and_costs()
+        request = request.model_copy(update={"pace": TripPace.RELAXED})
+        pipeline = PartialMaterialsFixturePipeline(request)
+
+        async with open_sqlite_product_runtime(
+            tmp_path / "product-partial-materials.sqlite3",
+            pipeline,
+        ) as runtime:
+            snapshot = await runtime.start_with_progress(
+                "product-partial-materials-thread",
+                request,
+                costs,
+                data_mode=DataMode.FIXTURE,
+            )
+
+        assert snapshot.state.materials is not None
+        assert snapshot.state.materials.status == PlanningMaterialStatus.PARTIAL
+        assert (
+            PlanningMaterialIssueCode.ACTIVITY_COVERAGE_INSUFFICIENT
+            in snapshot.state.materials.issues
+        )
+        assert snapshot.state.plan_agent is not None
+        assert snapshot.state.plan_agent.plan is not None
+        assert snapshot.state.status == PlanningThreadStatus.AWAITING_HUMAN_REVIEW
 
     asyncio.run(scenario())
 

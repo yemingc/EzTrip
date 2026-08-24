@@ -77,6 +77,8 @@ class BudgetQuantityBasis(StrEnum):
 
 class PlanningMaterialStatus(StrEnum):
     READY = "ready"
+    # PARTIAL is a usable, grounded draft input. Missing facts must remain
+    # explicit and flow into hard validation / HITL instead of erasing a plan.
     PARTIAL = "partial"
     BLOCKED = "blocked"
 
@@ -509,8 +511,6 @@ class PlanningMaterialBundle(DomainModel):
             or self.route_matrix.status
             in {RouteMatrixStatus.BLOCKED, RouteMatrixStatus.UNAVAILABLE}
             or explore_branch.status != SpecialistBranchStatus.SUCCEEDED
-            or PlanningMaterialIssueCode.ACTIVITY_COVERAGE_INSUFFICIENT in expected_issues
-            or PlanningMaterialIssueCode.EXCESSIVE_TRANSFER in expected_issues
         ):
             expected_status = PlanningMaterialStatus.BLOCKED
         elif expected_issues:
@@ -518,3 +518,15 @@ class PlanningMaterialBundle(DomainModel):
         if self.status != expected_status:
             raise ValueError("planning material status must match component outcomes")
         return self
+
+
+def planning_materials_support_draft(materials: PlanningMaterialBundle) -> bool:
+    """Return whether grounded POI facts can support an honest editable draft.
+
+    Partial route, stay, weather or budget facts are validation concerns, not a
+    reason to discard the Provider-grounded attractions already obtained.
+    """
+
+    if materials.status == PlanningMaterialStatus.BLOCKED:
+        return False
+    return bool(materials.shortlist.poi_candidates)

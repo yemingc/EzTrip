@@ -46,15 +46,15 @@ from app.observability.redaction import TraceRedactor
 from app.planning.context_compiler import compile_planner_context
 from app.planning.material_contracts import (
     PlanningMaterialBundle,
-    PlanningMaterialStatus,
     RouteEdgeStatus,
     RouteMatrixEdge,
+    planning_materials_support_draft,
 )
 from app.planning.specialist_contracts import SpecialistName
 from app.planning.validator import validate_trip_plan
 
 PLAN_AGENT_NAME = "eztrip-multi-agent-plan-v1"
-PLAN_AGENT_PROMPT_VERSION = "route-weather-budget-schedule-v1"
+PLAN_AGENT_PROMPT_VERSION = "route-weather-budget-schedule-v2"
 PLAN_AGENT_TOOL_NAME = "submit_grounded_schedule"
 DEFAULT_ACTIVITY_DURATION_MINUTES = 120
 CHINA_TIMEZONE = timezone(timedelta(hours=8), "Asia/Shanghai")
@@ -62,7 +62,8 @@ CHINA_TIMEZONE = timezone(timedelta(hours=8), "Asia/Shanghai")
 SYSTEM_PROMPT = """你是 EzTrip 多 Agent 工作流中的 Plan Agent, 只能安排输入 shortlist 中的 POI。
 必须把每个 allowed_poi_candidate_id 恰好安排一次, 不得新增、改名、遗漏、安排酒店 ID 或餐饮候选。
 你只决定 candidate_id、day_number、start_time 和简短 reason。
-候选事实、日期、结束时间、来源、路线、天气、预算和稳定 ID 全部由代码回填。
+候选事实、日期、结束时间、来源、已有路线、天气、预算和稳定 ID 全部由代码回填;
+material_issues 中缺失的路线、住宿或数量事实不得猜测, 代码会保留为空并交给硬校验。
 assigned_day_clusters 已由代码按地理位置分组并排序;
 day_number 必须匹配分组, 同日 start_time 必须保持该顺序。
 综合路线时长、逐日天气风险、同行人、已确认约束和预算目标, 做软权衡排程。
@@ -164,6 +165,8 @@ def _material_input_payload(materials: PlanningMaterialBundle) -> str:
         },
         "travel_styles": list(context.travel_styles),
         "pace": context.pace.value if context.pace is not None else "unspecified",
+        "material_status": materials.status.value,
+        "material_issues": [item.value for item in materials.issues],
         "activity_target_per_day": materials.shortlist.activity_target_per_day,
         "confirmed_constraints": [
             {
@@ -441,12 +444,12 @@ def normalize_plan_response(
     materials: PlanningMaterialBundle,
     response: PlannerModelResponse,
 ) -> PlanAgentRunResult:
-    if materials.status != PlanningMaterialStatus.READY:
-        raise PlanAgentProtocolError("Plan Agent normalizer requires ready planning materials")
+    if not planning_materials_support_draft(materials):
+        raise PlanAgentProtocolError("Plan Agent normalizer requires usable planning materials")
     candidates = materials.shortlist.poi_candidates
     stay = materials.shortlist.primary_stay
-    if not candidates or stay is None:
-        raise PlanAgentProtocolError("ready planning materials require POIs and a stay anchor")
+    if not candidates:
+        raise PlanAgentProtocolError("usable planning materials require Provider-grounded POIs")
     candidates_by_id = {item.candidate_id: item for item in candidates}
     proposal_ids = [item.candidate_id for item in response.proposal.items]
     if len(proposal_ids) != len(set(proposal_ids)):
@@ -493,7 +496,7 @@ def normalize_plan_response(
             )
         )
         day_decisions: list[PlanAgentDecision] = []
-        previous_candidate_id = stay.candidate_id
+        previous_candidate_id = stay.candidate_id if stay is not None else None
         previous_end: datetime | None = None
         departure_from_stay_at: datetime | None = None
         day_candidates: list[CandidatePOI] = []
@@ -503,20 +506,46 @@ def normalize_plan_response(
             hour, minute = (int(value) for value in proposal.start_time.split(":"))
             proposed_start = datetime.combine(day, time(hour, minute), tzinfo=CHINA_TIMEZONE)
             duration = candidate.suggested_duration_minutes or DEFAULT_ACTIVITY_DURATION_MINUTES
-            edge = edges_by_pair.get((previous_candidate_id, candidate.candidate_id))
-            if edge is None or edge.status != RouteEdgeStatus.SUCCEEDED or edge.route is None:
-                raise PlanAgentProtocolError("Plan Agent schedule references a missing route edge")
+            edge = (
+                edges_by_pair.get((previous_candidate_id, candidate.candidate_id))
+                if previous_candidate_id is not None
+                else None
+            )
+            route = (
+                edge.route
+                if edge is not None
+                and edge.status == RouteEdgeStatus.SUCCEEDED
+                and edge.route is not None
+                else None
+            )
             if previous_end is None:
-                earliest_departure = datetime.combine(day, time(7), tzinfo=CHINA_TIMEZONE)
-                earliest_start = earliest_departure + timedelta(minutes=edge.route.duration_minutes)
+                earliest_start = datetime.combine(day, time(8), tzinfo=CHINA_TIMEZONE)
+                if route is not None:
+                    earliest_departure = datetime.combine(day, time(7), tzinfo=CHINA_TIMEZONE)
+                    earliest_start = earliest_departure + timedelta(minutes=route.duration_minutes)
             else:
-                earliest_start = previous_end + timedelta(minutes=edge.route.duration_minutes)
+                earliest_start = previous_end
+                if route is not None:
+                    earliest_start += timedelta(minutes=route.duration_minutes)
             starts_at = max(proposed_start, earliest_start)
             ends_at = starts_at + timedelta(minutes=duration)
             if ends_at.date() != day:
                 raise PlanAgentProtocolError("Plan Agent activity cannot cross the day boundary")
-            if departure_from_stay_at is None:
-                departure_from_stay_at = starts_at - timedelta(minutes=edge.route.duration_minutes)
+            if (
+                previous_end is None
+                and departure_from_stay_at is None
+                and route is not None
+                and stay is not None
+            ):
+                departure_from_stay_at = starts_at - timedelta(minutes=route.duration_minutes)
+            notes = [
+                "活动事实与来源由 shortlist 候选回填, 模型只负责排程提案。",
+                "预算额度仅作排程目标; 实时价格、营业时间和可订状态尚未验证。",
+            ]
+            if route is None:
+                notes.append(
+                    "到达路线尚未取得 Provider 事实; 草案保留该缺口并交由硬校验与人工审核。"
+                )
             item = ItineraryItem(
                 item_id=_stable_id(
                     "plan-item",
@@ -530,16 +559,13 @@ def normalize_plan_response(
                 end_at=ends_at,
                 candidate_id=candidate.candidate_id,
                 source=candidate.source,
-                route_from_previous=edge.route,
-                notes=(
-                    "活动事实与来源由 shortlist 候选回填, 模型只负责排程提案。",
-                    "预算额度仅作排程目标; 实时价格、营业时间和可订状态尚未验证。",
-                ),
+                route_from_previous=route,
+                notes=tuple(notes),
             )
             decision = PlanAgentDecision(
                 proposal=proposal,
                 item=item,
-                route_edge_id=edge.edge_id,
+                route_edge_id=edge.edge_id if route is not None and edge is not None else None,
             )
             day_decisions.append(decision)
             day_candidates.append(candidate)
@@ -595,7 +621,7 @@ def normalize_plan_response(
         budget_status=materials.budget_allocation.status,
         status=PlanAgentRunStatus.PLANNED,
         input_poi_candidate_ids=tuple(item.candidate_id for item in candidates),
-        primary_stay_candidate_id=stay.candidate_id,
+        primary_stay_candidate_id=stay.candidate_id if stay is not None else None,
         input_route_edge_count=len(materials.route_matrix.edges),
         input_weather_risk_ids=tuple(item.risk_id for item in weather_risks),
         model=response.model,
@@ -603,7 +629,9 @@ def normalize_plan_response(
         usage=response.usage,
         model_call_count=1,
         decisions=tuple(decisions),
-        route_edge_ids_used=tuple(item.route_edge_id for item in decisions),
+        route_edge_ids_used=tuple(
+            item.route_edge_id for item in decisions if item.route_edge_id is not None
+        ),
         plan=plan,
         validation=validation,
     )
@@ -658,7 +686,7 @@ def run_plan_agent(
     model: PlanProposalModel,
 ) -> PlanAgentRunResult:
     _validate_inputs(request, materials)
-    if materials.status != PlanningMaterialStatus.READY:
+    if not planning_materials_support_draft(materials):
         return _skipped_result(materials)
     graph = build_plan_agent_graph(model)
     final_state = cast(
@@ -680,7 +708,7 @@ def run_live_plan_agent(
     settings: Settings,
 ) -> PlanAgentRunResult:
     _validate_inputs(request, materials)
-    if materials.status != PlanningMaterialStatus.READY:
+    if not planning_materials_support_draft(materials):
         return _skipped_result(materials)
     if not settings.langsmith_tracing:
         raise PlanAgentConfigurationError("LANGSMITH_TRACING must be true for the live Plan Agent")

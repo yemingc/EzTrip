@@ -4,15 +4,13 @@ EZ-302 把 Explore、Stay、主动 Weather、路线材料和预算目标首次�
 
 ## 输入门禁
 
-Plan Agent 只接受 `PlanningMaterialBundle.status=ready`：
+Plan Agent 接受 `PlanningMaterialBundle.status=ready`，也接受仍含至少一个 Provider-grounded 主要活动的 `partial` 材料：
 
 - Explore shortlist 至少包含一个有 Provider 来源的 POI；
-- Stay 已给出一个住宿区域锚点；
-- 每日住宿锚点到首站、以及相邻主活动之间的计划链路路线完整；
-- 预算已经被确定性 allocator 转成目标 envelope；
-- Weather 分支已经主动查询并返回风险或明确的空结果。
+- Stay、路线、预算和天气事实尽可能由上游提供；缺失项必须保持 unknown 并进入下游校验/审核；
+- `blocked` 只用于 Specialist/Route 能力整体不可用或没有任何可核验主要活动等无法安全继续的情况。
 
-材料为 `partial` 或 `blocked` 时，返回 `PlanAgentRunStatus.skipped` 和 `materials_not_ready`，模型调用数固定为 0。V1 不让模型猜缺失路线、房间数或预算。
+材料为 `blocked` 时返回 `PlanAgentRunStatus.skipped`，模型调用数固定为 0。`partial` 会生成可编辑草案：缺失路线的 `route_from_previous` 与 `route_edge_id` 同时为空，缺失住宿不会被模型补成酒店，预算/天气未知也不会被写成已验证事实。
 
 ## 模型与代码的职责
 
@@ -30,7 +28,7 @@ DeepSeek 通过强制 `submit_grounded_schedule` tool call 只能提交：
 - 要求 shortlist 中每个主活动 POI 恰好出现一次，并拒绝未知、重复或餐饮 ID；
 - 从候选对象回填名称、类别、来源与建议时长；
 - 保留确定性的逐日地理分组，并根据真实路线时长调整相邻活动时间；
-- 从路线材料回填每天住宿锚点到首个 POI、以及相邻 POI 之间的 `RouteLeg`，同时反推建议离店时间；
+- 从路线材料回填每天住宿锚点到首个 POI、以及相邻 POI 之间已成功的 `RouteLeg`，同时反推建议离店时间；缺失边保持为空并附加明确说明；
 - 从独立餐饮候选中为每天选择最多两个距离当日活动不超过 3 公里的 `MealRecommendation`；推荐不含强制开始/结束时间，也不进入活动密度计数；
 - 把 Weather 专业分支的风险原样写入 `TripPlan`，并按日期生成 `weather_risk_ids`；
 - 为没有 POI 的日期生成明确的 `free_time` 草案，使计划覆盖旅行的每一天；

@@ -42,24 +42,24 @@ def test_fixture_comparison_replays_all_three_arms_with_frozen_outcomes(
         single.eligible_case_count,
         no_gate.eligible_case_count,
         full.eligible_case_count,
-    ) == (28, 28, 28)
+    ) == (29, 29, 29)
     assert (
         single.finalizable_case_count,
         no_gate.finalizable_case_count,
         full.finalizable_case_count,
-    ) == (4, 4, 20)
+    ) == (5, 5, 21)
     assert (
         single.finalization_rate,
         no_gate.finalization_rate,
         full.finalization_rate,
-    ) == (Decimal("0.1429"), Decimal("0.1429"), Decimal("0.7143"))
+    ) == (Decimal("0.1724"), Decimal("0.1724"), Decimal("0.7241"))
     assert (
         full.finalizable_without_repair_case_count,
         full.repaired_case_count,
         full.waiting_for_user_case_count,
         full.unresolved_case_count,
         full.blocked_case_count,
-    ) == (4, 16, 1, 7, 2)
+    ) == (5, 16, 1, 7, 1)
 
 
 def test_fixture_comparison_is_paired_and_does_not_invent_specialist_lift(
@@ -80,14 +80,14 @@ def test_fixture_comparison_is_paired_and_does_not_invent_specialist_lift(
         single_to_no_gate.worsened_case_count,
         single_to_no_gate.unchanged_case_count,
         single_to_no_gate.finalization_rate_delta,
-    ) == (0, 0, 28, Decimal("0.0000"))
+    ) == (0, 0, 29, Decimal("0.0000"))
     for delta in (no_gate_to_full, single_to_full):
         assert (
             delta.improved_case_count,
             delta.worsened_case_count,
             delta.unchanged_case_count,
             delta.finalization_rate_delta,
-        ) == (16, 0, 12, Decimal("0.5714"))
+        ) == (16, 0, 13, Decimal("0.5517"))
 
 
 def test_single_agent_receives_all_stays_and_selects_its_own_route_anchor() -> None:
@@ -109,16 +109,16 @@ def test_fixture_report_preserves_cost_and_claim_boundaries(
     assert fixture_report.control_path_claim_allowed is True
     assert fixture_report.model_quality_claim_allowed is False
     assert (single.model_call_count, no_gate.model_call_count, full.model_call_count) == (
-        28,
-        144,
-        186,
+        29,
+        145,
+        187,
     )
     assert (single.provider_call_count, no_gate.provider_call_count, full.provider_call_count) == (
         357,
         357,
         518,
     )
-    assert single.total_tokens == 6720
+    assert single.total_tokens == 6960
     assert no_gate.total_tokens is None and full.total_tokens is None
     assert all(item.p50_latency_ms is None for item in fixture_report.arms)
 
@@ -152,7 +152,7 @@ def test_report_contract_rejects_paired_hash_or_delta_drift(
 
     payload = fixture_report.model_dump(mode="json")
     payload["paired_deltas"][1]["improved_case_count"] = 15
-    payload["paired_deltas"][1]["unchanged_case_count"] = 13
+    payload["paired_deltas"][1]["unchanged_case_count"] = 14
     with pytest.raises(ValidationError, match="paired delta must match"):
         SystemComparisonReport.model_validate(payload)
 

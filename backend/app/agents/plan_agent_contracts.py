@@ -25,7 +25,7 @@ class PlanAgentSkipReason(StrEnum):
 class PlanAgentDecision(DomainModel):
     proposal: PlannerPlacementProposal
     item: ItineraryItem
-    route_edge_id: Identifier
+    route_edge_id: Identifier | None = None
 
     @model_validator(mode="after")
     def validate_grounded_decision(self) -> "PlanAgentDecision":
@@ -33,15 +33,17 @@ class PlanAgentDecision(DomainModel):
             raise ValueError("Plan Agent decision must preserve the proposed candidate_id")
         if self.item.kind != ActivityKind.ATTRACTION:
             raise ValueError("Plan Agent decisions can only create POI activity items")
-        if self.item.route_from_previous is None:
-            raise ValueError("ready planning materials require a grounded incoming route")
+        if (self.item.route_from_previous is None) != (self.route_edge_id is None):
+            raise ValueError("Plan Agent route lineage must match the attached Provider route")
         return self
 
 
 class PlanAgentRunResult(DomainModel):
     schema_version: Literal["1.0"] = "1.0"
     agent_version: Literal["multi-agent-plan-v1"] = "multi-agent-plan-v1"
-    prompt_version: Literal["route-weather-budget-schedule-v1"] = "route-weather-budget-schedule-v1"
+    prompt_version: Literal[
+        "route-weather-budget-schedule-v1", "route-weather-budget-schedule-v2"
+    ] = "route-weather-budget-schedule-v2"
     request_id: Identifier
     context_id: Identifier
     input_material_sha256: Sha256Digest
@@ -70,8 +72,8 @@ class PlanAgentRunResult(DomainModel):
             raise ValueError("Plan Agent input weather risk ids must be unique")
 
         if self.status == PlanAgentRunStatus.SKIPPED:
-            if self.material_status == PlanningMaterialStatus.READY:
-                raise ValueError("ready materials cannot produce a skipped Plan Agent result")
+            if self.material_status != PlanningMaterialStatus.BLOCKED:
+                raise ValueError("usable materials cannot produce a skipped Plan Agent result")
             if (
                 self.skip_reason != PlanAgentSkipReason.MATERIALS_NOT_READY
                 or self.model is not None
@@ -86,8 +88,8 @@ class PlanAgentRunResult(DomainModel):
                 raise ValueError("skipped Plan Agent results cannot contain model or plan output")
             return self
 
-        if self.material_status != PlanningMaterialStatus.READY:
-            raise ValueError("Plan Agent may only plan from ready materials")
+        if self.material_status == PlanningMaterialStatus.BLOCKED:
+            raise ValueError("Plan Agent cannot plan from blocked materials")
         if (
             self.skip_reason is not None
             or self.model is None
@@ -96,15 +98,14 @@ class PlanAgentRunResult(DomainModel):
             or self.validation is None
         ):
             raise ValueError("planned results require exactly one model call and validated plan")
-        if self.primary_stay_candidate_id is None:
-            raise ValueError("planned results require the stay route anchor")
-
         decision_ids = tuple(item.proposal.candidate_id for item in self.decisions)
         if len(decision_ids) != len(set(decision_ids)) or set(decision_ids) != set(
             self.input_poi_candidate_ids
         ):
             raise ValueError("Plan Agent decisions must cover each input POI exactly once")
-        used_edges = tuple(item.route_edge_id for item in self.decisions)
+        used_edges = tuple(
+            item.route_edge_id for item in self.decisions if item.route_edge_id is not None
+        )
         if self.route_edge_ids_used != used_edges or len(used_edges) != len(set(used_edges)):
             raise ValueError("route edge lineage must match the Plan Agent decisions")
 

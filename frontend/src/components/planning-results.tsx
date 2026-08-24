@@ -207,6 +207,14 @@ export function PlanningResults({
   const budget = validation.budget;
   const hasBudget = budget.status !== "not_requested";
   const displayCity = plan.destination_city.replace(/市$/, "");
+  const materialIssueLabels: Record<string, string> = {
+    specialist_incomplete: "部分 Agent 数据未完整返回",
+    route_matrix_incomplete: "部分到达路线尚未验证",
+    budget_not_allocated: "预算目标尚未完整分配",
+    stay_anchor_missing: "住宿锚点尚未确认",
+    activity_coverage_insufficient: "主要活动数量低于所选节奏目标",
+    excessive_transfer: "存在超长通勤候选",
+  };
   const selectedRevisionDate = revisionTargetDate || plan.days.at(-1)?.date || plan.start_date;
   const fromVersionNumber = reviewOutcome
     ? snapshot.plan_versions.find(
@@ -242,6 +250,29 @@ export function PlanningResults({
           </span>
         </div>
       </div>
+
+      {materials?.status === "partial" ? (
+        <article
+          className="mb-5 rounded-[1.75rem] border border-amber-200 bg-amber-50 p-5 text-amber-950 shadow-sm sm:p-6"
+          data-testid="degraded-draft-notice"
+        >
+          <p className="eyebrow text-amber-700">Usable draft · facts incomplete</p>
+          <h3 className="mt-2 text-lg font-semibold">已先生成可编辑方案，以下事实仍需确认</h3>
+          <p className="mt-2 text-sm leading-6 text-amber-900/80">
+            系统没有用模型补写缺失事实；草案会继续经过确定性校验，并在需要时交给你审核。
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {materials.issues.map((issue) => (
+              <span
+                className="rounded-full border border-amber-200 bg-white px-3 py-1.5 text-xs font-semibold"
+                key={issue}
+              >
+                {materialIssueLabels[issue] ?? issue}
+              </span>
+            ))}
+          </div>
+        </article>
+      ) : null}
 
       {state.workflow_version === "product-planning-graph-v2" && specialists && materials ? (
         <article

@@ -26,10 +26,10 @@ from app.agents.plan_agent import (
     run_live_plan_agent,
     run_plan_agent,
 )
-from app.agents.plan_agent_contracts import PlanAgentRunStatus, PlanAgentSkipReason
+from app.agents.plan_agent_contracts import PlanAgentRunStatus
 from app.core.config import Settings
 from app.domain.money import BudgetCategory
-from app.domain.request import BudgetConstraint, TripRequest
+from app.domain.request import BudgetConstraint, TripPace, TripRequest
 from app.domain.sources import DataMode
 from app.domain.validation import PlanValidationStatus
 from app.evaluation.planning_materials import (
@@ -43,7 +43,11 @@ from app.evaluation.specialist_fanout import (
     load_specialist_fanout_suite,
 )
 from app.planning.material_builder import build_planning_material_bundle
-from app.planning.material_contracts import PlanningMaterialBundle, PlanningMaterialStatus
+from app.planning.material_contracts import (
+    PlanningMaterialBundle,
+    PlanningMaterialIssueCode,
+    PlanningMaterialStatus,
+)
 from app.planning.specialist_fanout import run_specialist_fanout
 
 
@@ -268,18 +272,57 @@ def test_plan_agent_excludes_weather_risks_outside_the_trip_dates() -> None:
     asyncio.run(exercise())
 
 
-def test_non_ready_materials_skip_without_calling_the_model() -> None:
+def test_partial_route_materials_produce_a_grounded_draft_with_explicit_gap() -> None:
     async def exercise() -> None:
         request, materials = await _materials(RouteFailureInjection.ONE_TIMEOUT)
+        model = FixedPlanModel()
 
-        result = run_plan_agent(request, materials, FailIfCalledPlanModel())
+        result = run_plan_agent(request, materials, model)
 
         assert materials.status == PlanningMaterialStatus.PARTIAL
-        assert result.status == PlanAgentRunStatus.SKIPPED
-        assert result.skip_reason == PlanAgentSkipReason.MATERIALS_NOT_READY
-        assert result.model_call_count == 0
-        assert result.plan is None
-        assert result.validation is None
+        assert result.status == PlanAgentRunStatus.PLANNED
+        assert result.skip_reason is None
+        assert result.model_call_count == model.calls == 1
+        assert result.plan is not None
+        assert result.validation is not None
+        assert len(result.decisions) == len(materials.shortlist.poi_candidates)
+        assert any(item.item.route_from_previous is None for item in result.decisions)
+        assert len(result.route_edge_ids_used) < len(result.decisions)
+
+    asyncio.run(exercise())
+
+
+def test_activity_coverage_gap_produces_an_editable_draft_instead_of_skipping() -> None:
+    async def exercise() -> None:
+        case = _specialist_case()
+        request = _request_with_soft_budget(
+            case.request.model_copy(
+                update={
+                    "end_date": case.request.start_date + timedelta(days=1),
+                    "pace": TripPace.RELAXED,
+                }
+            )
+        )
+        specialist_result = await run_specialist_fanout(
+            request,
+            build_specialist_scenario_provider(case),
+            PlanningMaterialFixtureExploreModel(),
+            PlanningMaterialFixtureStayModel(),
+            data_mode=DataMode.FIXTURE,
+        )
+        materials = await build_planning_material_bundle(
+            specialist_result,
+            PlanningMaterialRouteProvider(RouteFailureInjection.NONE),
+        )
+
+        result = run_plan_agent(request, materials, FixedPlanModel())
+
+        assert materials.status == PlanningMaterialStatus.PARTIAL
+        assert PlanningMaterialIssueCode.ACTIVITY_COVERAGE_INSUFFICIENT in materials.issues
+        assert len(materials.shortlist.poi_candidates) == 3
+        assert result.status == PlanAgentRunStatus.PLANNED
+        assert result.plan is not None
+        assert len(result.decisions) == 3
 
     asyncio.run(exercise())
 
@@ -405,16 +448,15 @@ def test_deepseek_plan_adapter_requires_api_key() -> None:
         DeepSeekPlanProposalModel(_settings(with_deepseek_key=False))
 
 
-def test_live_plan_agent_requires_tracing_only_for_ready_materials() -> None:
+def test_live_plan_agent_requires_tracing_for_ready_and_partial_drafts() -> None:
     async def exercise() -> None:
         request, ready = await _materials()
         with pytest.raises(PlanAgentConfigurationError, match="LANGSMITH_TRACING"):
             run_live_plan_agent(request, ready, _settings(tracing=False))
 
         request, partial = await _materials(RouteFailureInjection.ONE_TIMEOUT)
-        skipped = run_live_plan_agent(request, partial, _settings(tracing=False))
-        assert skipped.status == PlanAgentRunStatus.SKIPPED
-        assert skipped.model_call_count == 0
+        with pytest.raises(PlanAgentConfigurationError, match="LANGSMITH_TRACING"):
+            run_live_plan_agent(request, partial, _settings(tracing=False))
 
     asyncio.run(exercise())
 

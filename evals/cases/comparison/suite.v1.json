@@ -289,13 +289,13 @@
     },
     {
       "case_id": "comparison-hard-beijing-route-timeout-v1",
-      "title": "北京路线 Provider 超时阻断 Plan",
+      "title": "北京部分路线超时后仍生成可校验草案",
       "tier": "hard",
       "source_plan_case_id": "plan-agent-route-timeout-skip-v1",
       "scenario": "route_provider_timeout",
       "dimensions": {"city": "北京市", "trip_days": 3, "traveler_profile": "adults", "risk_dimensions": ["provider_failure", "route", "capability_boundary"]},
-      "expected": {"initial_error_codes": [], "full_outcome": "blocked_before_plan", "final_can_finalize": null, "repair_actions": []},
-      "boundary_notes": ["材料 partial 时不得让任一 arm 猜测缺失路线。"]
+      "expected": {"initial_error_codes": [], "full_outcome": "finalizable_without_repair", "final_can_finalize": true, "repair_actions": []},
+      "boundary_notes": ["材料 partial 时仍可使用 Provider-grounded 候选排程；冻结策略避开了失败边，任何实际缺失路线仍不得由模型猜测。"]
     },
     {
       "case_id": "comparison-hard-nanjing-unsupported-v1",

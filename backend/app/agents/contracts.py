@@ -244,9 +244,9 @@ class ExploreAgentResult(DomainModel):
     schema_version: Literal["1.0"] = "1.0"
     agent_version: Literal["explore-agent-v1"] = "explore-agent-v1"
     query_prompt_version: Literal["explore-query-strategy-v1"] = "explore-query-strategy-v1"
-    selection_prompt_version: Literal["explore-candidate-selection-v1"] = (
-        "explore-candidate-selection-v1"
-    )
+    selection_prompt_version: Literal[
+        "explore-candidate-selection-v1", "explore-candidate-selection-v2"
+    ] = "explore-candidate-selection-v2"
     request_id: Identifier
     context_id: Identifier
     candidate_set_sha256: Sha256Digest

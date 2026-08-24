@@ -314,19 +314,19 @@
       "title": "Case Pass Rate"
     },
     "planned_case_count": {
-      "maximum": 4,
+      "maximum": 5,
       "minimum": 0,
       "title": "Planned Case Count",
       "type": "integer"
     },
     "skipped_case_count": {
-      "maximum": 2,
+      "maximum": 1,
       "minimum": 0,
       "title": "Skipped Case Count",
       "type": "integer"
     },
     "model_call_count": {
-      "maximum": 4,
+      "maximum": 5,
       "minimum": 0,
       "title": "Model Call Count",
       "type": "integer"
@@ -400,19 +400,19 @@
       "title": "Weather Preservation Rate"
     },
     "zero_cost_claim_case_count": {
-      "maximum": 4,
+      "maximum": 5,
       "minimum": 0,
       "title": "Zero Cost Claim Case Count",
       "type": "integer"
     },
     "skipped_zero_model_call_case_count": {
-      "maximum": 2,
+      "maximum": 1,
       "minimum": 0,
       "title": "Skipped Zero Model Call Case Count",
       "type": "integer"
     },
     "usage_case_count": {
-      "maximum": 4,
+      "maximum": 5,
       "minimum": 0,
       "title": "Usage Case Count",
       "type": "integer"

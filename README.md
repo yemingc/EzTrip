@@ -377,7 +377,7 @@ fixture 模式使用明确标记的北京合成数据：首日中雨由天气 Pr
 
 [`docs/evaluation/system-comparison-protocol.md`](docs/evaluation/system-comparison-protocol.md) 冻结 20 standard + 10 hard case，并规定 `single_agent_tools`、`product_graph_no_hard_gate`、`product_graph_bounded_repair` 三组必须共享请求、Provider fixture、完整 `TripPlan` 契约、post-run evaluator 和 live 模型名称。旧 Single Planner 只输出部分 `DayPlan`，不会被错误复用为公平对照。
 
-三组 fixture runner 已共享冻结请求、工具快照、完整 `TripPlan` 和 `hard-trip-plan-validator-v1`：Single Agent 为 4/28，无 Hard Gate Product Graph 为 4/28，完整 Product Graph 为 20/28。后两组配对为 16 个改善、0 个恶化，即 `+57.14` 个百分点；这只证明 Hard Validator 与 bounded Repair 在该开发集故障注入上的恢复价值。Single 与无 Gate Product 没有差异，所以这份报告不能用于声称 Specialist Agent 提升了模型质量，更不能当作真实用户成功率。报告未调用 DeepSeek、高德或 LangSmith。
+三组 fixture runner 已共享冻结请求、工具快照、完整 `TripPlan` 和 `hard-trip-plan-validator-v1`。EZ-406A.2 让部分路线失败的材料继续生成安全草案后，当前结果为 Single Agent 5/29、无 Hard Gate Product Graph 5/29、完整 Product Graph 21/29；后两组配对仍为 16 个改善、0 个恶化，即 `+55.17` 个百分点。这只证明 Hard Validator 与 bounded Repair 在该开发集故障注入上的恢复价值。Single 与无 Gate Product 没有差异，所以这份报告不能用于声称 Specialist Agent 提升了模型质量，更不能当作真实用户成功率。报告未调用 DeepSeek、高德或 LangSmith。
 
 ```powershell
 Set-Location backend
