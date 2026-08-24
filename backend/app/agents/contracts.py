@@ -8,6 +8,8 @@ from app.domain.candidates import CandidatePOI, CandidateStay
 from app.domain.planning import DayPlan, ItineraryItem
 from app.domain.request import Constraint, ConstraintKind, ConstraintSet, ConstraintStrength
 
+MAX_EXPLORE_QUERY_COUNT = 5
+
 
 class ConstraintEvidenceMode(StrEnum):
     """Whether the quoted evidence is a direct requirement or an uncertain suggestion."""
@@ -165,7 +167,10 @@ class ExploreQueryProposal(DomainModel):
 
 
 class ExploreQueryProposalBatch(DomainModel):
-    items: tuple[ExploreQueryProposal, ...] = Field(min_length=1, max_length=5)
+    items: tuple[ExploreQueryProposal, ...] = Field(
+        min_length=1,
+        max_length=MAX_EXPLORE_QUERY_COUNT,
+    )
 
 
 class ExploreQueryModelResponse(DomainModel):
@@ -185,7 +190,10 @@ class ExploreSearchQuery(DomainModel):
 
 class ExploreCandidateObservation(DomainModel):
     candidate: CandidatePOI
-    query_ids: tuple[Identifier, ...] = Field(min_length=1, max_length=5)
+    query_ids: tuple[Identifier, ...] = Field(
+        min_length=1,
+        max_length=MAX_EXPLORE_QUERY_COUNT,
+    )
 
     @model_validator(mode="after")
     def validate_unique_query_ids(self) -> "ExploreCandidateObservation":
@@ -220,7 +228,10 @@ class ExploreSelectionModelResponse(DomainModel):
 class ExploreRecommendation(DomainModel):
     proposal: ExploreCandidateSelectionProposal
     candidate: CandidatePOI
-    query_ids: tuple[Identifier, ...] = Field(min_length=1, max_length=5)
+    query_ids: tuple[Identifier, ...] = Field(
+        min_length=1,
+        max_length=MAX_EXPLORE_QUERY_COUNT,
+    )
 
     @model_validator(mode="after")
     def validate_candidate_identity(self) -> "ExploreRecommendation":
@@ -239,7 +250,10 @@ class ExploreAgentResult(DomainModel):
     request_id: Identifier
     context_id: Identifier
     candidate_set_sha256: Sha256Digest
-    queries: tuple[ExploreSearchQuery, ...] = Field(min_length=1, max_length=5)
+    queries: tuple[ExploreSearchQuery, ...] = Field(
+        min_length=1,
+        max_length=MAX_EXPLORE_QUERY_COUNT,
+    )
     observations: tuple[ExploreCandidateObservation, ...] = Field(min_length=1, max_length=25)
     recommendations: tuple[ExploreRecommendation, ...] = Field(min_length=1, max_length=25)
     query_model: NonEmptyText

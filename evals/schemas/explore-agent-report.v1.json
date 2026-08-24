@@ -43,13 +43,13 @@
           "type": "integer"
         },
         "provider_call_count": {
-          "maximum": 4,
+          "maximum": 5,
           "minimum": 0,
           "title": "Provider Call Count",
           "type": "integer"
         },
         "query_count": {
-          "maximum": 4,
+          "maximum": 5,
           "minimum": 0,
           "title": "Query Count",
           "type": "integer"
@@ -290,7 +290,7 @@
       "type": "integer"
     },
     "provider_call_count": {
-      "maximum": 24,
+      "maximum": 30,
       "minimum": 0,
       "title": "Provider Call Count",
       "type": "integer"

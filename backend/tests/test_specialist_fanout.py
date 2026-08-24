@@ -107,6 +107,25 @@ class FixedExploreModel:
         )
 
 
+class FiveQueryExploreModel(FixedExploreModel):
+    def propose_queries(self, context: Any) -> ExploreQueryModelResponse:
+        self.query_calls += 1
+        return ExploreQueryModelResponse(
+            proposal=ExploreQueryProposalBatch(
+                items=tuple(
+                    ExploreQueryProposal(
+                        kind=ExploreQueryKind.ATTRACTION,
+                        keywords=f"{context.destination.normalized_name}历史文化景点{index}",
+                        reason=f"为多日行程补充第 {index} 组主要活动候选。",
+                    )
+                    for index in range(1, 6)
+                )
+            ),
+            model="fixture-five-query-explore-model",
+            latency_ms=10,
+        )
+
+
 class FixedStayModel:
     def __init__(self) -> None:
         self.query_calls = 0
@@ -354,6 +373,30 @@ def test_three_specialists_enter_provider_concurrently_and_merge_without_overwri
     assert branch(result, SpecialistName.STAY).stay_result is not None
     assert branch(result, SpecialistName.WEATHER).weather_risks == risks
     assert result.fanout_latency_ms < sum(item.elapsed_ms for item in result.branches)
+
+
+def test_five_explore_queries_fit_the_fanout_call_contract() -> None:
+    request, poi, stay, risks = sample_dependencies()
+    provider = ConcurrentSpecialistProvider(poi, stay, risks)
+
+    result = asyncio.run(
+        run_specialist_fanout(
+            request,
+            provider,
+            FiveQueryExploreModel(),
+            FixedStayModel(),
+            data_mode=DataMode.FIXTURE,
+        )
+    )
+
+    explore = branch(result, SpecialistName.EXPLORE)
+    assert result.status == SpecialistFanoutStatus.COMPLETE
+    assert explore.status == SpecialistBranchStatus.SUCCEEDED
+    assert explore.provider_call_count == 5
+    assert explore.explore_result is not None
+    assert len(explore.explore_result.queries) == 5
+    assert provider.poi_calls == 5
+    assert result.total_provider_call_count == 7
 
 
 @pytest.mark.parametrize("failed_specialist", [SpecialistName.EXPLORE, SpecialistName.WEATHER])
