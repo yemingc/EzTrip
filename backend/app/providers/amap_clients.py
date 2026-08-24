@@ -1,10 +1,12 @@
 import asyncio
 import json
-from collections.abc import Mapping
+from collections import deque
+from collections.abc import Awaitable, Callable, Mapping
 from contextlib import AsyncExitStack
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
+from time import monotonic
 from types import TracebackType
 from typing import Any, Protocol
 
@@ -32,6 +34,43 @@ DEFAULT_AMAP_FIXTURE_PATH = (
     / "amap"
     / "mcp-beijing-2026-08-20.v1.json"
 )
+DEFAULT_AMAP_MCP_MAX_CALLS_PER_WINDOW = 4
+DEFAULT_AMAP_MCP_RATE_WINDOW_SECONDS = 1.1
+
+
+class AmapToolCallRateLimiter:
+    """Keep official MCP tool calls inside the observed per-key QPS boundary."""
+
+    def __init__(
+        self,
+        *,
+        max_calls: int = DEFAULT_AMAP_MCP_MAX_CALLS_PER_WINDOW,
+        window_seconds: float = DEFAULT_AMAP_MCP_RATE_WINDOW_SECONDS,
+        clock: Callable[[], float] = monotonic,
+        sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+    ) -> None:
+        if max_calls < 1:
+            raise ValueError("AMap tool rate limit must allow at least one call")
+        if window_seconds <= 0:
+            raise ValueError("AMap tool rate-limit window must be positive")
+        self._max_calls = max_calls
+        self._window_seconds = window_seconds
+        self._clock = clock
+        self._sleep = sleep
+        self._timestamps: deque[float] = deque()
+        self._lock = asyncio.Lock()
+
+    async def acquire(self) -> None:
+        async with self._lock:
+            while True:
+                now = self._clock()
+                while self._timestamps and now - self._timestamps[0] >= self._window_seconds:
+                    self._timestamps.popleft()
+                if len(self._timestamps) < self._max_calls:
+                    self._timestamps.append(now)
+                    return
+                delay = self._window_seconds - (now - self._timestamps[0])
+                await self._sleep(delay)
 
 
 class AmapToolClient(Protocol):
@@ -119,6 +158,7 @@ class AmapLiveToolClient:
         self._http_client: httpx.AsyncClient | None = None
         self._session: ClientSession | None = None
         self._weather_freshness: dict[str, dict[str, object]] = {}
+        self._tool_rate_limiter = AmapToolCallRateLimiter()
 
     async def __aenter__(self) -> "AmapLiveToolClient":
         secret = self._settings.amap_maps_api_key
@@ -206,6 +246,7 @@ class AmapLiveToolClient:
                 )
             )
         try:
+            await self._tool_rate_limiter.acquire()
             async with asyncio.timeout(self._settings.amap_mcp_timeout_seconds):
                 result = await session.call_tool(operation, arguments)
             return decode_mcp_json(result, operation=operation)

@@ -26,12 +26,14 @@ from app.agents.contracts import (
     ExploreSelectionProposalBatch,
     ModelTokenUsage,
 )
-from app.agents.hashing import candidate_set_sha256
+from app.agents.hashing import candidate_facts_equal, candidate_set_sha256
 from app.core.config import Settings
 from app.domain.candidates import CandidatePOI
 from app.domain.context import PlannerCapability, PlannerContext
+from app.domain.provider import ProviderErrorCategory
 from app.observability.probe import build_langsmith_client, require_secret
 from app.observability.redaction import TraceRedactor
+from app.providers.errors import ProviderRequestError
 from app.providers.ports import POISearchProvider, POISearchRequest
 
 EXPLORE_AGENT_NAME = "eztrip-explore-agent-v1"
@@ -361,14 +363,25 @@ async def search_explore_candidates(
         raise ExploreAgentProtocolError("Explore Agent requires a supported destination adcode")
     candidates_by_id: dict[str, CandidatePOI] = {}
     query_ids_by_candidate: dict[str, list[str]] = {}
+    query_failures: list[ProviderRequestError] = []
     for query in queries:
-        candidates = await provider.search_pois(
-            POISearchRequest(
-                keywords=query.keywords,
-                city_adcode=city_adcode,
-                limit=MAX_CANDIDATES_PER_QUERY,
+        try:
+            candidates = await provider.search_pois(
+                POISearchRequest(
+                    keywords=query.keywords,
+                    city_adcode=city_adcode,
+                    limit=MAX_CANDIDATES_PER_QUERY,
+                )
             )
-        )
+        except ProviderRequestError as error:
+            if error.failure.category not in {
+                ProviderErrorCategory.EMPTY_RESULT,
+                ProviderErrorCategory.MISSING_FIELD,
+                ProviderErrorCategory.UNRECOVERABLE,
+            }:
+                raise
+            query_failures.append(error)
+            continue
         if len(candidates) > MAX_CANDIDATES_PER_QUERY:
             raise ExploreAgentProtocolError("provider returned more candidates than requested")
         response_ids = [item.candidate_id for item in candidates]
@@ -378,7 +391,7 @@ async def search_explore_candidates(
             if candidate.city != context.destination.normalized_name:
                 raise ExploreAgentProtocolError("provider candidate city does not match context")
             existing = candidates_by_id.get(candidate.candidate_id)
-            if existing is not None and existing != candidate:
+            if existing is not None and not candidate_facts_equal(existing, candidate):
                 raise ExploreAgentProtocolError(
                     "provider reused a candidate id for different candidate facts"
                 )
@@ -387,6 +400,8 @@ async def search_explore_candidates(
                 query_ids_by_candidate[candidate.candidate_id] = []
             query_ids_by_candidate[candidate.candidate_id].append(query.query_id)
     if not candidates_by_id:
+        if query_failures:
+            raise query_failures[-1]
         raise ExploreAgentProtocolError("Explore provider searches returned no candidates")
     return tuple(
         ExploreCandidateObservation(

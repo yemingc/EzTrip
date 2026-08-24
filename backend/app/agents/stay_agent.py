@@ -26,12 +26,14 @@ from app.agents.contracts import (
     StaySelectionModelResponse,
     StaySelectionProposalBatch,
 )
-from app.agents.hashing import stay_candidate_set_sha256
+from app.agents.hashing import candidate_facts_equal, stay_candidate_set_sha256
 from app.core.config import Settings
 from app.domain.candidates import CandidateStay
 from app.domain.context import PlannerCapability, PlannerContext
+from app.domain.provider import ProviderErrorCategory
 from app.observability.probe import build_langsmith_client, require_secret
 from app.observability.redaction import TraceRedactor
+from app.providers.errors import ProviderRequestError
 from app.providers.ports import StaySearchProvider, StaySearchRequest
 
 STAY_AGENT_NAME = "eztrip-stay-agent-v1"
@@ -389,14 +391,25 @@ async def search_stay_candidates(
         raise StayAgentProtocolError("Stay Agent requires a supported destination adcode")
     candidates_by_id: dict[str, CandidateStay] = {}
     query_ids_by_candidate: dict[str, list[str]] = {}
+    query_failures: list[ProviderRequestError] = []
     for query in queries:
-        candidates = await provider.search_stays(
-            StaySearchRequest(
-                keywords=query.keywords,
-                city_adcode=city_adcode,
-                limit=MAX_CANDIDATES_PER_QUERY,
+        try:
+            candidates = await provider.search_stays(
+                StaySearchRequest(
+                    keywords=query.keywords,
+                    city_adcode=city_adcode,
+                    limit=MAX_CANDIDATES_PER_QUERY,
+                )
             )
-        )
+        except ProviderRequestError as error:
+            if error.failure.category not in {
+                ProviderErrorCategory.EMPTY_RESULT,
+                ProviderErrorCategory.MISSING_FIELD,
+                ProviderErrorCategory.UNRECOVERABLE,
+            }:
+                raise
+            query_failures.append(error)
+            continue
         if len(candidates) > MAX_CANDIDATES_PER_QUERY:
             raise StayAgentProtocolError("provider returned more stay candidates than requested")
         response_ids = [item.candidate_id for item in candidates]
@@ -406,7 +419,7 @@ async def search_stay_candidates(
             if candidate.city != context.destination.normalized_name:
                 raise StayAgentProtocolError("provider stay candidate city does not match context")
             existing = candidates_by_id.get(candidate.candidate_id)
-            if existing is not None and existing != candidate:
+            if existing is not None and not candidate_facts_equal(existing, candidate):
                 raise StayAgentProtocolError(
                     "provider reused a stay candidate id for different candidate facts"
                 )
@@ -415,6 +428,8 @@ async def search_stay_candidates(
                 query_ids_by_candidate[candidate.candidate_id] = []
             query_ids_by_candidate[candidate.candidate_id].append(query.query_id)
     if not candidates_by_id:
+        if query_failures:
+            raise query_failures[-1]
         raise StayAgentProtocolError("Stay provider searches returned no candidates")
     return tuple(
         StayCandidateObservation(

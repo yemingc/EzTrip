@@ -1,6 +1,7 @@
 import asyncio
 import json
 from contextlib import nullcontext
+from datetime import timedelta
 from decimal import Decimal
 from types import SimpleNamespace
 from typing import Any
@@ -35,8 +36,10 @@ from app.agents.stay_agent import (
 from app.core.config import Settings
 from app.domain.candidates import CandidateStay, StayPriceBasis
 from app.domain.money import MoneyRange
+from app.domain.provider import ProviderErrorCategory, ProviderFailure
 from app.evaluation import load_planning_seed_suite
 from app.planning import compile_planner_context
+from app.providers.errors import ProviderRequestError
 from app.providers.ports import StaySearchRequest
 
 
@@ -93,13 +96,16 @@ class FixedStayModel:
 
 
 class RecordingStayProvider:
-    def __init__(self, responses: list[tuple[CandidateStay, ...]]) -> None:
+    def __init__(self, responses: list[tuple[CandidateStay, ...] | Exception]) -> None:
         self.responses = responses
         self.calls: list[StaySearchRequest] = []
 
     async def search_stays(self, request: StaySearchRequest) -> tuple[CandidateStay, ...]:
         self.calls.append(request)
-        return self.responses.pop(0)
+        response = self.responses.pop(0)
+        if isinstance(response, Exception):
+            raise response
+        return response
 
 
 class FakeCompletions:
@@ -216,6 +222,13 @@ def test_graph_searches_provider_then_returns_grounded_stay_recommendation() -> 
 def test_duplicate_candidate_across_queries_is_deduplicated_with_lineage() -> None:
     context = planning_context()
     candidate = sample_candidate()
+    refreshed_candidate = candidate.model_copy(
+        update={
+            "source": candidate.source.model_copy(
+                update={"retrieved_at": candidate.source.retrieved_at + timedelta(seconds=1)}
+            )
+        }
+    )
     response = make_query_response().model_copy(
         update={
             "proposal": StayQueryProposalBatch(
@@ -234,13 +247,48 @@ def test_duplicate_candidate_across_queries_is_deduplicated_with_lineage() -> No
     result = asyncio.run(
         run_stay_agent(
             context,
-            RecordingStayProvider([(candidate,), (candidate,)]),
+            RecordingStayProvider([(candidate,), (refreshed_candidate,)]),
             FixedStayModel(response),
         )
     )
 
     assert len(result.observations) == 1
     assert result.observations[0].query_ids == tuple(item.query_id for item in result.queries)
+
+
+def test_query_level_detail_failure_preserves_other_grounded_stays() -> None:
+    context = planning_context()
+    candidate = sample_candidate()
+    response = make_query_response().model_copy(
+        update={
+            "proposal": StayQueryProposalBatch(
+                items=(
+                    make_query_response().proposal.items[0],
+                    StayQueryProposal(
+                        target_area="前门商圈",
+                        keywords="北京前门客栈",
+                        reason="补充相邻住宿区域搜索。",
+                        context_refs=("travel_style:历史文化",),
+                    ),
+                )
+            )
+        }
+    )
+    detail_failure = ProviderRequestError(
+        ProviderFailure(
+            provider="amap",
+            operation="maps_search_detail",
+            category=ProviderErrorCategory.UNRECOVERABLE,
+            message="maps_search_detail returned invalid JSON content",
+            retryable=False,
+        )
+    )
+    provider = RecordingStayProvider([(candidate,), detail_failure])
+
+    result = asyncio.run(run_stay_agent(context, provider, FixedStayModel(response)))
+
+    assert len(provider.calls) == 2
+    assert [item.candidate.candidate_id for item in result.observations] == [candidate.candidate_id]
 
 
 def test_blocked_stay_context_stops_before_model_or_provider_calls() -> None:

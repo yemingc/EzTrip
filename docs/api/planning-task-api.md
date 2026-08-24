@@ -233,6 +233,12 @@ the automatic repair loop; its returned v2 remains a draft that has not been rev
   a typed `400 invalid-event-cursor` response.
 - Provider, configuration, workflow, timeout, and internal failures return stable codes and
   user-safe messages. Raw exception text is not copied into snapshots or SSE.
+- `planning-materials-blocked` means the grounded Explore/Stay/Route materials were insufficient
+  for a complete `TripPlan`. It is retryable and gives the user an actionable retry/keyword hint;
+  generic protocol violations remain `planning-workflow-error`.
+- Live weather risks enter the `TripPlan` only when their Provider date range overlaps the trip.
+  AMap's short forecast horizon therefore produces an empty, explicit weather-risk set for a later
+  trip instead of attaching stale dates or failing plan validation.
 - Fixture is the frontend default. Selecting live mode is the explicit per-request opt-in; it can
   call AMap and DeepSeek and consume quota. Credentials remain server-side, and missing AMap or
   model credentials fail with typed configuration errors.

@@ -19,7 +19,7 @@ from app.domain.planning import TripPlan
 from app.domain.request import TripRequest
 from app.domain.sources import DataMode
 from app.planning.hard_validator import validate_hard_trip_plan
-from app.planning.material_contracts import PlanningMaterialBundle
+from app.planning.material_contracts import PlanningMaterialBundle, PlanningMaterialIssueCode
 from app.planning.plan_revision import apply_plan_revision
 from app.planning.product_contracts import (
     ProductPlanningData,
@@ -49,6 +49,15 @@ ProductProgressCallback = Callable[[ProductPlanningProgress], Awaitable[None]]
 
 class ProductPlanningProtocolError(RuntimeError):
     """Raised when the product graph or persisted checkpoint violates its contract."""
+
+
+class ProductPlanningMaterialsBlockedError(ProductPlanningProtocolError):
+    """Raised when grounded Provider materials cannot support a complete TripPlan."""
+
+    def __init__(self, issues: tuple[PlanningMaterialIssueCode, ...]) -> None:
+        self.issues = issues
+        issue_codes = ",".join(item.value for item in issues)
+        super().__init__(f"product planning materials are blocked: {issue_codes}")
 
 
 class DuplicateProductPlanningThreadError(ProductPlanningProtocolError):
@@ -217,9 +226,7 @@ def build_product_planning_graph(
             raise ProductPlanningProtocolError("Plan Agent node requires planning materials")
         result = pipeline.run_plan(state.request, state.materials)
         if result.status != PlanAgentRunStatus.PLANNED or result.plan is None:
-            raise ProductPlanningProtocolError(
-                "Plan Agent skipped because product planning materials were not ready"
-            )
+            raise ProductPlanningMaterialsBlockedError(state.materials.issues)
         plan = TripPlan.model_validate(
             result.plan.model_copy(update={"cost_items": state.cost_items}).model_dump(
                 mode="python"

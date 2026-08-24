@@ -28,9 +28,15 @@ from app.providers.amap_probe import (
 )
 
 
-def mcp_result(payload: dict[str, Any], *, is_error: bool = False) -> SimpleNamespace:
+def mcp_result(
+    payload: dict[str, Any],
+    *,
+    is_error: bool = False,
+    structured_content: dict[str, Any] | None = None,
+) -> SimpleNamespace:
     return SimpleNamespace(
         content=[SimpleNamespace(text=json.dumps(payload, ensure_ascii=False))],
+        structuredContent=structured_content,
         isError=is_error,
     )
 
@@ -249,6 +255,46 @@ def test_decode_mcp_json_classifies_provider_and_protocol_failures() -> None:
     with pytest.raises(AmapProbeError) as protocol_error:
         decode_mcp_json(malformed, operation="maps_weather")
     assert protocol_error.value.failure.category == ProviderErrorCategory.UNRECOVERABLE
+
+
+def test_decode_mcp_json_supports_structured_multiple_and_fenced_content() -> None:
+    structured = SimpleNamespace(
+        content=[SimpleNamespace(text="human-readable summary")],
+        structuredContent={"id": "B025301URW", "name": "泉州博物馆"},
+        isError=False,
+    )
+    assert decode_mcp_json(structured, operation="maps_search_detail")["name"] == "泉州博物馆"
+
+    multiple = SimpleNamespace(
+        content=[
+            SimpleNamespace(text="provider notice"),
+            SimpleNamespace(text='{"id":"B025301URW","name":"泉州博物馆"}'),
+        ],
+        structuredContent=None,
+        isError=False,
+    )
+    assert decode_mcp_json(multiple, operation="maps_search_detail")["id"] == "B025301URW"
+
+    fenced = SimpleNamespace(
+        content=[SimpleNamespace(text='```json\n{"city":"泉州市"}\n```')],
+        structuredContent=None,
+        isError=False,
+    )
+    assert decode_mcp_json(fenced, operation="maps_weather") == {"city": "泉州市"}
+
+
+def test_decode_mcp_json_prioritizes_typed_tool_error_over_plain_text() -> None:
+    result = SimpleNamespace(
+        content=[SimpleNamespace(text="POI detail is temporarily unavailable")],
+        structuredContent=None,
+        isError=True,
+    )
+
+    with pytest.raises(AmapProbeError) as error:
+        decode_mcp_json(result, operation="maps_search_detail")
+
+    assert error.value.failure.category == ProviderErrorCategory.UNRECOVERABLE
+    assert error.value.failure.message == "maps_search_detail returned an MCP tool error"
 
 
 def test_rest_weather_preflight_preserves_freshness_without_leaking_key() -> None:

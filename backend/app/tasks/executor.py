@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Protocol
 
 from app.agents.contracts import ExploreAgentResult, StayAgentResult
 from app.agents.explore_agent import run_live_explore_agent
@@ -21,20 +20,14 @@ from app.planning.specialist_contracts import SpecialistFanoutResult
 from app.planning.specialist_fanout import run_live_specialist_fanout
 from app.planning.stateful_contracts import HumanReviewResume
 from app.providers import open_live_amap_provider
-from app.providers.ports import RouteProvider, SpecialistProvider
 from app.tasks.contracts import PlanningTaskSubmission
 from app.tasks.product_fixture import FixtureProductPlanningPipeline
 from app.tasks.service import PlanningProgressEmitter, PlanningTaskConfigurationError
 
 
-class LiveProductProvider(SpecialistProvider, RouteProvider, Protocol):
-    pass
-
-
 class LiveProductPlanningPipeline:
-    def __init__(self, settings: Settings, provider: LiveProductProvider) -> None:
+    def __init__(self, settings: Settings) -> None:
         self._settings = settings
-        self._provider = provider
 
     async def run_specialists(
         self,
@@ -42,24 +35,28 @@ class LiveProductPlanningPipeline:
         *,
         data_mode: DataMode,
     ) -> SpecialistFanoutResult:
-        return await run_live_specialist_fanout(
-            request,
-            self._provider,
-            self._settings,
-            data_mode=data_mode,
-        )
+        async with open_live_amap_provider(self._settings) as provider:
+            return await run_live_specialist_fanout(
+                request,
+                provider,
+                self._settings,
+                data_mode=data_mode,
+            )
 
     async def build_materials(
         self,
         specialist_result: SpecialistFanoutResult,
     ) -> PlanningMaterialBundle:
-        return await build_planning_material_bundle(specialist_result, self._provider)
+        async with open_live_amap_provider(self._settings) as provider:
+            return await build_planning_material_bundle(specialist_result, provider)
 
     async def rerun_explore(self, context: PlannerContext) -> ExploreAgentResult:
-        return await run_live_explore_agent(context, self._provider, self._settings)
+        async with open_live_amap_provider(self._settings) as provider:
+            return await run_live_explore_agent(context, provider, self._settings)
 
     async def rerun_stay(self, context: PlannerContext) -> StayAgentResult:
-        return await run_live_stay_agent(context, self._provider, self._settings)
+        async with open_live_amap_provider(self._settings) as provider:
+            return await run_live_stay_agent(context, provider, self._settings)
 
     def run_plan(
         self,
@@ -179,16 +176,15 @@ class ProductGraphPlanningTaskExecutor:
                     on_progress=emit_progress,
                 )
 
-        async with open_live_amap_provider(self._settings) as provider:
-            live_pipeline = LiveProductPlanningPipeline(self._settings, provider)
-            async with open_sqlite_product_runtime(checkpoint_path, live_pipeline) as runtime:
-                return await runtime.start_with_progress(
-                    submission.task_id,
-                    resolved_request,
-                    submission.cost_items,
-                    data_mode=DataMode.LIVE,
-                    on_progress=emit_progress,
-                )
+        live_pipeline = LiveProductPlanningPipeline(self._settings)
+        async with open_sqlite_product_runtime(checkpoint_path, live_pipeline) as runtime:
+            return await runtime.start_with_progress(
+                submission.task_id,
+                resolved_request,
+                submission.cost_items,
+                data_mode=DataMode.LIVE,
+                on_progress=emit_progress,
+            )
 
     async def resume(
         self,

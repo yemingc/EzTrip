@@ -369,62 +369,74 @@ class AmapTravelDataProvider:
             field="pois",
         )
         candidates: list[CandidatePOI] = []
+        detail_failures: list[ProviderRequestError] = []
         detail_operation = "maps_search_detail"
         for search_result in search_results[: request.limit]:
-            provider_id = _required_text(search_result, "id", operation=operation)
-            detail_payload = await self._invoke(
-                detail_operation,
-                partial(
-                    self._client.call_tool,
+            try:
+                provider_id = _required_text(search_result, "id", operation=operation)
+                detail_payload = await self._invoke(
                     detail_operation,
-                    {"id": provider_id},
-                ),
-            )
-            detail_id = _required_text(detail_payload, "id", operation=detail_operation)
-            if detail_id != provider_id:
-                raise _provider_error(
-                    detail_operation,
+                    partial(
+                        self._client.call_tool,
+                        detail_operation,
+                        {"id": provider_id},
+                    ),
+                )
+                detail_id = _required_text(detail_payload, "id", operation=detail_operation)
+                if detail_id != provider_id:
+                    raise _provider_error(
+                        detail_operation,
+                        ProviderErrorCategory.MISSING_FIELD,
+                        "maps_search_detail returned a different POI id",
+                    )
+                name = _required_text(detail_payload, "name", operation=detail_operation)
+                city = _required_text(detail_payload, "city", operation=detail_operation)
+                categories = _split_categories(detail_payload.get("type"))
+                tags = tuple(
+                    tag
+                    for tag in (
+                        f"level:{detail_payload['level']}"
+                        if _optional_text(detail_payload.get("level"))
+                        else None,
+                        f"rating:{detail_payload['rating']}"
+                        if _optional_text(detail_payload.get("rating"))
+                        else None,
+                    )
+                    if tag is not None
+                )
+                candidates.append(
+                    CandidatePOI(
+                        candidate_id=f"amap-poi-{provider_id.casefold()}",
+                        name=name,
+                        city=city,
+                        district=_optional_text(detail_payload.get("district")),
+                        address=_optional_text(detail_payload.get("address")),
+                        location=_parse_location(
+                            detail_payload.get("location"),
+                            operation=detail_operation,
+                        ),
+                        categories=categories,
+                        environment=_classify_environment(categories, name),
+                        tags=tags,
+                        source=SourceReference(
+                            provider="amap",
+                            provider_id=provider_id,
+                            data_mode=self._data_mode,
+                            retrieved_at=self._retrieved_at(),
+                            raw_response_sha256=_payload_sha256(search_result, detail_payload),
+                        ),
+                    ),
+                )
+            except ProviderRequestError as error:
+                if error.failure.category not in {
+                    ProviderErrorCategory.EMPTY_RESULT,
                     ProviderErrorCategory.MISSING_FIELD,
-                    "maps_search_detail returned a different POI id",
-                )
-            name = _required_text(detail_payload, "name", operation=detail_operation)
-            city = _required_text(detail_payload, "city", operation=detail_operation)
-            categories = _split_categories(detail_payload.get("type"))
-            tags = tuple(
-                tag
-                for tag in (
-                    f"level:{detail_payload['level']}"
-                    if _optional_text(detail_payload.get("level"))
-                    else None,
-                    f"rating:{detail_payload['rating']}"
-                    if _optional_text(detail_payload.get("rating"))
-                    else None,
-                )
-                if tag is not None
-            )
-            candidates.append(
-                CandidatePOI(
-                    candidate_id=f"amap-poi-{provider_id.casefold()}",
-                    name=name,
-                    city=city,
-                    district=_optional_text(detail_payload.get("district")),
-                    address=_optional_text(detail_payload.get("address")),
-                    location=_parse_location(
-                        detail_payload.get("location"),
-                        operation=detail_operation,
-                    ),
-                    categories=categories,
-                    environment=_classify_environment(categories, name),
-                    tags=tags,
-                    source=SourceReference(
-                        provider="amap",
-                        provider_id=provider_id,
-                        data_mode=self._data_mode,
-                        retrieved_at=self._retrieved_at(),
-                        raw_response_sha256=_payload_sha256(search_result, detail_payload),
-                    ),
-                )
-            )
+                    ProviderErrorCategory.UNRECOVERABLE,
+                }:
+                    raise
+                detail_failures.append(error)
+        if not candidates and detail_failures:
+            raise detail_failures[-1]
         return tuple(candidates)
 
     async def search_stays(self, request: StaySearchRequest) -> tuple[CandidateStay, ...]:

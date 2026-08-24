@@ -1,6 +1,7 @@
 import asyncio
 import json
 from contextlib import nullcontext
+from datetime import timedelta
 from decimal import Decimal
 from types import SimpleNamespace
 from typing import Any, cast
@@ -229,6 +230,40 @@ def test_plan_agent_builds_grounded_trip_plan_from_ready_multi_agent_materials()
         second_day_route = result.decisions[2].item.route_from_previous
         assert first_day_route is not None and first_day_route.origin.candidate_id == stay_id
         assert second_day_route is not None and second_day_route.origin.candidate_id == stay_id
+
+    asyncio.run(exercise())
+
+
+def test_plan_agent_excludes_weather_risks_outside_the_trip_dates() -> None:
+    async def exercise() -> None:
+        request, materials = await _materials()
+        weather_branch = next(
+            branch for branch in materials.specialist_result.branches if branch.weather_risks
+        )
+        original_risk = weather_branch.weather_risks[0]
+        shifted_risk = original_risk.model_copy(
+            update={
+                "starts_at": original_risk.starts_at + timedelta(days=30),
+                "ends_at": original_risk.ends_at + timedelta(days=30),
+            }
+        )
+        shifted_branch = weather_branch.model_copy(update={"weather_risks": (shifted_risk,)})
+        shifted_specialists = materials.specialist_result.model_copy(
+            update={
+                "branches": tuple(
+                    shifted_branch if branch is weather_branch else branch
+                    for branch in materials.specialist_result.branches
+                )
+            }
+        )
+        shifted_materials = materials.model_copy(update={"specialist_result": shifted_specialists})
+
+        result = run_plan_agent(request, shifted_materials, FixedPlanModel())
+
+        assert result.plan is not None
+        assert result.plan.weather_risks == ()
+        assert result.input_weather_risk_ids == ()
+        assert all(day.weather_risk_ids == () for day in result.plan.days)
 
     asyncio.run(exercise())
 

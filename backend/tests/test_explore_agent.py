@@ -1,6 +1,7 @@
 import asyncio
 import json
 from contextlib import nullcontext
+from datetime import timedelta
 from types import SimpleNamespace
 from typing import Any
 
@@ -34,8 +35,10 @@ from app.agents.explore_agent import (
 )
 from app.core.config import Settings
 from app.domain.candidates import CandidatePOI
+from app.domain.provider import ProviderErrorCategory, ProviderFailure
 from app.evaluation import load_planning_seed_suite
 from app.planning import compile_planner_context
+from app.providers.errors import ProviderRequestError
 from app.providers.ports import POISearchRequest, RouteRequest, WeatherRiskRequest
 
 
@@ -92,13 +95,16 @@ class FixedExploreModel:
 
 
 class RecordingProvider:
-    def __init__(self, responses: list[tuple[CandidatePOI, ...]]) -> None:
+    def __init__(self, responses: list[tuple[CandidatePOI, ...] | Exception]) -> None:
         self.responses = responses
         self.calls: list[POISearchRequest] = []
 
     async def search_pois(self, request: POISearchRequest) -> tuple[CandidatePOI, ...]:
         self.calls.append(request)
-        return self.responses.pop(0)
+        response = self.responses.pop(0)
+        if isinstance(response, Exception):
+            raise response
+        return response
 
     async def get_weather_risks(self, request: WeatherRiskRequest) -> Any:
         raise AssertionError(f"unexpected weather request: {request}")
@@ -199,6 +205,13 @@ def test_graph_searches_provider_then_returns_grounded_recommendation() -> None:
 
 def test_duplicate_candidate_across_queries_is_deduplicated_with_lineage() -> None:
     context, candidate = sample_context_and_candidate()
+    refreshed_candidate = candidate.model_copy(
+        update={
+            "source": candidate.source.model_copy(
+                update={"retrieved_at": candidate.source.retrieved_at + timedelta(seconds=1)}
+            )
+        }
+    )
     response = make_query_response().model_copy(
         update={
             "proposal": ExploreQueryProposalBatch(
@@ -215,12 +228,46 @@ def test_duplicate_candidate_across_queries_is_deduplicated_with_lineage() -> No
         }
     )
     model = FixedExploreModel(response)
-    provider = RecordingProvider([(candidate,), (candidate,)])
+    provider = RecordingProvider([(candidate,), (refreshed_candidate,)])
 
     result = asyncio.run(run_explore_agent(context, provider, model))
 
     assert len(result.observations) == 1
     assert result.observations[0].query_ids == tuple(item.query_id for item in result.queries)
+
+
+def test_query_level_detail_failure_preserves_other_grounded_candidates() -> None:
+    context, candidate = sample_context_and_candidate()
+    response = make_query_response().model_copy(
+        update={
+            "proposal": ExploreQueryProposalBatch(
+                items=(
+                    make_query_response().proposal.items[0],
+                    ExploreQueryProposal(
+                        kind=ExploreQueryKind.DINING,
+                        keywords="北京特色小吃",
+                        reason="补充当地餐饮候选。",
+                        context_refs=(),
+                    ),
+                )
+            )
+        }
+    )
+    detail_failure = ProviderRequestError(
+        ProviderFailure(
+            provider="amap",
+            operation="maps_search_detail",
+            category=ProviderErrorCategory.UNRECOVERABLE,
+            message="maps_search_detail returned invalid JSON content",
+            retryable=False,
+        )
+    )
+    provider = RecordingProvider([(candidate,), detail_failure])
+
+    result = asyncio.run(run_explore_agent(context, provider, FixedExploreModel(response)))
+
+    assert len(provider.calls) == 2
+    assert [item.candidate.candidate_id for item in result.observations] == [candidate.candidate_id]
 
 
 @pytest.mark.parametrize("corruption", ["unknown_query", "changed_candidate"])
