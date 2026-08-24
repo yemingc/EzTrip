@@ -24,7 +24,7 @@ from app.planning.material_contracts import (
     PlanningMaterialIssueCode,
     PlanningMaterialStatus,
 )
-from app.planning.product_graph import open_sqlite_product_runtime
+from app.planning.product_graph import open_sqlite_product_runtime, should_skip_live_repair
 from app.planning.product_repair import ProductRepairExecutor
 from app.planning.repair_contracts import RepairOutcome
 from app.planning.repair_router import run_repair_router
@@ -156,6 +156,37 @@ def test_product_graph_skips_repair_when_hard_validation_is_finalizable(tmp_path
         assert snapshot.state.repair is None
         assert "run_repair" not in nodes
         assert nodes[-1] == "prepare_human_review"
+
+    asyncio.run(scenario())
+
+
+def test_live_provider_fact_gaps_skip_expensive_automatic_repair() -> None:
+    async def scenario() -> None:
+        request, _, _, materials, plan, _ = await _product_artifacts()
+        missing_opening = OpeningHoursEvidenceBundle(
+            request_id=request.request_id,
+            data_mode=materials.data_mode,
+            items=(),
+        )
+        report = validate_hard_trip_plan(request, plan, materials, missing_opening)
+        error_codes = {
+            issue.rule_code for issue in report.issues if issue.severity == IssueSeverity.ERROR
+        }
+
+        assert error_codes == {"opening_hours.evidence_missing"}
+        assert should_skip_live_repair(DataMode.LIVE, report) is True
+        assert should_skip_live_repair(DataMode.FIXTURE, report) is False
+        hard_conflict = report.model_copy(
+            update={
+                "issues": tuple(
+                    issue.model_copy(update={"rule_code": "constraint.hard_avoid_scheduled"})
+                    if issue.severity == IssueSeverity.ERROR
+                    else issue
+                    for issue in report.issues
+                )
+            }
+        )
+        assert should_skip_live_repair(DataMode.LIVE, hard_conflict) is False
 
     asyncio.run(scenario())
 
