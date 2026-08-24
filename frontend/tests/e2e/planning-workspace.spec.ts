@@ -65,6 +65,46 @@ test("does not present missing cost facts as a zero-cost trip", async ({ page })
   await expect(results).toContainText("已批准草案");
 });
 
+test("resolves Shanghai and plans a three-day fixture trip", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByLabel("目的城市").fill("上海");
+  await page.getByLabel("行程天数").selectOption("3");
+  await page.getByTestId("submit-planning-task").click();
+
+  await expect(page.getByTestId("destination-resolution")).toContainText("adcode 310000");
+  const results = page.getByTestId("planning-results");
+  await expect(results).toBeVisible({ timeout: 20_000 });
+  await expect(results).toContainText("上海 · 3 日规划草案");
+  await expect(results).toContainText("上海博物馆");
+  await expect(results).toContainText("豫园");
+});
+
+test("requires confirmation when a destination name is ambiguous", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByLabel("目的城市").fill("朝阳");
+  await page.getByTestId("submit-planning-task").click();
+
+  const ambiguity = page.getByTestId("destination-ambiguity");
+  await expect(ambiguity).toBeVisible();
+  await expect(ambiguity).toContainText("北京市朝阳区");
+  await expect(ambiguity).toContainText("辽宁省朝阳市");
+  await expect(page.getByTestId("event-trace")).toContainText("提交后，这里会显示真实 SSE 事件");
+});
+
+test("does not pretend fixture mode supports an arbitrary city", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByLabel("目的城市").fill("泉州");
+  await page.getByTestId("submit-planning-task").click();
+
+  await expect(page.getByTestId("planning-error")).toContainText(
+    "Fixture 模式仅覆盖北京、上海和成都",
+  );
+  await expect(page.getByTestId("planning-results")).not.toBeVisible();
+});
+
 test("applies a structured day-scoped revision and renders plan version v2", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("submit-planning-task").click();

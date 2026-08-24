@@ -1,14 +1,16 @@
 # Planning Task API V1
 
 EZ-401 established the asynchronous FastAPI boundary, EZ-403A/403B added checkpoint HITL and a
-bounded PlanVersion v2 revision, EZ-405 moved the task executor to Product Graph V2, and EZ-405B
-connected issue-directed product repair before HITL. The API accepts an already structured
-`TripRequest`; Chinese free-text extraction is not silently implied by this endpoint.
+bounded PlanVersion v2 revision, EZ-405 moved the task executor to Product Graph V2, EZ-405B
+connected issue-directed product repair before HITL, and EZ-406A added provider-backed destination
+resolution. The API accepts an already structured `TripRequest`; Chinese free-text extraction is
+not silently implied by this endpoint.
 
 ## Endpoints
 
 | Method | Path | Purpose |
 |---|---|---|
+| `POST` | `/api/destinations/resolve` | Resolve a typed domestic administrative destination before planning |
 | `POST` | `/api/planning-tasks` | Create a task and return `202 queued` |
 | `GET` | `/api/planning-tasks/{task_id}` | Read the current typed snapshot |
 | `GET` | `/api/planning-tasks/{task_id}/events` | Replay and follow the SSE event log |
@@ -16,6 +18,21 @@ connected issue-directed product repair before HITL. The API accepts an already 
 
 The committed JSON Schema bundle is
 [`evals/schemas/planning-task-api.v1.json`](../../evals/schemas/planning-task-api.v1.json).
+
+## Destination resolution
+
+The frontend first sends `input_name` and `data_mode` to `/api/destinations/resolve`. A resolved
+response contains one canonical `planning_city_name`, six-digit `administrative_code`,
+administrative level, qualified name, and source. An ambiguous response contains multiple
+candidates and does not create a planning task until the user selects one. `no_result`,
+`unsupported`, configuration failure, and Provider failure remain distinct outcomes.
+
+The planning executor resolves the city again and checks `selected_destination_adcode`; it does not
+trust a browser-supplied code without Provider confirmation. Fixture resolution and planning cover
+Beijing, Shanghai, and Chengdu plus a deterministic `朝阳` ambiguity case. Live resolution uses AMap
+REST geocoding, after which POI, stay, route, and weather operations share the selected city name and
+adcode. This is an input/routing capability for AMap-resolvable domestic destinations, not evidence
+that every city has equal candidate quality. A single task still supports one destination only.
 
 ## Offline fixture request
 
@@ -25,9 +42,9 @@ Start the API from `backend/`:
 uv run uvicorn app.main:app --reload
 ```
 
-The default product fixture contains explicitly synthetic, source-labelled Beijing POI, stay,
-route, opening-hours, and first-day rain data. The following two-day request therefore runs without
-API keys or network access:
+The default product fixture contains explicitly synthetic, source-labelled Beijing, Shanghai, and
+Chengdu planning data. The following Beijing two-day request therefore runs without API keys or
+network access:
 
 ```powershell
 $body = @'
@@ -67,6 +84,7 @@ $body = @'
       ]
     }
   },
+  "selected_destination_adcode": "110000",
   "data_mode": "fixture"
 }
 '@

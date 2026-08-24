@@ -8,6 +8,10 @@ from app.agents.single_planner import (
     SinglePlannerConfigurationError,
     SinglePlannerProtocolError,
 )
+from app.destinations import (
+    DestinationResolutionConfigurationError,
+    DestinationSelectionError,
+)
 from app.planning.material_builder import PlanningMaterialProtocolError
 from app.planning.minimal_graph import PlanningGraphProtocolError
 from app.planning.plan_revision import PlanRevisionProtocolError
@@ -255,6 +259,13 @@ class PlanningTaskService:
 
     @staticmethod
     def _safe_failure(error: Exception) -> PlanningTaskFailure:
+        if isinstance(error, DestinationSelectionError):
+            return PlanningTaskFailure(
+                error_code=error.error_code,
+                category=PlanningTaskFailureCategory.PROVIDER,
+                retryable=False,
+                user_message=error.user_message,
+            )
         if isinstance(error, TimeoutError):
             return PlanningTaskFailure(
                 error_code="planning-task-timeout",
@@ -274,6 +285,7 @@ class PlanningTaskService:
             error,
             (
                 PlanningTaskConfigurationError,
+                DestinationResolutionConfigurationError,
                 SinglePlannerConfigurationError,
                 PlanAgentConfigurationError,
                 SpecialistFanoutConfigurationError,

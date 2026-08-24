@@ -9,7 +9,10 @@ import {
   createPlanningTask,
   getPlanningTask,
   planningEventsUrl,
+  resolveDestination,
   submitPlanningTaskReview,
+  type CityResolutionCandidate,
+  type DestinationResolution,
   type HumanReviewAction,
   type PlanRevisionRequest,
   type PlanRevisionSelection,
@@ -146,11 +149,14 @@ function PlanningTrace({
 
 export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: string }) {
   const [values, setValues] = useState<PlannerFormValues>({
-    rawText: "帮我规划一次北京两日历史文化之旅，节奏轻松一些。",
+    rawText: "帮我规划一次历史文化之旅，节奏轻松一些。",
     originCity: "上海",
+    destinationCity: "北京",
     startDate: defaultStartDate,
+    tripDays: 2,
     adults: 2,
     budgetLimit: "3000",
+    dataMode: "fixture",
   });
   const [phase, setPhase] = useState<WorkspacePhase>("idle");
   const [connection, setConnection] = useState<ConnectionState>("idle");
@@ -159,6 +165,10 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
   const [snapshot, setSnapshot] = useState<PlanningTaskSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reviewError, setReviewError] = useState<string | null>(null);
+  const [destinationResolution, setDestinationResolution] =
+    useState<DestinationResolution | null>(null);
+  const [selectedDestinationAdcode, setSelectedDestinationAdcode] =
+    useState<string | null>(null);
   const sourceRef = useRef<EventSource | null>(null);
   const terminalRef = useRef(false);
   const recoveryRef = useRef(false);
@@ -181,6 +191,10 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
     value: PlannerFormValues[Key],
   ) => {
     setValues((current) => ({ ...current, [key]: value }));
+    if (key === "destinationCity" || key === "dataMode") {
+      setDestinationResolution(null);
+      setSelectedDestinationAdcode(null);
+    }
   };
 
   async function loadFinalSnapshot(currentTaskId: string) {
@@ -279,7 +293,31 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
     setConnection("idle");
 
     try {
-      const accepted = await createPlanningTask(values);
+      const resolution = await resolveDestination(values);
+      setDestinationResolution(resolution);
+      let selected: CityResolutionCandidate | undefined;
+      if (resolution.status === "resolved") {
+        selected = resolution.candidates[0];
+        setSelectedDestinationAdcode(selected.administrative_code);
+      } else if (resolution.status === "ambiguous") {
+        selected = resolution.candidates.find(
+          (candidate) => candidate.administrative_code === selectedDestinationAdcode,
+        );
+        if (!selected) {
+          setPhase("idle");
+          return;
+        }
+      } else {
+        setError(
+          resolution.status === "unsupported"
+            ? "Fixture 模式仅覆盖北京、上海和成都。请选择实时 Provider，或改用演示城市。"
+            : "没有解析到可规划的国内城市，请补充省份或检查名称。",
+        );
+        setPhase("error");
+        return;
+      }
+
+      const accepted = await createPlanningTask(values, selected.administrative_code);
       setTaskId(accepted.task_id);
       setPhase("streaming");
       connectToEvents(accepted.task_id);
@@ -376,10 +414,15 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
     setSnapshot(null);
     setError(null);
     setReviewError(null);
+    setDestinationResolution(null);
+    setSelectedDestinationAdcode(null);
     pendingReviewRef.current = null;
   }
 
   const isBusy = ["submitting", "streaming", "loading_result"].includes(phase);
+  const selectedDestination = destinationResolution?.candidates.find(
+    (candidate) => candidate.administrative_code === selectedDestinationAdcode,
+  );
 
   return (
     <>
@@ -392,11 +435,11 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
             <div>
               <p className="eyebrow">Create a planning task</p>
               <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">
-                描述这次北京旅行
+                规划{values.destinationCity.trim() || "国内城市"}旅行
               </h2>
             </div>
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold text-slate-500">
-              2 日可验证演示
+              {values.tripDays} 日 · {values.dataMode === "fixture" ? "可回放 Fixture" : "实时 Provider"}
             </span>
           </div>
 
@@ -412,22 +455,64 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
             />
           </label>
           <p className="mt-2 text-[11px] leading-5 text-slate-500">
-            当前版本会保留这段原始需求，但不会假装已经完成中文语义抽取；下方已确认约束才会进入确定性工作流。
+            当前版本保留原始需求，但不会假装已完成中文字段抽取；本增量使用下方结构化字段规划，EZ-406B 再接自然语言 Request Intake。
           </p>
 
           <div className="mt-5 rounded-2xl border border-emerald-900/10 bg-emerald-50/70 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-900">已确认硬约束</p>
-              <span className="text-[10px] text-emerald-800/60">Fixture provider 支持</span>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-900">城市事实与结构化输入</p>
+              <span className="text-[10px] text-emerald-800/60">
+                {values.dataMode === "fixture" ? "三城市 Fixture" : "高德 live 解析"}
+              </span>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
-              <span className="constraint-chip">必须游览 · 故宫博物院</span>
-              <span className="constraint-chip">必须游览 · 天坛公园</span>
+              <span className="constraint-chip">
+                目的地 · {selectedDestination?.qualified_name ?? `${values.destinationCity}（待解析）`}
+              </span>
+              <span className="constraint-chip">行程 · {values.tripDays} 天</span>
               <span className="constraint-chip constraint-chip-soft">偏好 · 历史文化 / 轻步行</span>
             </div>
+            {selectedDestination ? (
+              <p className="mt-3 text-[11px] leading-5 text-emerald-900/70" data-testid="destination-resolution">
+                已由 {selectedDestination.source.provider} 解析 · adcode {selectedDestination.administrative_code} · {selectedDestination.level}
+              </p>
+            ) : null}
+            {destinationResolution?.status === "ambiguous" ? (
+              <div className="mt-4" data-testid="destination-ambiguity">
+                <p className="text-xs font-semibold text-amber-900">这个名称对应多个行政区，请先确认：</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {destinationResolution.candidates.map((candidate) => (
+                    <button
+                      className={
+                        candidate.administrative_code === selectedDestinationAdcode
+                          ? "rounded-full border border-emerald-700 bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white"
+                          : "rounded-full border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900"
+                      }
+                      key={candidate.administrative_code}
+                      onClick={() => setSelectedDestinationAdcode(candidate.administrative_code)}
+                      type="button"
+                    >
+                      {candidate.qualified_name}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-[11px] text-amber-800/70">选择后再次点击“开始规划”。</p>
+              </div>
+            ) : null}
           </div>
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <label>
+              <span className="field-label">目的城市</span>
+              <input
+                className="field-control"
+                disabled={isBusy}
+                onChange={(event) => updateValue("destinationCity", event.target.value)}
+                placeholder="例如：泉州"
+                required
+                value={values.destinationCity}
+              />
+            </label>
             <label>
               <span className="field-label">出发城市</span>
               <input
@@ -449,6 +534,19 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
                 type="date"
                 value={values.startDate}
               />
+            </label>
+            <label>
+              <span className="field-label">行程天数</span>
+              <select
+                className="field-control"
+                disabled={isBusy}
+                onChange={(event) => updateValue("tripDays", Number(event.target.value))}
+                value={values.tripDays}
+              >
+                {[2, 3, 4, 5].map((count) => (
+                  <option key={count} value={count}>{count} 天</option>
+                ))}
+              </select>
             </label>
             <label>
               <span className="field-label">成人数量</span>
@@ -480,10 +578,34 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
                 />
               </div>
             </label>
+            <label className="sm:col-span-2">
+              <span className="field-label">旅行数据模式</span>
+              <select
+                className="field-control"
+                disabled={isBusy}
+                onChange={(event) =>
+                  updateValue("dataMode", event.target.value as PlannerFormValues["dataMode"])
+                }
+                value={values.dataMode}
+              >
+                <option value="fixture">Fixture · 北京 / 上海 / 成都，可回放且不调用外部 API</option>
+                <option value="live">实时 Provider · 动态解析国内城市，会调用高德与 DeepSeek</option>
+              </select>
+            </label>
           </div>
 
+          {values.dataMode === "live" ? (
+            <p className="mt-3 text-[11px] leading-5 text-amber-700">
+              实时模式需要后端启用 EZTRIP_PLANNING_LIVE_ENABLED，并会消耗高德与模型配额；所有城市可输入，但规划质量不会被描述为全部已验证。
+            </p>
+          ) : null}
+
           {error ? (
-            <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 p-4" role="alert">
+            <div
+              className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 p-4"
+              data-testid="planning-error"
+              role="alert"
+            >
               <p className="text-sm font-semibold text-rose-900">任务没有完成</p>
               <p className="mt-1 text-xs leading-5 text-rose-700">{error}</p>
               <p className="mt-2 break-all font-mono text-[10px] text-rose-500">API: {apiBaseUrl}</p>
@@ -507,7 +629,9 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
             {phase === "complete" || phase === "error" ? (
               <button className="secondary-button" onClick={reset} type="button">重新开始</button>
             ) : null}
-            <p className="text-[11px] text-slate-400">目标城市固定为北京 · 行程固定为 2 天</p>
+            <p className="text-[11px] text-slate-400">
+              {values.destinationCity || "目的地待填写"} · {values.tripDays} 天 · 提交前由服务端验证城市身份
+            </p>
           </div>
         </form>
 

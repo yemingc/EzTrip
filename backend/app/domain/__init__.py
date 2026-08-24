@@ -16,6 +16,12 @@ from app.domain.context import (
     PlannerReadiness,
     PlanningClarification,
 )
+from app.domain.destination import (
+    AdministrativeLevel,
+    CityResolutionCandidate,
+    DestinationResolution,
+    DestinationResolutionStatus,
+)
 from app.domain.money import BudgetCategory, CostItem, MoneyRange
 from app.domain.opening_hours import OpeningHoursEvidence, OpeningHoursEvidenceBundle
 from app.domain.planning import (
@@ -70,6 +76,7 @@ from app.domain.workflow import (
 __all__ = [
     "ActivityEnvironment",
     "ActivityKind",
+    "AdministrativeLevel",
     "BudgetAssessmentStatus",
     "BudgetCategory",
     "BudgetConstraint",
@@ -79,6 +86,7 @@ __all__ = [
     "CandidateQuerySource",
     "CandidateSearchQuery",
     "CandidateStay",
+    "CityResolutionCandidate",
     "ClarificationKind",
     "Constraint",
     "ConstraintKind",
@@ -89,6 +97,8 @@ __all__ = [
     "DataMode",
     "DayPlan",
     "DestinationContext",
+    "DestinationResolution",
+    "DestinationResolutionStatus",
     "GeoPoint",
     "IssueSeverity",
     "ItineraryItem",

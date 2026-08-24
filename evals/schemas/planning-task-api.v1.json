@@ -4,6 +4,262 @@
   "title": "EzTrip planning task API contract bundle",
   "version": "1.0",
   "models": {
+    "DestinationResolveRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "input_name": {
+          "minLength": 1,
+          "title": "Input Name",
+          "type": "string"
+        },
+        "data_mode": {
+          "default": "fixture",
+          "enum": [
+            "fixture",
+            "live"
+          ],
+          "title": "Data Mode",
+          "type": "string"
+        }
+      },
+      "required": [
+        "input_name"
+      ],
+      "title": "DestinationResolveRequest",
+      "type": "object"
+    },
+    "DestinationResolution": {
+      "$defs": {
+        "AdministrativeLevel": {
+          "enum": [
+            "province",
+            "city",
+            "district"
+          ],
+          "title": "AdministrativeLevel",
+          "type": "string"
+        },
+        "CityResolutionCandidate": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Candidate Id",
+              "type": "string"
+            },
+            "qualified_name": {
+              "minLength": 1,
+              "title": "Qualified Name",
+              "type": "string"
+            },
+            "planning_city_name": {
+              "minLength": 1,
+              "title": "Planning City Name",
+              "type": "string"
+            },
+            "administrative_code": {
+              "pattern": "^\\d{6}$",
+              "title": "Administrative Code",
+              "type": "string"
+            },
+            "level": {
+              "$ref": "#/$defs/AdministrativeLevel"
+            },
+            "province_name": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Province Name"
+            },
+            "city_name": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "City Name"
+            },
+            "district_name": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "District Name"
+            },
+            "center": {
+              "anyOf": [
+                {
+                  "pattern": "^-?\\d+(?:\\.\\d+)?,-?\\d+(?:\\.\\d+)?$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Center"
+            },
+            "source": {
+              "$ref": "#/$defs/SourceReference"
+            }
+          },
+          "required": [
+            "candidate_id",
+            "qualified_name",
+            "planning_city_name",
+            "administrative_code",
+            "level",
+            "source"
+          ],
+          "title": "CityResolutionCandidate",
+          "type": "object"
+        },
+        "DataMode": {
+          "enum": [
+            "live",
+            "fixture",
+            "user_input",
+            "estimate"
+          ],
+          "title": "DataMode",
+          "type": "string"
+        },
+        "DestinationResolutionStatus": {
+          "enum": [
+            "resolved",
+            "ambiguous",
+            "no_result",
+            "unsupported"
+          ],
+          "title": "DestinationResolutionStatus",
+          "type": "string"
+        },
+        "SourceReference": {
+          "additionalProperties": false,
+          "description": "Traceable origin for provider data or an explicit estimate.",
+          "properties": {
+            "provider": {
+              "minLength": 1,
+              "title": "Provider",
+              "type": "string"
+            },
+            "provider_id": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Provider Id"
+            },
+            "data_mode": {
+              "$ref": "#/$defs/DataMode"
+            },
+            "retrieved_at": {
+              "format": "date-time",
+              "title": "Retrieved At",
+              "type": "string"
+            },
+            "raw_response_sha256": {
+              "anyOf": [
+                {
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Raw Response Sha256"
+            }
+          },
+          "required": [
+            "provider",
+            "data_mode",
+            "retrieved_at"
+          ],
+          "title": "SourceReference",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "resolver_version": {
+          "const": "city-resolver-v1",
+          "default": "city-resolver-v1",
+          "title": "Resolver Version",
+          "type": "string"
+        },
+        "input_name": {
+          "minLength": 1,
+          "title": "Input Name",
+          "type": "string"
+        },
+        "data_mode": {
+          "enum": [
+            "fixture",
+            "live"
+          ],
+          "title": "Data Mode",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/DestinationResolutionStatus"
+        },
+        "candidates": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CityResolutionCandidate"
+          },
+          "title": "Candidates",
+          "type": "array"
+        }
+      },
+      "required": [
+        "input_name",
+        "data_mode",
+        "status"
+      ],
+      "title": "DestinationResolution",
+      "type": "object"
+    },
     "PlanningTaskCreateRequest": {
       "$defs": {
         "BudgetCategory": {
@@ -443,6 +699,19 @@
               "title": "Destination City",
               "type": "string"
             },
+            "destination_adcode": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{6}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Destination Adcode"
+            },
             "start_date": {
               "format": "date",
               "title": "Start Date",
@@ -502,6 +771,19 @@
         },
         "request": {
           "$ref": "#/$defs/TripRequest"
+        },
+        "selected_destination_adcode": {
+          "anyOf": [
+            {
+              "pattern": "^\\d{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Selected Destination Adcode"
         },
         "cost_items": {
           "default": [],
@@ -6492,6 +6774,19 @@
               "minLength": 1,
               "title": "Destination City",
               "type": "string"
+            },
+            "destination_adcode": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{6}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Destination Adcode"
             },
             "start_date": {
               "format": "date",

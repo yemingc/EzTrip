@@ -525,6 +525,19 @@
           "title": "Destination City",
           "type": "string"
         },
+        "destination_adcode": {
+          "anyOf": [
+            {
+              "pattern": "^\\d{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Destination Adcode"
+        },
         "start_date": {
           "format": "date",
           "title": "Start Date",

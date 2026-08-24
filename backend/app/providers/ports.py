@@ -6,6 +6,7 @@ from pydantic import Field
 
 from app.domain.base import DomainModel, NonEmptyText
 from app.domain.candidates import CandidatePOI, CandidateStay
+from app.domain.destination import DestinationResolution
 from app.domain.travel_data import RouteEndpoint, RouteLeg, RouteMode, WeatherRisk
 
 
@@ -72,6 +73,10 @@ class WeatherRiskProvider(Protocol):
 
 class RouteProvider(Protocol):
     async def get_route(self, request: RouteRequest) -> RouteLeg: ...
+
+
+class CityResolverProvider(Protocol):
+    async def resolve_destination(self, input_name: str) -> DestinationResolution: ...
 
 
 class SpecialistProvider(

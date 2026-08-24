@@ -2,7 +2,7 @@
 
 Gate 0 FastAPI service plus the first offline Gate 2 vertical slice, recoverable HITL wrapper, specialist fan-out, deterministic planning-material layer, schema-constrained multi-Agent Plan Agent, deterministic Hard Validators, a bounded Repair Router, and provider-triggered local Weather Repair. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, schema-constrained Constraint/Explore/Stay Agents, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, a SQLite-checkpointed main Graph using native LangGraph interrupt/resume, an independent parallel Explore/Stay/proactive-Weather information-gathering Graph, a bounded route matrix plus auditable budget allocator, a Plan Agent that consumes those materials into the shared `TripPlan` contract, a zero-model finalization gate, deterministic issue-directed retry/HITL routing with artifact-reuse guards, and a zero-model Weather Repair Coordinator that grades validated proposals before auto-apply or HITL.
 
-The product-facing planning API now runs Product Graph V2: parallel Explore/Stay/proactive-Weather specialists feed deterministic route/budget materials, a schema-constrained Plan Agent, the full Hard Validator, a bounded responsibility-node Repair Router, checkpoint-backed HITL, and structured PlanVersion revision. Product repair can selectively rerun Explore, Stay, Route, Budget, or Plan while preserving unaffected artifacts and reporting delegated call counts. Task metadata and SSE logs remain process-local, and the separate Weather Repair Coordinator is not yet connected to this product Graph. EzTrip is an on-demand planner, so scheduled WeatherWatch is intentionally out of V1 scope. See [the planning task API protocol](../docs/api/planning-task-api.md).
+The product-facing planning API now runs Product Graph V2: parallel Explore/Stay/proactive-Weather specialists feed deterministic route/budget materials, a schema-constrained Plan Agent, the full Hard Validator, a bounded responsibility-node Repair Router, checkpoint-backed HITL, and structured PlanVersion revision. A typed destination-resolution API normalizes a free-form domestic destination to a canonical city and AMap `adcode` before the task starts; ambiguous administrative names require an explicit candidate selection. Beijing, Shanghai, and Chengdu are deterministic fixture coverage, while live coverage is provider-driven rather than a static product allow-list. Product repair can selectively rerun Explore, Stay, Route, Budget, or Plan while preserving unaffected artifacts and reporting delegated call counts. Task metadata and SSE logs remain process-local, and the separate Weather Repair Coordinator is not yet connected to this product Graph. EzTrip is an on-demand planner, so scheduled WeatherWatch is intentionally out of V1 scope. See [the planning task API protocol](../docs/api/planning-task-api.md).
 
 The 30-case system-comparison inventory is frozen under `evals/cases/comparison`, with a deterministic report committed at `evals/reports/system-comparison-fixture.v1.json`. The full single-Agent arm and Product Graph without the hard gate each finalize 4/28 eligible fixtures; Product Graph with Hard Validator and bounded repair finalizes 20/28. The paired +16 recoveries measure only the validator/repair control path over designed development faults. They do not establish Specialist-model quality or a real-user success rate, and the replay performs no DeepSeek, AMap, or LangSmith calls.
 
@@ -58,11 +58,11 @@ uv run uvicorn app.main:app --reload
 uv run pytest tests/test_planning_task_api.py tests/test_planning_task_service.py --no-cov
 ```
 
-The default `fixture` mode uses only allow-listed offline AMap captures and a deterministic
-fixture scheduler. `live` mode is rejected unless `EZTRIP_PLANNING_LIVE_ENABLED=true`; enabling
-it can call AMap and DeepSeek and consume quota. SSE emits committed graph-node events, heartbeat
-comments, typed terminal failures, and supports `Last-Event-ID` replay within the same server
-process.
+The default `fixture` mode uses deterministic Beijing, Shanghai, and Chengdu product data and
+never calls an external service. `live` mode resolves the destination through AMap REST and is
+rejected unless `EZTRIP_PLANNING_LIVE_ENABLED=true`; enabling it can call AMap and DeepSeek and
+consume quota. SSE emits committed graph-node events, heartbeat comments, typed terminal failures,
+and supports `Last-Event-ID` replay within the same server process.
 
 Compile the committed Beijing request into a deterministic planning context:
 

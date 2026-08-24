@@ -5,8 +5,10 @@ from app.providers.amap_adapter import (
     load_fixture_amap_provider,
     open_live_amap_provider,
 )
+from app.providers.city_resolver import AmapCityResolverProvider, FixtureCityResolverProvider
 from app.providers.errors import ProviderRequestError
 from app.providers.ports import (
+    CityResolverProvider,
     POISearchProvider,
     POISearchRequest,
     RetryPolicy,
@@ -21,7 +23,10 @@ from app.providers.ports import (
 )
 
 __all__ = [
+    "AmapCityResolverProvider",
     "AmapTravelDataProvider",
+    "CityResolverProvider",
+    "FixtureCityResolverProvider",
     "POISearchProvider",
     "POISearchRequest",
     "ProviderRequestError",
