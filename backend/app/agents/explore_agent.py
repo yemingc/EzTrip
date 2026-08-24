@@ -39,10 +39,11 @@ from app.providers.ports import POISearchProvider, POISearchRequest
 
 EXPLORE_AGENT_NAME = "eztrip-explore-agent-v1"
 EXPLORE_QUERY_PROMPT_VERSION = "explore-query-strategy-v1"
-EXPLORE_SELECTION_PROMPT_VERSION = "explore-candidate-selection-v1"
+EXPLORE_SELECTION_PROMPT_VERSION = "explore-candidate-selection-v2"
 EXPLORE_QUERY_TOOL_NAME = "submit_explore_queries"
 EXPLORE_SELECTION_TOOL_NAME = "submit_explore_selection"
 MAX_CANDIDATES_PER_QUERY = 5
+EXPLORE_RESERVE_ACTIVITY_COUNT = 2
 
 QUERY_SYSTEM_PROMPT = """你是 EzTrip Explore Agent 的搜索策略节点。
 只根据结构化 PlannerContext 设计 1 到 5 条高德 POI 文本搜索关键词, 可选择 attraction 或 dining。
@@ -56,7 +57,8 @@ context_refs 只能复制输入 allowed_context_refs 中的完整字符串; 没�
 
 SELECTION_SYSTEM_PROMPT = """你是 EzTrip Explore Agent 的候选筛选节点。
 只能从输入 provider_candidates 中选择 1 到 25 个 candidate_id, 并给出从 1 开始连续的 rank。
-若输入存在足够相关事实, 至少选择 required_major_activity_count 个非餐饮候选;
+若输入存在足够相关事实, 至少选择 preferred_major_activity_count 个非餐饮候选,
+其中 required_major_activity_count 用于排程, 其余作为住宿锚点距离过滤后的候补;
 餐饮候选只作为附近用餐建议池, 不计入 required_major_activity_count。
 不得为了凑数选择与 confirmed_constraints、travel_styles 或同行人特征没有直接关系的候选。
 若某候选的类别和标签明显偏离用户偏好, 必须排除, 即使它来自同一查询结果。
@@ -187,6 +189,10 @@ def _selection_input_payload(
         "required_major_activity_count": major_activity_target(
             context.day_count,
             context.pace,
+        ),
+        "preferred_major_activity_count": min(
+            major_activity_target(context.day_count, context.pace) + EXPLORE_RESERVE_ACTIVITY_COUNT,
+            15,
         ),
         "meal_candidates_are_recommendations_only": True,
         "travel_styles": list(context.travel_styles),

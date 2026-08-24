@@ -57,7 +57,10 @@ from app.evaluation.hard_validator_contracts import (
 from app.evaluation.plan_agent import build_plan_agent_materials, load_plan_agent_suite
 from app.evaluation.plan_agent_contracts import PlanAgentEvalCase
 from app.planning.hard_validator import validate_hard_trip_plan
-from app.planning.material_contracts import PlanningMaterialBundle, PlanningMaterialStatus
+from app.planning.material_contracts import (
+    PlanningMaterialBundle,
+    planning_materials_support_draft,
+)
 from app.planning.product_repair import ProductRepairExecutor
 from app.planning.repair_contracts import RepairOutcome, RepairRouterResult
 from app.planning.repair_router import run_repair_router
@@ -479,7 +482,7 @@ def _product_plan(
 ) -> tuple[PlanAgentRunResult, str]:
     primary_stay = fixture.healthy_materials.shortlist.primary_stay
     if primary_stay is None:
-        raise ComparisonEvaluationError("ready Product fixture requires a stay selection")
+        raise ComparisonEvaluationError("usable Product fixture requires a stay selection")
     return (
         run_plan_agent(
             fixture.request,
@@ -513,7 +516,7 @@ async def _run_arm(
     product_arm = arm != ComparisonArm.SINGLE_AGENT_TOOLS
     base_model_calls = materials.specialist_result.total_model_call_count if product_arm else 0
     provider_calls = _initial_provider_calls(materials)
-    if materials.status != PlanningMaterialStatus.READY:
+    if not planning_materials_support_draft(materials):
         usage_complete = not product_arm or base_model_calls == 0
         return (
             ComparisonRunOutput(
@@ -540,7 +543,7 @@ async def _run_arm(
         else _product_plan(fixture, policy)
     )
     if plan_result.status != PlanAgentRunStatus.PLANNED or plan_result.plan is None:
-        raise ComparisonEvaluationError("ready comparison fixture did not produce a plan")
+        raise ComparisonEvaluationError("usable comparison fixture did not produce a plan")
     initial_materials, initial_plan, opening = _inject_plan_stage(
         fixture,
         plan_result.plan,

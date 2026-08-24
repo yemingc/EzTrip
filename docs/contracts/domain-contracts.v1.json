@@ -3760,8 +3760,11 @@
           "type": "string"
         },
         "selection_prompt_version": {
-          "const": "explore-candidate-selection-v1",
-          "default": "explore-candidate-selection-v1",
+          "default": "explore-candidate-selection-v2",
+          "enum": [
+            "explore-candidate-selection-v1",
+            "explore-candidate-selection-v2"
+          ],
           "title": "Selection Prompt Version",
           "type": "string"
         },

@@ -12,6 +12,7 @@ from app.domain.planning import DayPlan, ItineraryItem, TripPlan
 from app.domain.request import TripRequest
 from app.domain.sources import DataMode
 from app.domain.validation import RepairAction, ResponsibleNode, ValidationIssue
+from app.itinerary_quality import EXCESSIVE_TRANSFER_MINUTES, major_activity_target
 from app.planning.material_builder import allocate_budget
 from app.planning.material_contracts import (
     BudgetAllocation,
@@ -144,6 +145,18 @@ def _material_issues(
         issues.append(PlanningMaterialIssueCode.BUDGET_NOT_ALLOCATED)
     if materials.shortlist.primary_stay is None:
         issues.append(PlanningMaterialIssueCode.STAY_ANCHOR_MISSING)
+    if materials.planner_context.pace is not None and len(
+        materials.shortlist.poi_candidates
+    ) < major_activity_target(
+        materials.planner_context.day_count,
+        materials.planner_context.pace,
+    ):
+        issues.append(PlanningMaterialIssueCode.ACTIVITY_COVERAGE_INSUFFICIENT)
+    if materials.planner_context.pace is not None and any(
+        edge.route is not None and edge.route.duration_minutes > EXCESSIVE_TRANSFER_MINUTES
+        for edge in materials.route_matrix.edges
+    ):
+        issues.append(PlanningMaterialIssueCode.EXCESSIVE_TRANSFER)
     return tuple(issues)
 
 

@@ -615,9 +615,7 @@ async def request_materials_blocked_task() -> None:
         "error_code": "planning-materials-blocked",
         "category": "workflow",
         "retryable": True,
-        "user_message": (
-            "景点、住宿或路线数据未能形成完整规划材料; 请重试, 若持续失败可更换更明确的兴趣关键词。"
-        ),
+        "user_message": ("当前城市未取得任何可核验的景点事实, 无法安全生成草案; 请稍后重试。"),
     }
 
 

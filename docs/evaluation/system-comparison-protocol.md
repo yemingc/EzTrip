@@ -32,7 +32,7 @@ EZ-501A 冻结 30 条 system-level development regression case，用于后续回
 - 20 条 standard：4 条正常链路，16 条路线缺失/血缘、营业时间、跨城 POI/住宿和转场窗口等可修复场景；
 - 10 条 hard：2 条不可修复候选血缘、2 条硬预算事实缺失、1 条预算下界 HITL、2 条持续约束失败、1 条路线 Provider 超时、1 条不支持城市、1 条无可行营业窗口；
 - 来源覆盖：北京历史、北京餐饮、上海城市风光、成都亲子，以及路线超时和南京能力边界；
-- 预期完整方案结果：4 个无需修复、16 个 repaired、1 个 waiting-for-user、7 个 unresolved、2 个 blocked-before-plan。
+- 当前预期完整方案结果：5 个无需修复、16 个 repaired、1 个 waiting-for-user、7 个 unresolved、1 个 blocked-before-plan。路线 Provider 部分超时不再自动排除；只要剩余 Provider-grounded 材料支持安全排程，就进入草案与统一校验。
 
 Suite 的 SHA-256 同时覆盖 30 条 case、引用的 Plan Agent source cases 和其下游 Explore/Stay Provider fixtures；修改引用事实也会改变 comparison dataset hash。
 
@@ -42,15 +42,15 @@ EZ-501B 已实现三组同构 runner。它读取相同的冻结工具快照，�
 
 | arm | 可评估 case | 可定稿 | finalization rate | 模型调用 | Provider 调用 |
 |---|---:|---:|---:|---:|---:|
-| `single_agent_tools` | 28 | 4 | 14.29% | 28 | 435 |
-| `product_graph_no_hard_gate` | 28 | 4 | 14.29% | 144 | 435 |
-| `product_graph_bounded_repair` | 28 | 20 | 71.43% | 186 | 638 |
+| `single_agent_tools` | 29 | 5 | 17.24% | 29 | 357 |
+| `product_graph_no_hard_gate` | 29 | 5 | 17.24% | 145 | 357 |
+| `product_graph_bounded_repair` | 29 | 21 | 72.41% | 187 | 518 |
 
-配对结果中，Single Agent 到无 Hard Gate Product Graph 是 0 个改善、0 个恶化、28 个不变；无 Hard Gate 到完整 Product Graph 是 16 个改善、0 个恶化、12 个不变，即 `+0.5714`。完整链路保持冻结库存：4 个无需修复、16 个 repaired、1 个 waiting-for-user、7 个 unresolved、2 个 blocked-before-plan，30/30 与预期一致。
+配对结果中，Single Agent 到无 Hard Gate Product Graph 是 0 个改善、0 个恶化、29 个不变；无 Hard Gate 到完整 Product Graph 是 16 个改善、0 个恶化、13 个不变，即 `+0.5517`。完整链路当前库存为 5 个无需修复、16 个 repaired、1 个 waiting-for-user、7 个 unresolved、1 个 blocked-before-plan，30/30 与预期一致。
 
 这是一份 `fixture_control_path_replay`，只允许声称：在这批开发集故障注入上，生产 Hard Validator 与有界 Repair 恢复了 16 条原本不可定稿的草案。它不允许声称 Specialist Agent 提升了模型规划质量，也不代表真实用户成功率。Single 与无 Gate Product arm 在 fixture 中使用同一确定性排程策略，因此二者相同是预期结果；住宿路线矩阵也只覆盖最终锚点，不构成酒店排序评测。
 
-报告没有调用 DeepSeek、高德或 LangSmith。Single arm 的 fixture token 记录完整，总计 6720；Product fixture 未完整记录所有 Specialist token，延迟也不是 live wall-clock，因此对应 token 总量和 p50/p95 均明确留空，而不是拿不完整数字比较。
+报告没有调用 DeepSeek、高德或 LangSmith。Single arm 的 fixture token 记录完整，总计 6960；Product fixture 未完整记录所有 Specialist token，延迟也不是 live wall-clock，因此对应 token 总量和 p50/p95 均明确留空，而不是拿不完整数字比较。
 
 ## 下一阶段：有界 repeated-live pilot
 

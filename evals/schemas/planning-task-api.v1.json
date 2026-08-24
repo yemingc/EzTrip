@@ -2231,8 +2231,11 @@
               "type": "string"
             },
             "selection_prompt_version": {
-              "const": "explore-candidate-selection-v1",
-              "default": "explore-candidate-selection-v1",
+              "default": "explore-candidate-selection-v2",
+              "enum": [
+                "explore-candidate-selection-v1",
+                "explore-candidate-selection-v2"
+              ],
               "title": "Selection Prompt Version",
               "type": "string"
             },
@@ -3218,17 +3221,24 @@
               "$ref": "#/$defs/ItineraryItem"
             },
             "route_edge_id": {
-              "maxLength": 100,
-              "minLength": 1,
-              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
-              "title": "Route Edge Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Route Edge Id"
             }
           },
           "required": [
             "proposal",
-            "item",
-            "route_edge_id"
+            "item"
           ],
           "title": "PlanAgentDecision",
           "type": "object"
@@ -3249,8 +3259,11 @@
               "type": "string"
             },
             "prompt_version": {
-              "const": "route-weather-budget-schedule-v1",
-              "default": "route-weather-budget-schedule-v1",
+              "default": "route-weather-budget-schedule-v2",
+              "enum": [
+                "route-weather-budget-schedule-v1",
+                "route-weather-budget-schedule-v2"
+              ],
               "title": "Prompt Version",
               "type": "string"
             },

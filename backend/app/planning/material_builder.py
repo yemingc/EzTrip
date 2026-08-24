@@ -492,8 +492,6 @@ async def build_planning_material_bundle(
         specialist_result.status == SpecialistFanoutStatus.BLOCKED
         or route_matrix.status in {RouteMatrixStatus.BLOCKED, RouteMatrixStatus.UNAVAILABLE}
         or explore_branch.explore_result is None
-        or PlanningMaterialIssueCode.ACTIVITY_COVERAGE_INSUFFICIENT in issues
-        or PlanningMaterialIssueCode.EXCESSIVE_TRANSFER in issues
     ):
         status = PlanningMaterialStatus.BLOCKED
     elif issues:

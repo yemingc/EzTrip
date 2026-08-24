@@ -143,7 +143,7 @@
     },
     {
       "case_id": "plan-agent-route-timeout-skip-v1",
-      "title": "单条路线超时后禁止带缺口调用 Plan 模型",
+      "title": "单条路线超时后生成保留事实缺口的草案",
       "request": {
         "request_id": "plan_agent_route_timeout_request",
         "raw_text": "两位成年人去北京三天，偏好历史文化，预算3000元。",
@@ -163,12 +163,12 @@
       "route_failure": "one_timeout",
       "expected": {
         "material_status": "partial",
-        "run_status": "skipped",
+        "run_status": "planned",
         "candidate_count": 3,
-        "model_call_count": 0
+        "model_call_count": 1
       },
       "boundary_notes": [
-        "路线 partial 时返回类型化 skip，不能让模型猜测缺失路线。"
+        "路线 partial 时仍返回 Provider 景点草案，但缺失路线保持为空并交由硬校验与审核。"
       ]
     },
     {

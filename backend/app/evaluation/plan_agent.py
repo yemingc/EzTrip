@@ -298,7 +298,8 @@ async def evaluate_plan_agent_case(
         ),
         EvaluationCheck(
             code="route_lineage_preserved",
-            passed=len(route_backed) == len(scheduled),
+            passed=len(route_backed)
+            == sum(item.item.route_from_previous is not None for item in decisions),
         ),
         EvaluationCheck(
             code="weather_output_preserved",

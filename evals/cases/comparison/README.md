@@ -14,4 +14,4 @@
 
 数据集是开发集回归，不是未触碰 holdout。20 条 standard 覆盖正常链路及可修复的路线、营业时间、跨城和来源问题；10 条 hard 覆盖不可修复血缘、硬预算事实缺口、HITL、有界重试、Provider 超时和能力边界。
 
-当前 fixture 结果是 Single 4/28、无 Hard Gate Product 4/28、完整 Product 20/28；后两组的配对差值为 16 个改善、0 个恶化。它只测量相同草案策略下 Hard Validator + bounded Repair 的控制路径恢复能力。Single 与无 Gate Product 相同，因此不能从这份报告声称 Specialist Agent 带来模型质量提升；报告也没有发起 DeepSeek、高德或 LangSmith live 调用。
+EZ-406A.2 将可恢复的 partial 路线材料纳入草案路径后，当前 fixture 结果是 Single 5/29、无 Hard Gate Product 5/29、完整 Product 21/29；后两组的配对差值仍为 16 个改善、0 个恶化。它只测量相同草案策略下 Hard Validator + bounded Repair 的控制路径恢复能力。Single 与无 Gate Product 相同，因此不能从这份报告声称 Specialist Agent 带来模型质量提升；报告也没有发起 DeepSeek、高德或 LangSmith live 调用。

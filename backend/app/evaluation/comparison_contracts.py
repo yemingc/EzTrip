@@ -196,11 +196,11 @@ class ComparisonEvalSuite(DomainModel):
             for outcome in ComparisonOutcome
         }
         if outcome_counts != {
-            ComparisonOutcome.FINALIZABLE_WITHOUT_REPAIR: 4,
+            ComparisonOutcome.FINALIZABLE_WITHOUT_REPAIR: 5,
             ComparisonOutcome.REPAIRED: 16,
             ComparisonOutcome.WAITING_FOR_USER: 1,
             ComparisonOutcome.UNRESOLVED: 7,
-            ComparisonOutcome.BLOCKED_BEFORE_PLAN: 2,
+            ComparisonOutcome.BLOCKED_BEFORE_PLAN: 1,
         }:
             raise ValueError("comparison outcome inventory must match the frozen protocol")
         return self
