@@ -66,6 +66,57 @@ test("renders three main activities per day in standard pace without counting me
   await expect(results).toContainText("推荐 · 不占活动名额");
 });
 
+test("renders a plan when the API omits empty meal recommendations", async ({ page }) => {
+  await page.route(/\/api\/planning-tasks\/planning-task-[^/]+$/, async (route) => {
+    const response = await route.fetch();
+    const payload = (await response.json()) as {
+      result?: {
+        state?: {
+          plan?: {
+            days?: Array<{ meal_recommendations?: unknown }>;
+          };
+          plan_agent?: {
+            plan?: {
+              days?: Array<{ meal_recommendations?: unknown }>;
+            };
+          };
+          repair?: {
+            final_plan?: {
+              days?: Array<{ meal_recommendations?: unknown }>;
+            };
+          };
+        };
+      };
+      plan_versions?: Array<{
+        plan?: {
+          days?: Array<{ meal_recommendations?: unknown }>;
+        };
+      }>;
+    };
+    const plans = [
+      payload.result?.state?.plan,
+      payload.result?.state?.plan_agent?.plan,
+      payload.result?.state?.repair?.final_plan,
+      ...(payload.plan_versions ?? []).map((version) => version.plan),
+    ];
+    for (const plan of plans) {
+      for (const day of plan?.days ?? []) {
+        delete day.meal_recommendations;
+      }
+    }
+    await route.fulfill({ response, json: payload });
+  });
+
+  await page.goto("/");
+  await page.getByTestId("submit-planning-task").click();
+
+  const results = page.getByTestId("planning-results");
+  await expect(results).toBeVisible({ timeout: 20_000 });
+  await expect(
+    results.getByText("当前没有 3 公里内且来源可追溯的餐饮候选，不随机填充全城餐厅。"),
+  ).toHaveCount(2);
+});
+
 test("does not present missing cost facts as a zero-cost trip", async ({ page }) => {
   await page.goto("/");
 

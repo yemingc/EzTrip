@@ -443,7 +443,7 @@ export function PlanningResults({
                       ) : null}
                     </div>
                   ))}
-                  {day.meal_recommendations.length ? (
+                  {(day.meal_recommendations ?? []).length ? (
                     <div
                       className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4"
                       data-testid="meal-recommendations"
@@ -453,7 +453,7 @@ export function PlanningResults({
                         <span className="text-[10px] font-semibold text-amber-700">推荐 · 不占活动名额</span>
                       </div>
                       <div className="mt-3 grid gap-2">
-                        {day.meal_recommendations.map((recommendation) => {
+                        {(day.meal_recommendations ?? []).map((recommendation) => {
                           const anchor = day.items.find(
                             (item) => item.candidate_id === recommendation.anchor_candidate_id,
                           );
