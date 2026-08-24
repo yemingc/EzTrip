@@ -22,3 +22,23 @@ def candidate_set_sha256(candidates: tuple[CandidatePOI, ...]) -> str:
 
 def stay_candidate_set_sha256(candidates: tuple[CandidateStay, ...]) -> str:
     return _model_set_sha256(candidates)
+
+
+def candidate_facts_equal(
+    left: CandidatePOI | CandidateStay,
+    right: CandidatePOI | CandidateStay,
+) -> bool:
+    """Compare normalized candidate facts while ignoring retrieval-only provenance fields."""
+
+    if type(left) is not type(right):
+        return False
+
+    def semantic_payload(candidate: CandidatePOI | CandidateStay) -> dict[str, object]:
+        payload = candidate.model_dump(mode="json")
+        source = payload.get("source")
+        if isinstance(source, dict):
+            source.pop("retrieved_at", None)
+            source.pop("raw_response_sha256", None)
+        return payload
+
+    return semantic_payload(left) == semantic_payload(right)

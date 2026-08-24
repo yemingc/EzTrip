@@ -11,6 +11,8 @@ from app.core.config import Settings
 from app.domain.request import ConstraintSet, TripRequest
 from app.evaluation import load_vertical_slice_suite
 from app.main import create_app
+from app.planning.material_contracts import PlanningMaterialIssueCode
+from app.planning.product_graph import ProductPlanningMaterialsBlockedError
 from app.planning.stateful_contracts import StatefulPlanningSnapshot
 from app.planning.vertical_slice import VerticalSliceProtocolError
 from app.tasks import (
@@ -574,6 +576,53 @@ async def request_failed_task() -> None:
 
 def test_task_failure_is_typed_and_sanitized() -> None:
     asyncio.run(request_failed_task())
+
+
+class BlockedMaterialsExecutor:
+    async def execute(
+        self,
+        submission: PlanningTaskSubmission,
+        emit_progress,
+    ) -> StatefulPlanningSnapshot:
+        del submission, emit_progress
+        raise ProductPlanningMaterialsBlockedError(
+            (
+                PlanningMaterialIssueCode.SPECIALIST_INCOMPLETE,
+                PlanningMaterialIssueCode.STAY_ANCHOR_MISSING,
+            )
+        )
+
+
+async def request_materials_blocked_task() -> None:
+    service = PlanningTaskService(
+        BlockedMaterialsExecutor(),
+        heartbeat_seconds=0.01,
+        timeout_seconds=1,
+    )
+    app = create_app(planning_task_service=service)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/api/planning-tasks",
+            json=build_fixture_payload().model_dump(mode="json"),
+        )
+        accepted = response.json()
+        await client.get(accepted["events_url"])
+        snapshot = (await client.get(accepted["task_url"])).json()
+
+    assert snapshot["failure"] == {
+        "schema_version": "1.0",
+        "error_code": "planning-materials-blocked",
+        "category": "workflow",
+        "retryable": True,
+        "user_message": (
+            "景点、住宿或路线数据未能形成完整规划材料; 请重试, 若持续失败可更换更明确的兴趣关键词。"
+        ),
+    }
+
+
+def test_materials_blocked_failure_is_actionable() -> None:
+    asyncio.run(request_materials_blocked_task())
 
 
 def test_planning_task_schema_bundle_and_openapi_do_not_drift() -> None:

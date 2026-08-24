@@ -16,7 +16,11 @@ from app.domain.provider import ProviderErrorCategory
 from app.domain.sources import DataMode
 from app.domain.travel_data import RiskSeverity, WeatherRiskType
 from app.providers.amap_adapter import AmapTravelDataProvider
-from app.providers.amap_clients import AmapFixtureToolClient, AmapLiveToolClient
+from app.providers.amap_clients import (
+    AmapFixtureToolClient,
+    AmapLiveToolClient,
+    AmapToolCallRateLimiter,
+)
 from app.providers.errors import ProviderRequestError
 from app.providers.ports import POISearchRequest, WeatherRiskRequest
 
@@ -105,6 +109,40 @@ class MissingLocationClient:
         raise AssertionError("weather should not be called")
 
 
+class PartiallyMalformedDetailClient:
+    captured_at = datetime(2026, 8, 20, tzinfo=UTC)
+
+    async def call_tool(
+        self,
+        operation: str,
+        arguments: dict[str, Any],
+    ) -> dict[str, object]:
+        if operation == "maps_text_search":
+            return {
+                "pois": [
+                    {"id": "BAD-DETAIL", "name": "损坏候选"},
+                    {"id": "GOOD-DETAIL", "name": "泉州博物馆"},
+                ]
+            }
+        if arguments["id"] == "BAD-DETAIL":
+            return {
+                "id": "BAD-DETAIL",
+                "name": "损坏候选",
+                "city": "泉州市",
+                "type": "科教文化服务;博物馆",
+            }
+        return {
+            "id": "GOOD-DETAIL",
+            "name": "泉州博物馆",
+            "city": "泉州市",
+            "type": "科教文化服务;博物馆",
+            "location": "118.585827,24.935632",
+        }
+
+    async def fetch_weather_freshness(self, city_adcode: str) -> dict[str, object]:
+        raise AssertionError("weather should not be called")
+
+
 def test_poi_field_drift_becomes_a_typed_missing_field_failure() -> None:
     provider = AmapTravelDataProvider(
         MissingLocationClient(),
@@ -118,6 +156,19 @@ def test_poi_field_drift_becomes_a_typed_missing_field_failure() -> None:
 
     assert error.value.failure.operation == "maps_search_detail"
     assert error.value.failure.category == ProviderErrorCategory.MISSING_FIELD
+
+
+def test_poi_search_keeps_valid_candidates_when_one_detail_is_malformed() -> None:
+    provider = AmapTravelDataProvider(
+        PartiallyMalformedDetailClient(),
+        data_mode=DataMode.LIVE,
+    )
+
+    candidates = asyncio.run(
+        provider.search_pois(POISearchRequest(keywords="泉州博物馆", city_adcode="350500", limit=2))
+    )
+
+    assert [item.name for item in candidates] == ["泉州博物馆"]
 
 
 def test_fixture_loader_rejects_malformed_or_missing_files(tmp_path: Path) -> None:
@@ -142,6 +193,33 @@ def test_live_client_requires_a_key_and_an_open_session() -> None:
     with pytest.raises(ProviderRequestError) as session_error:
         asyncio.run(client.call_tool("maps_weather", {"city": "110000"}))
     assert session_error.value.failure.category == ProviderErrorCategory.UNRECOVERABLE
+
+
+def test_amap_tool_rate_limiter_waits_before_the_fifth_call() -> None:
+    current_time = 0.0
+    delays: list[float] = []
+
+    def clock() -> float:
+        return current_time
+
+    async def sleep(delay: float) -> None:
+        nonlocal current_time
+        delays.append(delay)
+        current_time += delay
+
+    limiter = AmapToolCallRateLimiter(
+        max_calls=4,
+        window_seconds=1.1,
+        clock=clock,
+        sleep=sleep,
+    )
+
+    async def exercise() -> None:
+        await asyncio.gather(*(limiter.acquire() for _ in range(5)))
+
+    asyncio.run(exercise())
+
+    assert delays == [pytest.approx(1.1)]
 
 
 def weather_freshness_payload() -> dict[str, object]:

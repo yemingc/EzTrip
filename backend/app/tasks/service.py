@@ -16,7 +16,10 @@ from app.planning.material_builder import PlanningMaterialProtocolError
 from app.planning.minimal_graph import PlanningGraphProtocolError
 from app.planning.plan_revision import PlanRevisionProtocolError
 from app.planning.product_contracts import ProductPlanningProgress, ProductPlanningSnapshot
-from app.planning.product_graph import ProductPlanningProtocolError
+from app.planning.product_graph import (
+    ProductPlanningMaterialsBlockedError,
+    ProductPlanningProtocolError,
+)
 from app.planning.product_repair import ProductRepairProtocolError
 from app.planning.repair_router import RepairRouterProtocolError
 from app.planning.specialist_fanout import (
@@ -296,6 +299,16 @@ class PlanningTaskService:
                 category=PlanningTaskFailureCategory.CONFIGURATION,
                 retryable=False,
                 user_message="当前规划模式尚未正确配置。",
+            )
+        if isinstance(error, ProductPlanningMaterialsBlockedError):
+            return PlanningTaskFailure(
+                error_code="planning-materials-blocked",
+                category=PlanningTaskFailureCategory.WORKFLOW,
+                retryable=True,
+                user_message=(
+                    "景点、住宿或路线数据未能形成完整规划材料; 请重试, "
+                    "若持续失败可更换更明确的兴趣关键词。"
+                ),
             )
         if isinstance(
             error,

@@ -99,7 +99,13 @@ def _weather_risks(materials: PlanningMaterialBundle) -> tuple[WeatherRisk, ...]
         for item in materials.specialist_result.branches
         if item.specialist == SpecialistName.WEATHER
     )
-    return branch.weather_risks
+    trip_start = materials.planner_context.start_date
+    trip_end = materials.planner_context.end_date
+    return tuple(
+        risk
+        for risk in branch.weather_risks
+        if risk.ends_at.date() >= trip_start and risk.starts_at.date() <= trip_end
+    )
 
 
 def planning_material_sha256(materials: PlanningMaterialBundle) -> str:
