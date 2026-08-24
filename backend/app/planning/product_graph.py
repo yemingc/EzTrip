@@ -30,6 +30,7 @@ from app.planning.product_contracts import (
 )
 from app.planning.product_repair import ProductRepairExecutor, ProductRepairPipeline
 from app.planning.repair_router import run_repair_router
+from app.planning.review_copy import build_review_prompt
 from app.planning.specialist_contracts import SpecialistFanoutResult
 from app.planning.stateful_contracts import (
     Clock,
@@ -132,7 +133,10 @@ def build_product_human_review_request(state: ProductPlanningData) -> HumanRevie
     if validation is None:
         raise ProductPlanningProtocolError("product review requires hard validation")
     kind = HumanReviewKind.PLAN_APPROVAL
-    prompt = "请确认是否批准这份多 Agent 行程草案, 或请求修改/取消。"
+    prompt = build_review_prompt(
+        validation,
+        approval_prompt="请确认是否批准这份多 Agent 行程草案, 或请求修改/取消。",
+    )
     actions = (
         HumanReviewAction.APPROVE_DRAFT,
         HumanReviewAction.REQUEST_REVISION,
@@ -140,7 +144,6 @@ def build_product_human_review_request(state: ProductPlanningData) -> HumanRevie
     )
     if not validation.can_finalize:
         kind = HumanReviewKind.CONFLICT_RESOLUTION
-        prompt = "当前草案存在硬冲突, 请确认已知晓、请求修改或取消; 系统不会自动放宽约束。"
         actions = (
             HumanReviewAction.ACKNOWLEDGE_CONFLICT,
             HumanReviewAction.REQUEST_REVISION,

@@ -17,6 +17,7 @@ from app.domain.money import CostItem
 from app.domain.request import TripRequest
 from app.domain.sources import DataMode
 from app.planning.plan_revision import apply_plan_revision
+from app.planning.review_copy import build_review_prompt
 from app.planning.stateful_contracts import (
     CheckpointHistoryEntry,
     Clock,
@@ -90,7 +91,10 @@ def build_human_review_request(state: StatefulPlanningData) -> HumanReviewReques
         raise StatefulPlanningProtocolError("human review requires a vertical slice result")
     validation = result.validation
     kind = HumanReviewKind.PLAN_APPROVAL
-    prompt = "请确认是否批准这份 provider-grounded 行程草案, 或请求修改/取消。"
+    prompt = build_review_prompt(
+        validation,
+        approval_prompt="请确认是否批准这份 provider-grounded 行程草案, 或请求修改/取消。",
+    )
     actions = (
         HumanReviewAction.APPROVE_DRAFT,
         HumanReviewAction.REQUEST_REVISION,
@@ -98,7 +102,6 @@ def build_human_review_request(state: StatefulPlanningData) -> HumanReviewReques
     )
     if not validation.can_finalize:
         kind = HumanReviewKind.CONFLICT_RESOLUTION
-        prompt = "当前草案存在硬冲突, 请确认已知晓、请求修改或取消; 系统不会自动放宽约束。"
         actions = (
             HumanReviewAction.ACKNOWLEDGE_CONFLICT,
             HumanReviewAction.REQUEST_REVISION,

@@ -156,6 +156,11 @@ export interface ValidationIssue {
   rule_code: string;
   severity: "warning" | "error";
   message: string;
+  evidence: {
+    field_path: string;
+    description: string;
+    observed_value: string;
+  }[];
   responsible_node: string;
   repairable: boolean;
   repair_action: string;
@@ -198,12 +203,26 @@ export interface ProductSpecialistBranch {
   specialist: "explore" | "stay" | "weather";
   status: "succeeded" | "skipped" | "failed";
   explore_result: {
-    recommendations: { candidate: CandidatePoi }[];
+    recommendations: {
+      candidate: CandidatePoi;
+      proposal: {
+        rank: number;
+        reason: string;
+        evidence: { kind: string; value: string }[];
+      };
+    }[];
     query_model: string;
     selection_model: string;
   } | null;
   stay_result: {
-    recommendations: { candidate: CandidateStay }[];
+    recommendations: {
+      candidate: CandidateStay;
+      proposal: {
+        rank: number;
+        reason: string;
+        evidence: { kind: string; value: string }[];
+      };
+    }[];
     query_model: string;
     selection_model: string;
   } | null;
@@ -227,7 +246,15 @@ export interface ProductPlanningMaterials {
   budget_allocation: {
     status: string;
     total_limit: string | number | null;
+    currency?: "CNY";
     hard_limit: boolean | null;
+    allocations?: {
+      category: BudgetCategory;
+      target_amount: string | number;
+      quantity_basis: "party_day" | "traveler_trip" | "room_night" | "trip";
+      reference_quantity: string | number;
+      target_per_unit: string | number;
+    }[];
   };
 }
 

@@ -1,16 +1,22 @@
 import { useState } from "react";
 
+import { apiBaseUrl } from "@/lib/planning-task";
+
 import type {
   BudgetCategory,
   CandidatePoi,
+  CandidateStay,
   HumanReviewAction,
   PlanRevisionSelection,
+  PlanValidation,
   PlanningTaskSnapshot,
+  TripPlan,
+  ValidationIssue,
 } from "@/lib/planning-task";
 
 const reviewActionLabels: Record<HumanReviewAction, string> = {
   approve_draft: "已批准草案",
-  acknowledge_conflict: "已确认冲突",
+  acknowledge_conflict: "已保留待验证草案",
   request_revision: "已生成修改草案",
   cancel: "已取消规划",
 };
@@ -50,6 +56,25 @@ const repairIssueLabels: Record<string, string> = {
   "opening_hours.schedule_outside_verified_window": "营业时间冲突",
 };
 
+const validationIssueLabels: Record<string, string> = {
+  "budget.incomplete_category_coverage": "预算采用规划估算",
+  "budget.possible_overrun": "预算可能超出目标",
+  "budget.deterministic_floor_exceeds_limit": "确定费用已超过硬预算",
+  "route.missing_for_grounded_item": "一段到达路线未取得",
+  "route.excessive_transfer": "存在超长通勤",
+  "route.insufficient_transfer_window": "活动间通勤时间不足",
+  "opening_hours.evidence_missing": "开放时间尚未取得",
+  "opening_hours.schedule_outside_verified_window": "安排时段不在开放时间内",
+  "plan.activity_density_out_of_range": "活动数量不符合所选节奏",
+  "constraint.hard_avoid_scheduled": "安排了明确要求避开的地点",
+  "constraint.hard_must_visit_missing": "遗漏了明确要求必去的地点",
+};
+
+const verificationGapCodes = new Set([
+  "route.missing_for_grounded_item",
+  "opening_hours.evidence_missing",
+]);
+
 function formatDate(date: string) {
   return new Intl.DateTimeFormat("zh-CN", {
     month: "long",
@@ -83,79 +108,116 @@ function SourceModeBadge({ mode }: { mode: string }) {
   );
 }
 
-function CoordinateOverview({ candidates }: { candidates: CandidatePoi[] }) {
-  const longitudes = candidates.map((item) => item.location.longitude);
-  const latitudes = candidates.map((item) => item.location.latitude);
-  const minLongitude = Math.min(...longitudes);
-  const maxLongitude = Math.max(...longitudes);
-  const minLatitude = Math.min(...latitudes);
-  const maxLatitude = Math.max(...latitudes);
+function candidateTag(candidate: CandidatePoi, prefix: string) {
+  return candidate.tags.find((tag) => tag.startsWith(prefix))?.slice(prefix.length) ?? null;
+}
 
-  const pointPosition = (candidate: CandidatePoi) => {
-    const longitudeRange = maxLongitude - minLongitude || 1;
-    const latitudeRange = maxLatitude - minLatitude || 1;
-    return {
-      left: 15 + ((candidate.location.longitude - minLongitude) / longitudeRange) * 70,
-      top: 16 + ((maxLatitude - candidate.location.latitude) / latitudeRange) * 46,
-    };
-  };
+function issueTitle(issue: ValidationIssue) {
+  return validationIssueLabels[issue.rule_code] ?? issue.message;
+}
+
+function validationHeading(validation: PlanValidation) {
+  if (validation.status === "passed") return "确定性校验通过";
+  if (validation.status === "warning") return "方案可用 · 有估算提醒";
+  const blockingIssues = validation.issues.filter((issue) => issue.severity === "error");
+  if (blockingIssues.length && blockingIssues.every((issue) => verificationGapCodes.has(issue.rule_code))) {
+    return "关键事实待确认";
+  }
+  return "约束问题待处理";
+}
+
+function evidenceText(
+  issue: ValidationIssue,
+  itemTitleById: Map<string, string>,
+) {
+  return issue.evidence.map((evidence) => {
+    const values = evidence.observed_value.split(",");
+    const resolvedValues = values.map((value) => {
+      const trimmed = value.trim();
+      if (itemTitleById.has(trimmed)) return itemTitleById.get(trimmed);
+      if (trimmed in categoryLabels) return categoryLabels[trimmed as BudgetCategory];
+      return trimmed;
+    });
+    return `${evidence.description}：${resolvedValues.join("、")}`;
+  });
+}
+
+function AmapPlanOverview({
+  plan,
+  candidates,
+  stay,
+  dataMode,
+}: {
+  plan: TripPlan;
+  candidates: CandidatePoi[];
+  stay: CandidateStay | null | undefined;
+  dataMode: "live" | "fixture";
+}) {
+  const [failedMapUrl, setFailedMapUrl] = useState<string | null>(null);
+  const candidateById = new Map(candidates.map((candidate) => [candidate.candidate_id, candidate]));
+  const seen = new Set<string>();
+  const orderedCandidates = plan.days
+    .flatMap((day) => day.items)
+    .flatMap((item) => {
+      if (!item.candidate_id || seen.has(item.candidate_id)) return [];
+      const candidate = candidateById.get(item.candidate_id);
+      if (!candidate) return [];
+      seen.add(item.candidate_id);
+      return [candidate];
+    })
+    .slice(0, 9);
+  const params = new URLSearchParams();
+  for (const candidate of orderedCandidates) {
+    params.append("poi", `${candidate.location.longitude},${candidate.location.latitude}`);
+  }
+  if (stay) {
+    params.set("stay", `${stay.location.longitude},${stay.location.latitude}`);
+  }
+  const mapUrl = `${apiBaseUrl}/api/maps/static-plan?${params.toString()}`;
+  const mapFailed = failedMapUrl === mapUrl;
 
   return (
-    <article className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-[#e8eee8] shadow-sm lg:col-span-2">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-900/8 px-6 py-5">
+    <article className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm lg:col-span-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-6 py-5">
         <div>
-          <p className="eyebrow">Spatial evidence</p>
-          <h3 className="mt-1 text-lg font-semibold tracking-tight">景点坐标概览</h3>
+          <p className="eyebrow">AMap spatial context</p>
+          <h3 className="mt-1 text-lg font-semibold tracking-tight">高德地图 · 行程空间分布</h3>
         </div>
-        <span className="rounded-full bg-white/75 px-3 py-1.5 text-xs font-medium text-slate-600">
-          坐标视图 · 无地图底图
+        <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-800">
+          {orderedCandidates.length
+            ? `H 住宿 · 1–${orderedCandidates.length} 行程顺序`
+            : "暂无地图点位"}
         </span>
       </div>
-      <div className="relative min-h-72 overflow-hidden p-6 sm:min-h-80">
-        <div className="absolute inset-0 opacity-70 [background-image:linear-gradient(rgba(15,23,42,.07)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,.07)_1px,transparent_1px)] [background-size:32px_32px]" />
-        <div className="absolute -right-16 -top-20 size-72 rounded-full border-[42px] border-emerald-900/5" />
-        <svg
-          className="absolute inset-0 size-full"
-          aria-hidden="true"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-        >
-          {candidates.length > 1 ? (
-            <path
-              d={`M ${pointPosition(candidates[0]).left} ${pointPosition(candidates[0]).top} L ${pointPosition(candidates[1]).left} ${pointPosition(candidates[1]).top}`}
-              fill="none"
-              stroke="rgba(6,78,59,.32)"
-              strokeDasharray="2 2"
-              strokeWidth="0.7"
-            />
-          ) : null}
-        </svg>
-        {candidates.map((candidate, index) => {
-          const position = pointPosition(candidate);
-          return (
-            <div
-              className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
-              key={candidate.candidate_id}
-              style={{ left: `${position.left}%`, top: `${position.top}%` }}
-            >
-              <div className="group relative">
-                <span className="grid size-11 place-items-center rounded-full border-4 border-white bg-emerald-950 text-sm font-bold text-white shadow-lg">
-                  {index + 1}
-                </span>
-                <div className="absolute left-1/2 top-13 w-48 -translate-x-1/2 rounded-2xl border border-white/80 bg-white/92 p-3 text-center shadow-lg backdrop-blur">
-                  <p className="text-sm font-semibold text-slate-950">{candidate.name}</p>
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    {candidate.location.longitude.toFixed(4)}, {candidate.location.latitude.toFixed(4)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-        <p className="absolute bottom-4 left-5 z-10 max-w-sm rounded-xl bg-slate-950/82 px-3 py-2 text-[11px] leading-5 text-white/80 backdrop-blur">
-          位置点来自 provider 返回值；这里只做相对位置表达，不声称路线距离或真实地图能力。
-        </p>
-      </div>
+      {dataMode === "live" && orderedCandidates.length && !mapFailed ? (
+        <div className="relative bg-slate-100">
+          {/* The backend proxies AMap so the service key never reaches the browser. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            alt={`${plan.destination_city}行程高德地图，包含住宿和活动位置`}
+            className="block min-h-72 w-full object-cover sm:min-h-96"
+            data-testid="amap-static-map"
+            onError={() => setFailedMapUrl(mapUrl)}
+            src={mapUrl}
+          />
+          <p className="absolute bottom-4 left-4 max-w-xl rounded-xl bg-slate-950/85 px-3 py-2 text-[11px] leading-5 text-white/85 backdrop-blur">
+            底图与标注由高德静态地图返回；绿色连接线只表示游览顺序，实际道路与时长以每段路线卡片为准。
+          </p>
+        </div>
+      ) : (
+        <div className="grid min-h-72 place-items-center bg-slate-100 p-8 text-center">
+          <div className="max-w-lg">
+            <p className="text-sm font-semibold text-slate-800">
+              {dataMode === "fixture" ? "Fixture 模式不调用真实地图服务" : "高德地图底图暂时不可用"}
+            </p>
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              {dataMode === "fixture"
+                ? "切换到实时 Provider 后，页面会通过服务端代理加载高德底图，Key 不会发送到浏览器。"
+                : "行程坐标和路线事实仍保留；请稍后刷新地图，不会用坐标网格冒充真实底图。"}
+            </p>
+          </div>
+        </div>
+      )}
     </article>
   );
 }
@@ -206,6 +268,38 @@ export function PlanningResults({
   const stay = materials?.shortlist.primary_stay;
   const budget = validation.budget;
   const hasBudget = budget.status !== "not_requested";
+  const exploreRecommendations =
+    specialists?.branches.find((branch) => branch.specialist === "explore")?.explore_result
+      ?.recommendations ?? [];
+  const stayRecommendations =
+    specialists?.branches.find((branch) => branch.specialist === "stay")?.stay_result
+      ?.recommendations ?? [];
+  const exploreRecommendationById = new Map(
+    exploreRecommendations.map((recommendation) => [
+      recommendation.candidate.candidate_id,
+      recommendation,
+    ]),
+  );
+  const candidateById = new Map(candidates.map((candidate) => [candidate.candidate_id, candidate]));
+  const primaryStayRecommendation = stay
+    ? stayRecommendations.find(
+        (recommendation) => recommendation.candidate.candidate_id === stay.candidate_id,
+      )
+    : undefined;
+  const alternativeStays = stayRecommendations
+    .filter((recommendation) => recommendation.candidate.candidate_id !== stay?.candidate_id)
+    .slice(0, 2);
+  const blockingIssues = validation.issues.filter((issue) => issue.severity === "error");
+  const warningIssues = validation.issues.filter((issue) => issue.severity === "warning");
+  const itemTitleById = new Map(
+    plan.days.flatMap((day) => day.items.map((item) => [item.item_id, item.title] as const)),
+  );
+  const budgetAllocations = materials?.budget_allocation.allocations ?? [];
+  const reviewSummary = blockingIssues.length
+    ? `当前草案有 ${blockingIssues.length} 项关键问题尚未解决：${blockingIssues
+        .map(issueTitle)
+        .join("、")}。${warningIssues.length ? `另有 ${warningIssues.length} 项估算提醒。` : ""}`
+    : review?.prompt ?? "当前任务没有生成待审核请求。";
   const displayCity = plan.destination_city.replace(/市$/, "");
   const materialIssueLabels: Record<string, string> = {
     specialist_incomplete: "部分 Agent 数据未完整返回",
@@ -242,11 +336,7 @@ export function PlanningResults({
         <div className="flex items-center gap-2">
           <SourceModeBadge mode={snapshot.data_mode} />
           <span className={`status-pill status-${validation.status}`}>
-            {validation.status === "passed"
-              ? "确定性校验通过"
-              : validation.status === "warning"
-                ? "校验有提醒"
-                : "存在硬冲突"}
+            {validationHeading(validation)}
           </span>
         </div>
       </div>
@@ -273,6 +363,84 @@ export function PlanningResults({
           </div>
         </article>
       ) : null}
+
+      <article
+        className="mb-5 overflow-hidden rounded-[1.75rem] border border-emerald-900/10 bg-white shadow-sm"
+        data-testid="stay-recommendation"
+      >
+        <div className="grid lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,.65fr)]">
+          <div className="p-5 sm:p-7">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="eyebrow">Recommended stay</p>
+                <h3 className="mt-2 text-xl font-semibold tracking-tight">住宿推荐</h3>
+              </div>
+              <span className="rounded-full bg-emerald-950 px-3 py-1.5 text-[11px] font-semibold text-white">
+                行程住宿锚点
+              </span>
+            </div>
+            {stay ? (
+              <div className="mt-5">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <p className="text-2xl font-semibold tracking-tight text-slate-950">{stay.name}</p>
+                    <p className="mt-2 text-sm text-slate-500">
+                      {stay.area_name} · {stay.address ?? "详细地址暂缺"}
+                    </p>
+                  </div>
+                  <SourceModeBadge mode={stay.source.data_mode} />
+                </div>
+                <div className="mt-4 rounded-2xl bg-emerald-50 p-4">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-800">
+                    Stay Agent 推荐理由
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-emerald-950">
+                    {primaryStayRecommendation?.proposal.reason ??
+                      "作为当前路线计算的住宿锚点，便于评估每天前往首站的交通时间。"}
+                  </p>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {[...new Set(stay.tags.map((tag) => tag.replace(/^category:/, "")))]
+                    .filter((tag) => tag && tag !== "住宿服务")
+                    .slice(0, 4)
+                    .map((tag) => (
+                      <span className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] text-slate-600" key={tag}>
+                        {tag}
+                      </span>
+                    ))}
+                  <span className="rounded-full border border-dashed border-amber-300 px-3 py-1.5 text-[11px] text-amber-800">
+                    房价与房态待验证
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="mt-5 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">
+                当前没有可追溯的酒店候选，行程仍可作为景点草案查看。
+              </p>
+            )}
+          </div>
+          <div className="border-t border-slate-200 bg-slate-50 p-5 sm:p-7 lg:border-l lg:border-t-0">
+            <p className="text-xs font-semibold text-slate-800">其他住宿候选</p>
+            {alternativeStays.length ? (
+              <div className="mt-3 space-y-3">
+                {alternativeStays.map((recommendation) => (
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4" key={recommendation.candidate.candidate_id}>
+                    <p className="text-sm font-semibold text-slate-950">{recommendation.candidate.name}</p>
+                    <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-slate-500">
+                      {recommendation.proposal.reason}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 text-xs leading-5 text-slate-500">本次 Provider 没有返回其他可靠住宿候选。</p>
+            )}
+            <p className="mt-4 text-[10px] leading-4 text-slate-400">
+              推荐只用于规划路线；未接入酒店价格、房态或预订交易。
+            </p>
+          </div>
+        </div>
+      </article>
 
       {state.workflow_version === "product-planning-graph-v2" && specialists && materials ? (
         <article
@@ -315,9 +483,7 @@ export function PlanningResults({
             </div>
           </div>
           <p className="mt-4 text-xs leading-5 text-emerald-100/65">
-            {stay
-              ? `住宿锚点：${stay.name}（${stay.area_name}）；价格与可订状态未验证，不提供预订。`
-              : "当前没有可用住宿锚点；系统不会伪造酒店推荐。"}
+            景点、住宿、天气与路线结果均保留独立来源；上方住宿卡片展示 Stay Agent 的选择理由与能力边界。
           </p>
         </article>
       ) : null}
@@ -416,8 +582,15 @@ export function PlanningResults({
                       建议 {formatTime(day.departure_from_stay_at)} 从住宿锚点出发前往首站
                     </p>
                   ) : null}
-                  {day.items.map((item, itemIndex) => (
-                    <div
+                  {day.items.map((item, itemIndex) => {
+                    const candidate = item.candidate_id ? candidateById.get(item.candidate_id) : undefined;
+                    const recommendation = item.candidate_id
+                      ? exploreRecommendationById.get(item.candidate_id)
+                      : undefined;
+                    const rating = candidate ? candidateTag(candidate, "rating:") : null;
+                    const level = candidate ? candidateTag(candidate, "level:") : null;
+                    return (
+                      <div
                       className="relative rounded-2xl bg-slate-50 px-4 py-4"
                       data-testid="itinerary-item"
                       key={item.item_id}
@@ -432,8 +605,44 @@ export function PlanningResults({
                         </div>
                         {item.source ? <SourceModeBadge mode={item.source.data_mode} /> : null}
                       </div>
-                      {item.notes.length ? (
-                        <p className="mt-2 text-xs leading-5 text-slate-500">{item.notes.join(" · ")}</p>
+                      {candidate ? (
+                        <div className="mt-3" data-testid="activity-description">
+                          <p className="text-xs leading-5 text-slate-600">
+                            {candidate.categories.slice(0, 3).join("、") || "景点候选"}
+                            {candidate.address ? `；位于${candidate.address}` : "；详细地址暂缺"}。
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {level ? (
+                              <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-semibold text-emerald-800">
+                                {level} 级景区
+                              </span>
+                            ) : null}
+                            {rating ? (
+                              <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-semibold text-amber-800">
+                                高德评分 {rating}
+                              </span>
+                            ) : null}
+                            <span className="rounded-full bg-white px-2.5 py-1 text-[10px] text-slate-500">
+                              {candidate.environment === "indoor"
+                                ? "室内"
+                                : candidate.environment === "outdoor"
+                                  ? "户外"
+                                  : candidate.environment === "mixed"
+                                    ? "室内外混合"
+                                    : "环境类型未知"}
+                            </span>
+                          </div>
+                        </div>
+                      ) : null}
+                      {recommendation ? (
+                        <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3" data-testid="activity-reason">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700">
+                            Explore Agent 推荐理由
+                          </p>
+                          <p className="mt-1 text-xs leading-5 text-emerald-950">
+                            {recommendation.proposal.reason}
+                          </p>
+                        </div>
                       ) : null}
                       {item.route_from_previous ? (
                         <p className="mt-2 text-xs text-slate-500">
@@ -441,8 +650,15 @@ export function PlanningResults({
                           {item.route_from_previous.duration_minutes} 分钟 · {item.route_from_previous.distance_meters} 米
                         </p>
                       ) : null}
-                    </div>
-                  ))}
+                      {item.notes.length ? (
+                        <details className="mt-3 text-[11px] text-slate-400">
+                          <summary className="cursor-pointer">数据与验证边界</summary>
+                          <p className="mt-2 leading-5">{item.notes.join(" · ")}</p>
+                        </details>
+                      ) : null}
+                      </div>
+                    );
+                  })}
                   {(day.meal_recommendations ?? []).length ? (
                     <div
                       className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4"
@@ -498,7 +714,13 @@ export function PlanningResults({
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-300">Human review</p>
                 <h3 className="mt-2 text-lg font-semibold">
-                  {reviewOutcome ? "审核已完成" : review ? "等待你的确认" : "审核状态"}
+                  {reviewOutcome
+                    ? "审核已完成"
+                    : review
+                      ? blockingIssues.length
+                        ? validationHeading(validation)
+                        : "等待你的确认"
+                      : "审核状态"}
                 </h3>
               </div>
               <span className="flex size-10 items-center justify-center rounded-full bg-amber-300 text-lg text-slate-950">!</span>
@@ -506,8 +728,25 @@ export function PlanningResults({
             <p className="mt-5 text-sm leading-6 text-slate-300">
               {reviewOutcome
                 ? reviewOutcome.plan_diff.summary.join(" ")
-                : review?.prompt ?? "当前任务没有生成待审核请求。"}
+                : reviewSummary}
             </p>
+            {!reviewOutcome && review && validation.issues.length ? (
+              <div className="mt-4 space-y-2" data-testid="review-issue-summary">
+                {validation.issues.map((issue) => (
+                  <div
+                    className={
+                      issue.severity === "error"
+                        ? "rounded-xl border border-rose-300/20 bg-rose-300/10 p-3"
+                        : "rounded-xl border border-amber-300/20 bg-amber-300/10 p-3"
+                    }
+                    key={issue.issue_id}
+                  >
+                    <p className="text-xs font-semibold text-white">{issueTitle(issue)}</p>
+                    <p className="mt-1 text-[11px] leading-5 text-slate-300">{issue.message}</p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
             {reviewOutcome ? (
               <div className="mt-5 rounded-2xl border border-emerald-300/15 bg-emerald-300/10 p-4">
                 <p className="text-sm font-semibold text-emerald-200">
@@ -537,7 +776,7 @@ export function PlanningResults({
                       onClick={() => void onReview("acknowledge_conflict")}
                       type="button"
                     >
-                      确认已知冲突
+                      保留待验证草案
                     </button>
                   ) : null}
                   <button
@@ -671,37 +910,46 @@ export function PlanningResults({
             </p>
           </article>
 
-          <article className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="eyebrow">Budget guard</p>
+          <article className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm" data-testid="budget-estimate">
+            <p className="eyebrow">Planning estimate</p>
             <div className="mt-3 flex items-end justify-between gap-4">
               <div>
+                <p className="text-sm font-semibold text-slate-800">预算估算</p>
                 <p className="text-2xl font-semibold tracking-tight">
-                  {hasBudget && budget.total_limit !== null ? formatMoney(budget.total_limit) : "未设置"}
+                  {hasBudget && (materials?.budget_allocation.total_limit ?? budget.total_limit) !== null
+                    ? formatMoney(materials?.budget_allocation.total_limit ?? budget.total_limit ?? 0)
+                    : "未设置"}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
-                  {materials?.budget_allocation.hard_limit ? "整趟行程硬预算" : "整趟行程规划目标"}
+                  {materials?.budget_allocation.hard_limit ? "整趟行程硬预算上限" : "整趟行程建议分配"}
                 </p>
               </div>
-              <span className={`status-pill status-${budget.status}`}>
-                {budget.status === "not_requested"
-                  ? "未请求校验"
-                  : budget.status === "incomplete"
-                    ? "事实不完整"
-                    : budget.status}
+              <span className="status-pill status-warning">
+                {budgetAllocations.length ? "规划估算" : "待补估算"}
               </span>
             </div>
-            {budget.status === "incomplete" ? (
-              <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <p className="text-sm font-semibold text-amber-950">费用事实缺失，不等于 0 元</p>
-                <p className="mt-1 text-xs leading-5 text-amber-800">
-                  待补：{budget.missing_categories.map((item) => categoryLabels[item]).join("、")}
-                </p>
+            {budgetAllocations.length ? (
+              <div className="mt-5 grid grid-cols-2 gap-2">
+                {budgetAllocations.map((allocation) => (
+                  <div className="rounded-2xl bg-slate-50 p-3" key={allocation.category}>
+                    <p className="text-[11px] text-slate-500">{categoryLabels[allocation.category]}</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-950">
+                      {formatMoney(allocation.target_amount)}
+                    </p>
+                  </div>
+                ))}
               </div>
             ) : (
               <p className="mt-5 text-xs leading-5 text-slate-500">
-                当前未提供预算时，系统不会凭空生成或宣称费用总额。
+                当前没有可用预算目标，系统不会把缺失价格当成 0 元。
               </p>
             )}
+            <p className="mt-4 text-[10px] leading-5 text-slate-400">
+              这是根据总预算、人数、天数和类别权重生成的规划估算，不代表实时票价、餐费或交通结算金额。
+              {budget.missing_categories.length
+                ? ` 尚未取得实时价格：${budget.missing_categories.map((item) => categoryLabels[item]).join("、")}。`
+                : ""}
+            </p>
           </article>
 
           <article className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
@@ -724,7 +972,12 @@ export function PlanningResults({
           </article>
         </div>
 
-        <CoordinateOverview candidates={candidates} />
+        <AmapPlanOverview
+          candidates={candidates}
+          dataMode={snapshot.data_mode}
+          plan={plan}
+          stay={stay}
+        />
 
         <article className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
           <p className="eyebrow">Source ledger</p>
@@ -763,10 +1016,33 @@ export function PlanningResults({
           {validation.issues.length ? (
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {validation.issues.map((issue) => (
-                <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4" key={issue.issue_id}>
-                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-rose-700">{issue.rule_code}</p>
-                  <p className="mt-2 text-sm leading-6 text-rose-950">{issue.message}</p>
-                  <p className="mt-2 text-[11px] text-rose-700/70">责任节点：{issue.responsible_node}</p>
+                <div
+                  className={
+                    issue.severity === "error"
+                      ? "rounded-2xl border border-rose-100 bg-rose-50 p-4"
+                      : "rounded-2xl border border-amber-100 bg-amber-50 p-4"
+                  }
+                  key={issue.issue_id}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className={issue.severity === "error" ? "text-sm font-semibold text-rose-950" : "text-sm font-semibold text-amber-950"}>
+                      {issueTitle(issue)}
+                    </p>
+                    <span className={issue.severity === "error" ? "text-[10px] font-bold text-rose-700" : "text-[10px] font-bold text-amber-700"}>
+                      {issue.severity === "error" ? "阻止最终确认" : "信息提醒"}
+                    </span>
+                  </div>
+                  <p className={issue.severity === "error" ? "mt-2 text-xs leading-5 text-rose-900" : "mt-2 text-xs leading-5 text-amber-900"}>
+                    {issue.message}
+                  </p>
+                  {evidenceText(issue, itemTitleById).map((evidence) => (
+                    <p className="mt-2 rounded-xl bg-white/70 px-3 py-2 text-[11px] leading-5 text-slate-600" key={evidence}>
+                      {evidence}
+                    </p>
+                  ))}
+                  <p className="mt-2 font-mono text-[10px] text-slate-400">
+                    {issue.rule_code} · 责任节点 {issue.responsible_node}
+                  </p>
                 </div>
               ))}
             </div>
