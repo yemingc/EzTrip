@@ -11,6 +11,14 @@ from app.domain.money import BudgetCategory
 from app.domain.provider import ProviderErrorCategory
 from app.domain.sources import DataMode
 from app.domain.travel_data import RouteLeg, RouteMode
+from app.itinerary_quality import (
+    EXCESSIVE_TRANSFER_MINUTES,
+    cluster_major_activities,
+    is_meal_candidate,
+    major_activity_range,
+    major_activity_target,
+    select_major_activities,
+)
 from app.planning.specialist_contracts import (
     SpecialistBranchStatus,
     SpecialistFanoutResult,
@@ -78,18 +86,31 @@ class PlanningMaterialIssueCode(StrEnum):
     ROUTE_MATRIX_INCOMPLETE = "route_matrix_incomplete"
     BUDGET_NOT_ALLOCATED = "budget_not_allocated"
     STAY_ANCHOR_MISSING = "stay_anchor_missing"
+    ACTIVITY_COVERAGE_INSUFFICIENT = "activity_coverage_insufficient"
+    EXCESSIVE_TRANSFER = "excessive_transfer"
+
+
+class PlanningDayCluster(DomainModel):
+    day_number: int = Field(ge=1, le=5)
+    poi_candidate_ids: tuple[Identifier, ...] = Field(max_length=4)
 
 
 class PlanningShortlist(DomainModel):
-    policy_version: Literal["planning-shortlist-v1"] = "planning-shortlist-v1"
-    poi_candidates: tuple[CandidatePOI, ...] = Field(max_length=4)
+    policy_version: Literal["planning-shortlist-v2"] = "planning-shortlist-v2"
+    activity_target_per_day: int = Field(ge=1, le=3)
+    poi_candidates: tuple[CandidatePOI, ...] = Field(max_length=15)
+    meal_candidates: tuple[CandidatePOI, ...] = Field(default=(), max_length=15)
+    day_clusters: tuple[PlanningDayCluster, ...] = Field(min_length=2, max_length=5)
     primary_stay: CandidateStay | None = None
     omitted_poi_ids: tuple[Identifier, ...] = ()
     omitted_stay_ids: tuple[Identifier, ...] = ()
 
     @model_validator(mode="after")
     def validate_shortlist(self) -> "PlanningShortlist":
-        selected_ids = [item.candidate_id for item in self.poi_candidates]
+        selected_ids = [
+            *(item.candidate_id for item in self.poi_candidates),
+            *(item.candidate_id for item in self.meal_candidates),
+        ]
         if self.primary_stay is not None:
             selected_ids.append(self.primary_stay.candidate_id)
         if len(selected_ids) != len(set(selected_ids)):
@@ -99,6 +120,23 @@ class PlanningShortlist(DomainModel):
             raise ValueError("omitted planning candidate ids must be unique")
         if set(selected_ids) & set(omitted_ids):
             raise ValueError("selected and omitted planning candidate ids cannot overlap")
+        expected_day_numbers = tuple(range(1, len(self.day_clusters) + 1))
+        if tuple(item.day_number for item in self.day_clusters) != expected_day_numbers:
+            raise ValueError("planning day clusters must be contiguous and one-based")
+        clustered_ids = tuple(
+            candidate_id
+            for cluster in self.day_clusters
+            for candidate_id in cluster.poi_candidate_ids
+        )
+        poi_ids = tuple(item.candidate_id for item in self.poi_candidates)
+        if len(clustered_ids) != len(set(clustered_ids)) or set(clustered_ids) != set(poi_ids):
+            raise ValueError(
+                "planning day clusters must cover each shortlisted activity exactly once"
+            )
+        if any(is_meal_candidate(item) for item in self.poi_candidates):
+            raise ValueError("meal candidates cannot consume major activity slots")
+        if any(not is_meal_candidate(item) for item in self.meal_candidates):
+            raise ValueError("meal recommendation candidates must be dining POIs")
         return self
 
 
@@ -146,14 +184,14 @@ class RouteMatrixEdge(DomainModel):
 
 class RouteMatrix(DomainModel):
     schema_version: Literal["1.0"] = "1.0"
-    matrix_version: Literal["route-matrix-v1"] = "route-matrix-v1"
+    matrix_version: Literal["route-matrix-v2"] = "route-matrix-v2"
     request_id: Identifier
     context_id: Identifier
     data_mode: Literal[DataMode.LIVE, DataMode.FIXTURE]
     status: RouteMatrixStatus
     reason: RouteMatrixReason | None = None
     route_mode: Literal[RouteMode.TRANSIT] = RouteMode.TRANSIT
-    poi_candidate_ids: tuple[Identifier, ...] = Field(max_length=4)
+    poi_candidate_ids: tuple[Identifier, ...] = Field(max_length=15)
     primary_stay_id: Identifier | None = None
     edges: tuple[RouteMatrixEdge, ...] = Field(max_length=20)
     expected_edge_count: int = Field(ge=0, le=20)
@@ -170,23 +208,8 @@ class RouteMatrix(DomainModel):
         if self.primary_stay_id in set(self.poi_candidate_ids):
             raise ValueError("route matrix stay id cannot duplicate a POI id")
         expected_pairs = tuple(
-            (origin, destination)
-            for origin in self.poi_candidate_ids
-            for destination in self.poi_candidate_ids
-            if origin != destination
+            (item.origin_candidate_id, item.destination_candidate_id) for item in self.edges
         )
-        if self.primary_stay_id is not None:
-            expected_pairs = (
-                *expected_pairs,
-                *(
-                    pair
-                    for poi_id in self.poi_candidate_ids
-                    for pair in (
-                        (self.primary_stay_id, poi_id),
-                        (poi_id, self.primary_stay_id),
-                    )
-                ),
-            )
         if self.status == RouteMatrixStatus.BLOCKED:
             if (
                 self.reason != RouteMatrixReason.CAPABILITY_BLOCKED
@@ -202,11 +225,8 @@ class RouteMatrix(DomainModel):
             ):
                 raise ValueError("blocked route matrix requires only its capability reason")
             return self
-        actual_pairs = tuple(
-            (item.origin_candidate_id, item.destination_candidate_id) for item in self.edges
-        )
-        if actual_pairs != expected_pairs:
-            raise ValueError("route matrix edges must exactly cover the ordered candidate pairs")
+        if len(expected_pairs) != len(set(expected_pairs)):
+            raise ValueError("route matrix candidate pairs must be unique")
         if len({item.edge_id for item in self.edges}) != len(self.edges):
             raise ValueError("route matrix edge ids must be unique")
         succeeded = sum(item.status == RouteEdgeStatus.SUCCEEDED for item in self.edges)
@@ -231,7 +251,7 @@ class RouteMatrix(DomainModel):
         if not self.poi_candidate_ids:
             expected_status = RouteMatrixStatus.UNAVAILABLE
             expected_reason = RouteMatrixReason.NO_EXPLORE_CANDIDATES
-        elif not expected_pairs:
+        elif not self.edges:
             expected_status = RouteMatrixStatus.NOT_REQUIRED
             expected_reason = RouteMatrixReason.INSUFFICIENT_CANDIDATE_PAIR
         elif failed == len(expected_pairs):
@@ -374,19 +394,55 @@ class PlanningMaterialBundle(DomainModel):
             if stay_branch.stay_result is not None
             else ()
         )
-        if self.shortlist.poi_candidates != available_pois[:4]:
-            raise ValueError("planning shortlist must take the four highest-ranked POIs")
-        if self.shortlist.omitted_poi_ids != tuple(
-            item.candidate_id for item in available_pois[4:]
-        ):
-            raise ValueError("planning shortlist must expose omitted POI ids")
+        available_activity_count = sum(not is_meal_candidate(item) for item in available_pois)
+        activity_target = major_activity_target(
+            self.planner_context.day_count,
+            self.planner_context.pace,
+            available_count=available_activity_count,
+        )
+        expected_per_day, _ = major_activity_range(self.planner_context.pace)
+        if self.shortlist.activity_target_per_day != expected_per_day:
+            raise ValueError("planning shortlist activity target must match the requested pace")
+        available_meals = tuple(item for item in available_pois if is_meal_candidate(item))
         expected_stay = available_stays[0] if available_stays else None
         if self.shortlist.primary_stay != expected_stay:
             raise ValueError("planning shortlist must use the highest-ranked stay as its anchor")
+        expected_pois = select_major_activities(
+            available_pois,
+            expected_stay,
+            target=activity_target,
+        )
+        expected_meals = available_meals[: self.planner_context.day_count * 3]
+        if self.shortlist.poi_candidates != expected_pois:
+            raise ValueError("planning shortlist must take nearby highest-ranked activities")
+        if self.shortlist.meal_candidates != expected_meals:
+            raise ValueError("planning shortlist must separate ranked dining recommendations")
+        selected_poi_ids = {
+            *(item.candidate_id for item in expected_pois),
+            *(item.candidate_id for item in expected_meals),
+        }
+        if self.shortlist.omitted_poi_ids != tuple(
+            item.candidate_id
+            for item in available_pois
+            if item.candidate_id not in selected_poi_ids
+        ):
+            raise ValueError("planning shortlist must expose omitted POI ids")
         if self.shortlist.omitted_stay_ids != tuple(
             item.candidate_id for item in available_stays[1:]
         ):
             raise ValueError("planning shortlist must expose omitted stay ids")
+        expected_groups = cluster_major_activities(
+            expected_pois,
+            expected_stay,
+            day_count=self.planner_context.day_count,
+        )
+        expected_cluster_ids = tuple(
+            tuple(item.candidate_id for item in group) for group in expected_groups
+        )
+        if tuple(item.poi_candidate_ids for item in self.shortlist.day_clusters) != (
+            expected_cluster_ids
+        ):
+            raise ValueError("planning shortlist day clusters must match geographic clustering")
         if self.route_matrix.poi_candidate_ids != tuple(
             item.candidate_id for item in self.shortlist.poi_candidates
         ) or self.route_matrix.primary_stay_id != (
@@ -395,6 +451,34 @@ class PlanningMaterialBundle(DomainModel):
             else None
         ):
             raise ValueError("route matrix scope must match the planning shortlist")
+        expected_route_pairs: list[tuple[str, str]] = []
+        if self.planner_context.pace is None:
+            expected_route_pairs.extend(
+                (origin, destination)
+                for origin in self.route_matrix.poi_candidate_ids
+                for destination in self.route_matrix.poi_candidate_ids
+                if origin != destination
+            )
+            if self.shortlist.primary_stay is not None:
+                for candidate_id in self.route_matrix.poi_candidate_ids:
+                    expected_route_pairs.extend(
+                        (
+                            (self.shortlist.primary_stay.candidate_id, candidate_id),
+                            (candidate_id, self.shortlist.primary_stay.candidate_id),
+                        )
+                    )
+        elif self.shortlist.primary_stay is not None:
+            for cluster in self.shortlist.day_clusters:
+                previous_id = self.shortlist.primary_stay.candidate_id
+                for candidate_id in cluster.poi_candidate_ids:
+                    expected_route_pairs.append((previous_id, candidate_id))
+                    previous_id = candidate_id
+        actual_route_pairs = [
+            (item.origin_candidate_id, item.destination_candidate_id)
+            for item in self.route_matrix.edges
+        ]
+        if actual_route_pairs != expected_route_pairs:
+            raise ValueError("route matrix must cover only the clustered itinerary chain")
         expected_issues: list[PlanningMaterialIssueCode] = []
         if self.specialist_result.status != SpecialistFanoutStatus.COMPLETE:
             expected_issues.append(PlanningMaterialIssueCode.SPECIALIST_INCOMPLETE)
@@ -407,6 +491,16 @@ class PlanningMaterialBundle(DomainModel):
             expected_issues.append(PlanningMaterialIssueCode.BUDGET_NOT_ALLOCATED)
         if self.shortlist.primary_stay is None:
             expected_issues.append(PlanningMaterialIssueCode.STAY_ANCHOR_MISSING)
+        if (
+            self.planner_context.pace is not None
+            and len(self.shortlist.poi_candidates) < activity_target
+        ):
+            expected_issues.append(PlanningMaterialIssueCode.ACTIVITY_COVERAGE_INSUFFICIENT)
+        if self.planner_context.pace is not None and any(
+            edge.route is not None and edge.route.duration_minutes > EXCESSIVE_TRANSFER_MINUTES
+            for edge in self.route_matrix.edges
+        ):
+            expected_issues.append(PlanningMaterialIssueCode.EXCESSIVE_TRANSFER)
         if self.issues != tuple(expected_issues):
             raise ValueError("planning material issues must match component outcomes")
         expected_status = PlanningMaterialStatus.READY
@@ -415,6 +509,8 @@ class PlanningMaterialBundle(DomainModel):
             or self.route_matrix.status
             in {RouteMatrixStatus.BLOCKED, RouteMatrixStatus.UNAVAILABLE}
             or explore_branch.status != SpecialistBranchStatus.SUCCEEDED
+            or PlanningMaterialIssueCode.ACTIVITY_COVERAGE_INSUFFICIENT in expected_issues
+            or PlanningMaterialIssueCode.EXCESSIVE_TRANSFER in expected_issues
         ):
             expected_status = PlanningMaterialStatus.BLOCKED
         elif expected_issues:

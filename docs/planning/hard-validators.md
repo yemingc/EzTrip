@@ -18,11 +18,18 @@ validate_hard_trip_plan(request, plan, materials, opening_hours)
 | single city | POI 或住宿锚点城市与请求不一致 | `explore` / `stay` | `rerun_explore` / `rerun_stay` |
 | route presence/endpoints/lineage | 缺路线、端点不邻接或不来自当前矩阵 | `route` | `rerun_route` |
 | transfer window | 路线分钟数大于相邻活动间隔 | `plan` | `replan_day` |
+| activity density | 显式节奏下每日主活动少于或多于约定范围 | `explore` / `plan` | `rerun_explore` / `replan_day` |
+| meal structure | 餐饮被排成主要活动，或推荐未绑定当日主活动 | `plan` | `replan_day` |
+| meal proximity | 推荐餐厅与绑定活动的直线距离超过 3 公里 | `explore` | `rerun_explore` |
+| first-leg departure | 住宿到首站的路线无法反推或匹配建议出发时间 | `plan` | `replan_day` |
+| excessive transfer | 显式节奏下单段路线超过 90 分钟 | `route` / `plan` | `rerun_route` / `replan_day` |
 | opening-hours evidence | 对应日期没有 Provider 证据 | `explore` | `rerun_explore` |
 | opening-hours window | 活动不落在任何已验证窗口内 | `plan` | `replan_day` |
 | hard budget | CostItem 下界超限、区间可能超限或类别缺失 | `budget` | `ask_user` / `recalculate_budget` |
 
 `TripPlan` 自身已经拒绝日期缺口、item ID 重复和日内重叠；基础 Validator 已检查 candidate 重复、请求/目的地/日期一致性和来源模式。Hard Validator 不重复把这些 schema 规则包装成 Agent。
+
+餐饮 proximity 当前依据 Provider 经纬度计算直线距离，不等同于真实步行路线；前端必须同时展示该边界。价格、营业时间、排队和可订状态没有独立事实时也不得从推荐对象推断。
 
 ## 营业时间事实边界
 

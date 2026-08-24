@@ -70,9 +70,19 @@ export interface ItineraryItem {
   notes: string[];
 }
 
+export interface MealRecommendation {
+  recommendation_id: string;
+  anchor_candidate_id: string;
+  candidate: CandidatePoi;
+  straight_line_distance_meters: number;
+  reason: string;
+}
+
 export interface DayPlan {
   date: string;
   items: ItineraryItem[];
+  departure_from_stay_at: string | null;
+  meal_recommendations: MealRecommendation[];
   weather_risk_ids: string[];
 }
 
@@ -204,7 +214,9 @@ export interface ProductPlanningMaterials {
   status: "ready" | "partial" | "blocked";
   issues: string[];
   shortlist: {
+    activity_target_per_day: number;
     poi_candidates: CandidatePoi[];
+    meal_candidates: CandidatePoi[];
     primary_stay: CandidateStay | null;
   };
   route_matrix: {
@@ -479,6 +491,7 @@ export interface PlannerFormValues {
   tripDays: number;
   adults: number;
   budgetLimit: string;
+  pace: "relaxed" | "standard";
   dataMode: PlanningDataMode;
 }
 
@@ -526,6 +539,7 @@ export function buildPlanningTaskRequest(
         rooms: 1,
       },
       budget,
+      pace: values.pace,
       travel_styles: ["历史文化", "轻步行"],
       constraints: {
         items: [],

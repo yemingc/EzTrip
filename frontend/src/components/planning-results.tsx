@@ -380,8 +380,17 @@ export function PlanningResults({
                   <p className="mt-1 text-sm font-semibold text-slate-800">{formatDate(day.date)}</p>
                 </div>
                 <div className="space-y-3 border-l border-slate-200 pl-5">
-                  {day.items.map((item) => (
-                    <div className="relative rounded-2xl bg-slate-50 px-4 py-4" key={item.item_id}>
+                  {day.departure_from_stay_at ? (
+                    <p className="rounded-xl border border-dashed border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+                      建议 {formatTime(day.departure_from_stay_at)} 从住宿锚点出发前往首站
+                    </p>
+                  ) : null}
+                  {day.items.map((item, itemIndex) => (
+                    <div
+                      className="relative rounded-2xl bg-slate-50 px-4 py-4"
+                      data-testid="itinerary-item"
+                      key={item.item_id}
+                    >
                       <span className="absolute -left-[1.68rem] top-6 size-3 rounded-full border-2 border-white bg-emerald-700 ring-1 ring-emerald-800/20" />
                       <div className="flex flex-wrap justify-between gap-3">
                         <div>
@@ -397,11 +406,55 @@ export function PlanningResults({
                       ) : null}
                       {item.route_from_previous ? (
                         <p className="mt-2 text-xs text-slate-500">
-                          上一站至此：{item.route_from_previous.duration_minutes} 分钟 · {item.route_from_previous.distance_meters} 米
+                          {itemIndex === 0 ? "住宿锚点至此" : "上一站至此"}：
+                          {item.route_from_previous.duration_minutes} 分钟 · {item.route_from_previous.distance_meters} 米
                         </p>
                       ) : null}
                     </div>
                   ))}
+                  {day.meal_recommendations.length ? (
+                    <div
+                      className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4"
+                      data-testid="meal-recommendations"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h4 className="text-sm font-semibold text-amber-950">附近用餐建议</h4>
+                        <span className="text-[10px] font-semibold text-amber-700">推荐 · 不占活动名额</span>
+                      </div>
+                      <div className="mt-3 grid gap-2">
+                        {day.meal_recommendations.map((recommendation) => {
+                          const anchor = day.items.find(
+                            (item) => item.candidate_id === recommendation.anchor_candidate_id,
+                          );
+                          return (
+                            <div
+                              className="rounded-xl border border-amber-100 bg-white/85 p-3"
+                              key={recommendation.recommendation_id}
+                            >
+                              <div className="flex flex-wrap items-start justify-between gap-2">
+                                <div>
+                                  <p className="text-sm font-semibold text-slate-950">
+                                    {recommendation.candidate.name}
+                                  </p>
+                                  <p className="mt-1 text-[11px] text-slate-500">
+                                    距“{anchor?.title ?? "当日景点"}”直线约 {recommendation.straight_line_distance_meters} 米
+                                  </p>
+                                </div>
+                                <SourceModeBadge mode={recommendation.candidate.source.data_mode} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p className="mt-3 text-[10px] leading-4 text-amber-800/70">
+                        仅按 Provider 坐标计算附近备选；价格、营业时间、排队和可订状态尚未验证。
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="rounded-xl border border-dashed border-slate-200 px-3 py-2 text-xs text-slate-400">
+                      当前没有 3 公里内且来源可追溯的餐饮候选，不随机填充全城餐厅。
+                    </p>
+                  )}
                 </div>
               </section>
             ))}

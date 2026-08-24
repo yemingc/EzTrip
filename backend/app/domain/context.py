@@ -7,7 +7,7 @@ from pydantic import Field, model_validator
 
 from app.domain.base import DomainModel, Identifier, NonEmptyText, Sha256Digest
 from app.domain.money import BudgetCategory
-from app.domain.request import Constraint
+from app.domain.request import Constraint, TripPace
 
 
 class PlannerReadiness(StrEnum):
@@ -130,6 +130,7 @@ class PlannerContext(DomainModel):
     lodging_nights: int = Field(ge=1, le=4)
     party: PartyPlanningContext
     budget: BudgetPlanningContext | None = None
+    pace: TripPace | None = Field(default=None, exclude_if=lambda value: value is None)
     travel_styles: tuple[NonEmptyText, ...] = ()
     confirmed_hard_constraints: tuple[Constraint, ...] = ()
     confirmed_soft_constraints: tuple[Constraint, ...] = ()

@@ -28,6 +28,7 @@ from app.domain.planning import (
     ActivityKind,
     DayPlan,
     ItineraryItem,
+    MealRecommendation,
     PlanStatus,
     PlanVersion,
     TripPlan,
@@ -41,6 +42,7 @@ from app.domain.request import (
     ConstraintSource,
     ConstraintStrength,
     Party,
+    TripPace,
     TripRequest,
 )
 from app.domain.sources import DataMode, SourceReference
@@ -102,6 +104,7 @@ __all__ = [
     "GeoPoint",
     "IssueSeverity",
     "ItineraryItem",
+    "MealRecommendation",
     "MinimalPlanningResult",
     "MoneyRange",
     "OpeningHoursEvidence",
@@ -131,6 +134,7 @@ __all__ = [
     "RouteMode",
     "SourceReference",
     "StayPriceBasis",
+    "TripPace",
     "TripPlan",
     "TripRequest",
     "ValidationEvidence",

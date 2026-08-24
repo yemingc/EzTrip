@@ -350,6 +350,14 @@
       "title": "RouteFailureInjection",
       "type": "string"
     },
+    "TripPace": {
+      "enum": [
+        "relaxed",
+        "standard"
+      ],
+      "title": "TripPace",
+      "type": "string"
+    },
     "TripRequest": {
       "additionalProperties": false,
       "properties": {
@@ -395,6 +403,19 @@
           "title": "Destination City",
           "type": "string"
         },
+        "destination_adcode": {
+          "anyOf": [
+            {
+              "pattern": "^\\d{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Destination Adcode"
+        },
         "start_date": {
           "format": "date",
           "title": "Start Date",
@@ -412,6 +433,17 @@
           "anyOf": [
             {
               "$ref": "#/$defs/BudgetConstraint"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "pace": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TripPace"
             },
             {
               "type": "null"

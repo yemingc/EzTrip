@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import AwareDatetime, Field, model_validator
 
 from app.domain.base import DomainModel, Identifier, NonEmptyText, Sha256Digest
+from app.domain.candidates import CandidatePOI
 from app.domain.money import CostItem
 from app.domain.sources import SourceReference
 from app.domain.travel_data import RouteLeg, WeatherRisk
@@ -24,6 +25,20 @@ class PlanStatus(StrEnum):
     PENDING_CONFIRMATION = "pending_confirmation"
     FINAL = "final"
     CONFLICTED = "conflicted"
+
+
+class MealRecommendation(DomainModel):
+    recommendation_id: Identifier
+    anchor_candidate_id: Identifier
+    candidate: CandidatePOI
+    straight_line_distance_meters: int = Field(ge=0, le=5000)
+    reason: NonEmptyText
+
+    @model_validator(mode="after")
+    def validate_recommendation(self) -> "MealRecommendation":
+        if self.anchor_candidate_id == self.candidate.candidate_id:
+            raise ValueError("meal recommendation must differ from its activity anchor")
+        return self
 
 
 class ItineraryItem(DomainModel):
@@ -56,6 +71,15 @@ class ItineraryItem(DomainModel):
 class DayPlan(DomainModel):
     date: date
     items: tuple[ItineraryItem, ...] = Field(min_length=1)
+    departure_from_stay_at: AwareDatetime | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
+    meal_recommendations: tuple[MealRecommendation, ...] = Field(
+        default=(),
+        max_length=3,
+        exclude_if=lambda value: not value,
+    )
     weather_risk_ids: tuple[Identifier, ...] = ()
 
     @model_validator(mode="after")
@@ -65,11 +89,22 @@ class DayPlan(DomainModel):
             raise ValueError("item_id values must be unique within a day")
         if len(self.weather_risk_ids) != len(set(self.weather_risk_ids)):
             raise ValueError("weather_risk_ids must be unique within a day")
+        meal_ids = [item.recommendation_id for item in self.meal_recommendations]
+        if len(meal_ids) != len(set(meal_ids)):
+            raise ValueError("meal recommendation ids must be unique within a day")
+        meal_candidate_ids = [item.candidate.candidate_id for item in self.meal_recommendations]
+        if len(meal_candidate_ids) != len(set(meal_candidate_ids)):
+            raise ValueError("meal recommendation candidates must be unique within a day")
         if any(
             item.start_at.date() != self.date or item.end_at.date() != self.date
             for item in self.items
         ):
             raise ValueError("all itinerary item timestamps must fall on the DayPlan date")
+        if self.departure_from_stay_at is not None:
+            if self.departure_from_stay_at.date() != self.date:
+                raise ValueError("departure_from_stay_at must fall on the DayPlan date")
+            if self.departure_from_stay_at > self.items[0].start_at:
+                raise ValueError("departure_from_stay_at cannot be after the first activity")
         for previous, current in zip(self.items, self.items[1:], strict=False):
             if current.start_at < previous.start_at:
                 raise ValueError("DayPlan items must be sorted by start_at")
@@ -105,6 +140,12 @@ class TripPlan(DomainModel):
         all_item_ids = [item.item_id for day in self.days for item in day.items]
         if len(all_item_ids) != len(set(all_item_ids)):
             raise ValueError("item_id values must be unique across the trip")
+
+        meal_ids = [
+            item.recommendation_id for day in self.days for item in day.meal_recommendations
+        ]
+        if len(meal_ids) != len(set(meal_ids)):
+            raise ValueError("meal recommendation ids must be unique across the trip")
 
         cost_ids = [item.cost_item_id for item in self.cost_items]
         if len(cost_ids) != len(set(cost_ids)):

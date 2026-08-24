@@ -565,7 +565,7 @@
           "items": {
             "$ref": "#/$defs/PlannerPlacementProposal"
           },
-          "maxItems": 12,
+          "maxItems": 15,
           "minItems": 1,
           "title": "Items",
           "type": "array"
@@ -628,6 +628,14 @@
       ],
       "title": "SourceReference",
       "type": "object"
+    },
+    "TripPace": {
+      "enum": [
+        "relaxed",
+        "standard"
+      ],
+      "title": "TripPace",
+      "type": "string"
     },
     "TripRequest": {
       "additionalProperties": false,
@@ -704,6 +712,17 @@
           "anyOf": [
             {
               "$ref": "#/$defs/BudgetConstraint"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "pace": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TripPace"
             },
             {
               "type": "null"

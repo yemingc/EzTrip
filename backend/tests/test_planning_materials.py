@@ -41,6 +41,7 @@ from app.planning.material_contracts import (
     BudgetAllocationReason,
     BudgetAllocationStatus,
     BudgetQuantityBasis,
+    PlanningDayCluster,
     PlanningMaterialIssueCode,
     PlanningMaterialStatus,
     PlanningShortlist,
@@ -291,7 +292,18 @@ def test_four_poi_shortlist_caps_directed_route_matrix_at_twenty_edges() -> None
             }
         )
         shortlist = PlanningShortlist(
+            activity_target_per_day=base.activity_target_per_day,
             poi_candidates=(*base.poi_candidates, fourth),
+            day_clusters=(
+                PlanningDayCluster(
+                    day_number=base.day_clusters[0].day_number,
+                    poi_candidate_ids=(
+                        *base.day_clusters[0].poi_candidate_ids,
+                        fourth.candidate_id,
+                    ),
+                ),
+                *base.day_clusters[1:],
+            ),
             primary_stay=base.primary_stay,
             omitted_stay_ids=base.omitted_stay_ids,
         )

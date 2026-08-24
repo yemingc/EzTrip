@@ -31,7 +31,7 @@ class PlanAgentDecision(DomainModel):
     def validate_grounded_decision(self) -> "PlanAgentDecision":
         if self.item.candidate_id != self.proposal.candidate_id:
             raise ValueError("Plan Agent decision must preserve the proposed candidate_id")
-        if self.item.kind not in {ActivityKind.ATTRACTION, ActivityKind.MEAL}:
+        if self.item.kind != ActivityKind.ATTRACTION:
             raise ValueError("Plan Agent decisions can only create POI activity items")
         if self.item.route_from_previous is None:
             raise ValueError("ready planning materials require a grounded incoming route")
@@ -49,7 +49,7 @@ class PlanAgentRunResult(DomainModel):
     budget_status: BudgetAllocationStatus
     status: PlanAgentRunStatus
     skip_reason: PlanAgentSkipReason | None = None
-    input_poi_candidate_ids: tuple[Identifier, ...] = Field(max_length=4)
+    input_poi_candidate_ids: tuple[Identifier, ...] = Field(max_length=15)
     primary_stay_candidate_id: Identifier | None = None
     input_route_edge_count: int = Field(ge=0, le=20)
     input_weather_risk_ids: tuple[Identifier, ...] = ()
@@ -57,8 +57,8 @@ class PlanAgentRunResult(DomainModel):
     latency_ms: int = Field(ge=0)
     usage: ModelTokenUsage | None = None
     model_call_count: int = Field(ge=0, le=1)
-    decisions: tuple[PlanAgentDecision, ...] = Field(default=(), max_length=4)
-    route_edge_ids_used: tuple[Identifier, ...] = Field(default=(), max_length=4)
+    decisions: tuple[PlanAgentDecision, ...] = Field(default=(), max_length=15)
+    route_edge_ids_used: tuple[Identifier, ...] = Field(default=(), max_length=15)
     plan: TripPlan | None = None
     validation: PlanValidationReport | None = None
 
@@ -120,7 +120,7 @@ class PlanAgentRunResult(DomainModel):
             item
             for day in self.plan.days
             for item in day.items
-            if item.kind in {ActivityKind.ATTRACTION, ActivityKind.MEAL}
+            if item.kind == ActivityKind.ATTRACTION
         )
         if scheduled_items != tuple(item.item for item in self.decisions):
             raise ValueError("TripPlan must preserve Plan Agent decisions in timeline order")

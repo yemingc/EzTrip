@@ -7,6 +7,14 @@ from app.domain.candidates import CandidatePOI, CandidateStay
 from app.domain.context import PlannerCapability, PlannerContext
 from app.domain.money import BudgetCategory
 from app.domain.travel_data import RouteEndpoint, RouteMode
+from app.itinerary_quality import (
+    EXCESSIVE_TRANSFER_MINUTES,
+    cluster_major_activities,
+    is_meal_candidate,
+    major_activity_range,
+    major_activity_target,
+    select_major_activities,
+)
 from app.planning.material_contracts import (
     BudgetAllocation,
     BudgetAllocationItem,
@@ -14,6 +22,7 @@ from app.planning.material_contracts import (
     BudgetAllocationStatus,
     BudgetQuantityBasis,
     PlanningCandidateKind,
+    PlanningDayCluster,
     PlanningMaterialBundle,
     PlanningMaterialIssueCode,
     PlanningMaterialStatus,
@@ -75,10 +84,43 @@ def build_planning_shortlist(result: SpecialistFanoutResult) -> PlanningShortlis
         if stay_branch.stay_result is not None
         else ()
     )
+    available_pois = tuple(item.candidate for item in explore_recommendations)
+    available_activity_count = sum(not is_meal_candidate(item) for item in available_pois)
+    target = major_activity_target(
+        result.planner_context.day_count,
+        result.planner_context.pace,
+        available_count=available_activity_count,
+    )
+    minimum_per_day, _ = major_activity_range(result.planner_context.pace)
+    primary_stay = stay_recommendations[0].candidate if stay_recommendations else None
+    activities = select_major_activities(available_pois, primary_stay, target=target)
+    meals = tuple(item for item in available_pois if is_meal_candidate(item))[
+        : result.planner_context.day_count * 3
+    ]
+    groups = cluster_major_activities(
+        activities,
+        primary_stay,
+        day_count=result.planner_context.day_count,
+    )
+    selected_ids = {
+        *(item.candidate_id for item in activities),
+        *(item.candidate_id for item in meals),
+    }
     return PlanningShortlist(
-        poi_candidates=tuple(item.candidate for item in explore_recommendations[:4]),
-        primary_stay=(stay_recommendations[0].candidate if stay_recommendations else None),
-        omitted_poi_ids=tuple(item.candidate.candidate_id for item in explore_recommendations[4:]),
+        activity_target_per_day=minimum_per_day,
+        poi_candidates=activities,
+        meal_candidates=meals,
+        day_clusters=tuple(
+            PlanningDayCluster(
+                day_number=index,
+                poi_candidate_ids=tuple(item.candidate_id for item in group),
+            )
+            for index, group in enumerate(groups, start=1)
+        ),
+        primary_stay=primary_stay,
+        omitted_poi_ids=tuple(
+            item.candidate_id for item in available_pois if item.candidate_id not in selected_ids
+        ),
         omitted_stay_ids=tuple(item.candidate.candidate_id for item in stay_recommendations[1:]),
     )
 
@@ -225,16 +267,30 @@ def _route_failure(error: Exception, origin_id: str, destination_id: str) -> Rou
 
 def _candidate_pairs(
     shortlist: PlanningShortlist,
+    *,
+    use_legacy_matrix: bool,
 ) -> tuple[tuple[CandidatePOI | CandidateStay, CandidatePOI | CandidateStay], ...]:
-    pairs: list[tuple[CandidatePOI | CandidateStay, CandidatePOI | CandidateStay]] = [
-        (origin, destination)
-        for origin in shortlist.poi_candidates
-        for destination in shortlist.poi_candidates
-        if origin.candidate_id != destination.candidate_id
-    ]
-    if shortlist.primary_stay is not None:
-        for poi in shortlist.poi_candidates:
-            pairs.extend(((shortlist.primary_stay, poi), (poi, shortlist.primary_stay)))
+    if use_legacy_matrix:
+        pairs: list[tuple[CandidatePOI | CandidateStay, CandidatePOI | CandidateStay]] = [
+            (origin, destination)
+            for origin in shortlist.poi_candidates
+            for destination in shortlist.poi_candidates
+            if origin.candidate_id != destination.candidate_id
+        ]
+        if shortlist.primary_stay is not None:
+            for poi in shortlist.poi_candidates:
+                pairs.extend(((shortlist.primary_stay, poi), (poi, shortlist.primary_stay)))
+        return tuple(pairs)
+    if shortlist.primary_stay is None:
+        return ()
+    candidates_by_id = {item.candidate_id: item for item in shortlist.poi_candidates}
+    pairs = []
+    for cluster in shortlist.day_clusters:
+        origin: CandidatePOI | CandidateStay = shortlist.primary_stay
+        for candidate_id in cluster.poi_candidate_ids:
+            destination = candidates_by_id[candidate_id]
+            pairs.append((origin, destination))
+            origin = destination
     return tuple(pairs)
 
 
@@ -271,7 +327,7 @@ async def build_route_matrix(
         raise PlanningMaterialProtocolError(
             "route capability is ready without a destination administrative code"
         )
-    pairs = _candidate_pairs(shortlist)
+    pairs = _candidate_pairs(shortlist, use_legacy_matrix=context.pace is None)
     if not poi_ids:
         return RouteMatrix(
             request_id=result.request_id,
@@ -393,6 +449,18 @@ def _planning_material_issues(
         issues.append(PlanningMaterialIssueCode.BUDGET_NOT_ALLOCATED)
     if shortlist.primary_stay is None:
         issues.append(PlanningMaterialIssueCode.STAY_ANCHOR_MISSING)
+    if specialist_result.planner_context.pace is not None and len(
+        shortlist.poi_candidates
+    ) < major_activity_target(
+        specialist_result.planner_context.day_count,
+        specialist_result.planner_context.pace,
+    ):
+        issues.append(PlanningMaterialIssueCode.ACTIVITY_COVERAGE_INSUFFICIENT)
+    if specialist_result.planner_context.pace is not None and any(
+        edge.route is not None and edge.route.duration_minutes > EXCESSIVE_TRANSFER_MINUTES
+        for edge in route_matrix.edges
+    ):
+        issues.append(PlanningMaterialIssueCode.EXCESSIVE_TRANSFER)
     return tuple(issues)
 
 
@@ -424,6 +492,8 @@ async def build_planning_material_bundle(
         specialist_result.status == SpecialistFanoutStatus.BLOCKED
         or route_matrix.status in {RouteMatrixStatus.BLOCKED, RouteMatrixStatus.UNAVAILABLE}
         or explore_branch.explore_result is None
+        or PlanningMaterialIssueCode.ACTIVITY_COVERAGE_INSUFFICIENT in issues
+        or PlanningMaterialIssueCode.EXCESSIVE_TRANSFER in issues
     ):
         status = PlanningMaterialStatus.BLOCKED
     elif issues:

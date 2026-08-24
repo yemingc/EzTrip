@@ -297,7 +297,19 @@ def repair_plan_schedule(
             previous_end = item.end_at
         repaired_days.append(
             DayPlan.model_validate(
-                day.model_copy(update={"items": tuple(repaired_items)}).model_dump(mode="python")
+                day.model_copy(
+                    update={
+                        "items": tuple(repaired_items),
+                        "departure_from_stay_at": (
+                            repaired_items[0].start_at
+                            - timedelta(
+                                minutes=repaired_items[0].route_from_previous.duration_minutes
+                            )
+                            if repaired_items and repaired_items[0].route_from_previous is not None
+                            else day.departure_from_stay_at
+                        ),
+                    }
+                ).model_dump(mode="python")
             )
         )
     if not changed:

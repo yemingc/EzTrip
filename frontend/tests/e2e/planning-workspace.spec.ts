@@ -16,6 +16,12 @@ test("submits a real fixture planning task and renders its evidence", async ({ p
   await expect(results).toContainText("北京 · 2 日规划草案");
   await expect(results).toContainText("故宫博物院");
   await expect(results).toContainText("天坛公园");
+  await expect(results).toContainText("中国国家博物馆");
+  await expect(results).toContainText("景山公园");
+  await expect(results.getByTestId("itinerary-item")).toHaveCount(4);
+  await expect(results).toContainText("从住宿锚点出发前往首站");
+  await expect(results).toContainText("附近用餐建议");
+  await expect(results).toContainText("推荐 · 不占活动名额");
   await expect(results).toContainText("Fixture 数据");
   await expect(results).toContainText("Product Graph V2");
   await expect(results).toContainText("explore");
@@ -45,6 +51,19 @@ test("submits a real fixture planning task and renders its evidence", async ({ p
     path: "test-results/eztrip-planning-workspace.png",
     fullPage: true,
   });
+});
+
+test("renders three main activities per day in standard pace without counting meals", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByLabel("行程节奏").selectOption("standard");
+  await page.getByTestId("submit-planning-task").click();
+
+  const results = page.getByTestId("planning-results");
+  await expect(results).toBeVisible({ timeout: 20_000 });
+  await expect(results.getByTestId("itinerary-item")).toHaveCount(6);
+  await expect(results.getByTestId("meal-recommendations")).toHaveCount(2);
+  await expect(results).toContainText("推荐 · 不占活动名额");
 });
 
 test("does not present missing cost facts as a zero-cost trip", async ({ page }) => {
@@ -130,7 +149,7 @@ test("applies a structured day-scoped revision and renders plan version v2", asy
   await expect(results).toContainText("v2 修改草案 · 尚未再次审核");
   await expect(results).toContainText("v1 → v2");
   await expect(results).toContainText("计划已修改 · 1 个受影响日期");
-  await expect(results).toContainText("12:00 — 14:30");
+  await expect(results).toContainText("12:00 — 14:00");
 
   await page.screenshot({
     path: "test-results/eztrip-structured-revision-v2.png",

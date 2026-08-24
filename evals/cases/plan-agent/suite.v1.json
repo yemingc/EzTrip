@@ -65,11 +65,11 @@
       "expected": {
         "material_status": "ready",
         "run_status": "planned",
-        "candidate_count": 3,
+        "candidate_count": 2,
         "model_call_count": 1
       },
       "boundary_notes": [
-        "餐饮类型来自候选类别的确定性映射，不由模型新增餐厅事实。"
+        "餐饮候选与两项主要活动分离，只作为附近推荐，不占活动名额。"
       ]
     },
     {
@@ -94,11 +94,11 @@
       "expected": {
         "material_status": "ready",
         "run_status": "planned",
-        "candidate_count": 3,
+        "candidate_count": 2,
         "model_call_count": 1
       },
       "boundary_notes": [
-        "天气风险由 Weather 工具主动提供，无需用户追加天气事实。"
+        "餐饮候选与两项主要活动分离；天气风险仍由 Weather 工具主动提供。"
       ]
     },
     {

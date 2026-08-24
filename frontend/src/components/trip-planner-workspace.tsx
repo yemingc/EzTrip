@@ -156,6 +156,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
     tripDays: 2,
     adults: 2,
     budgetLimit: "3000",
+    pace: "relaxed",
     dataMode: "fixture",
   });
   const [phase, setPhase] = useState<WorkspacePhase>("idle");
@@ -559,6 +560,20 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
                 {[1, 2, 3, 4, 5, 6].map((count) => (
                   <option key={count} value={count}>{count} 人</option>
                 ))}
+              </select>
+            </label>
+            <label>
+              <span className="field-label">行程节奏</span>
+              <select
+                className="field-control"
+                disabled={isBusy}
+                onChange={(event) =>
+                  updateValue("pace", event.target.value as PlannerFormValues["pace"])
+                }
+                value={values.pace}
+              >
+                <option value="relaxed">轻松 · 每天 2–3 个主要活动</option>
+                <option value="standard">标准 · 每天 3–4 个主要活动</option>
               </select>
             </label>
             <label>

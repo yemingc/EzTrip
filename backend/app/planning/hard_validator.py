@@ -1,7 +1,7 @@
 import hashlib
 import unicodedata
 from collections import Counter
-from datetime import date
+from datetime import date, timedelta
 
 from app.domain.opening_hours import OpeningHoursEvidence, OpeningHoursEvidenceBundle
 from app.domain.planning import ActivityKind, PlanStatus, TripPlan
@@ -19,6 +19,12 @@ from app.domain.validation import (
     ResponsibleNode,
     ValidationEvidence,
     ValidationIssue,
+)
+from app.itinerary_quality import (
+    EXCESSIVE_TRANSFER_MINUTES,
+    MAX_MEAL_RECOMMENDATION_DISTANCE_METERS,
+    major_activity_range,
+    straight_line_distance_meters,
 )
 from app.planning.material_contracts import (
     PlanningMaterialBundle,
@@ -168,10 +174,7 @@ def validate_hard_trip_plan(
         candidate.candidate_id: candidate for candidate in materials.shortlist.poi_candidates
     }
     scheduled_items = tuple(
-        item
-        for day in plan.days
-        for item in day.items
-        if item.kind in {ActivityKind.ATTRACTION, ActivityKind.MEAL}
+        item for day in plan.days for item in day.items if item.kind == ActivityKind.ATTRACTION
     )
     scheduled_ids = tuple(
         item.candidate_id for item in scheduled_items if item.candidate_id is not None
@@ -206,6 +209,169 @@ def validate_hard_trip_plan(
         )
     else:
         pass_rule("plan.candidate_scope_exact")
+
+    minimum_activities, maximum_activities = major_activity_range(request.pace)
+    density_conflicts = (
+        tuple(
+            (
+                f"{day.date.isoformat()}:"
+                f"{sum(item.kind == ActivityKind.ATTRACTION for item in day.items)}"
+            )
+            for day in plan.days
+            if not minimum_activities
+            <= sum(item.kind == ActivityKind.ATTRACTION for item in day.items)
+            <= maximum_activities
+        )
+        if request.pace is not None
+        else ()
+    )
+    if density_conflicts:
+        add_issue(
+            _issue(
+                plan,
+                rule_code="plan.activity_density_out_of_range",
+                message="每日主要游览项目数量与所选行程节奏不一致。",
+                evidence=(
+                    ValidationEvidence(
+                        field_path="plan.days.items.kind",
+                        description="日期和主要活动数量",
+                        observed_value=";".join(density_conflicts),
+                    ),
+                ),
+                responsible_node=ResponsibleNode.PLAN,
+                repair_action=RepairAction.REPLAN_DAY,
+            )
+        )
+    else:
+        pass_rule("plan.activity_density_matches_pace")
+
+    scheduled_meals = tuple(
+        item.item_id for day in plan.days for item in day.items if item.kind == ActivityKind.MEAL
+    )
+    if scheduled_meals:
+        add_issue(
+            _issue(
+                plan,
+                rule_code="meal.scheduled_as_activity",
+                message="餐饮只能作为附近推荐, 不能占用主要行程活动名额。",
+                evidence=(
+                    ValidationEvidence(
+                        field_path="plan.days.items.kind",
+                        description="被错误排入时间线的餐饮 item_id",
+                        observed_value=",".join(scheduled_meals),
+                    ),
+                ),
+                responsible_node=ResponsibleNode.PLAN,
+                repair_action=RepairAction.REPLAN_DAY,
+            )
+        )
+    else:
+        pass_rule("meal.recommendations_not_scheduled")
+
+    meal_candidates = {item.candidate_id: item for item in materials.shortlist.meal_candidates}
+    invalid_meal_recommendations: list[str] = []
+    for day in plan.days:
+        day_activity_ids = {
+            item.candidate_id
+            for item in day.items
+            if item.kind == ActivityKind.ATTRACTION and item.candidate_id is not None
+        }
+        for recommendation in day.meal_recommendations:
+            candidate = meal_candidates.get(recommendation.candidate.candidate_id)
+            anchor = candidates_by_id.get(recommendation.anchor_candidate_id)
+            expected_distance = (
+                straight_line_distance_meters(anchor.location, candidate.location)
+                if anchor is not None and candidate is not None
+                else None
+            )
+            if (
+                candidate != recommendation.candidate
+                or recommendation.anchor_candidate_id not in day_activity_ids
+                or expected_distance != recommendation.straight_line_distance_meters
+                or recommendation.straight_line_distance_meters
+                > MAX_MEAL_RECOMMENDATION_DISTANCE_METERS
+            ):
+                invalid_meal_recommendations.append(recommendation.recommendation_id)
+    if invalid_meal_recommendations:
+        add_issue(
+            _issue(
+                plan,
+                rule_code="meal.recommendation_not_near_activity",
+                message="餐饮建议必须来自 shortlist, 并绑定当日附近景点。",
+                evidence=(
+                    ValidationEvidence(
+                        field_path="plan.days.meal_recommendations",
+                        description="不满足附近推荐契约的 recommendation_id",
+                        observed_value=",".join(invalid_meal_recommendations),
+                    ),
+                ),
+                responsible_node=ResponsibleNode.EXPLORE,
+                repair_action=RepairAction.RERUN_EXPLORE,
+            )
+        )
+    else:
+        pass_rule("meal.recommendations_are_near_day_activities")
+
+    departure_conflicts: list[str] = []
+    excessive_routes: list[str] = []
+    for day in plan.days:
+        activities = tuple(item for item in day.items if item.kind == ActivityKind.ATTRACTION)
+        if not activities:
+            continue
+        first = activities[0]
+        route = first.route_from_previous
+        expected_departure = (
+            first.start_at - timedelta(minutes=route.duration_minutes)
+            if route is not None
+            else None
+        )
+        if request.pace is not None and day.departure_from_stay_at != expected_departure:
+            departure_conflicts.append(day.date.isoformat())
+        if request.pace is not None:
+            excessive_routes.extend(
+                item.item_id
+                for item in activities
+                if item.route_from_previous is not None
+                and item.route_from_previous.duration_minutes > EXCESSIVE_TRANSFER_MINUTES
+            )
+    if departure_conflicts:
+        add_issue(
+            _issue(
+                plan,
+                rule_code="route.first_leg_departure_mismatch",
+                message="每日首站必须根据住宿到景点的路线反推建议出发时间。",
+                evidence=(
+                    ValidationEvidence(
+                        field_path="plan.days.departure_from_stay_at",
+                        description="首段出发时间不一致的日期",
+                        observed_value=",".join(departure_conflicts),
+                    ),
+                ),
+                responsible_node=ResponsibleNode.PLAN,
+                repair_action=RepairAction.REPLAN_DAY,
+            )
+        )
+    else:
+        pass_rule("route.first_leg_departure_matches")
+    if excessive_routes:
+        add_issue(
+            _issue(
+                plan,
+                rule_code="route.excessive_transfer",
+                message="计划包含超过 90 分钟的单段通勤。",
+                evidence=(
+                    ValidationEvidence(
+                        field_path="plan.days.items.route_from_previous",
+                        description="超长通勤的 item_id",
+                        observed_value=",".join(excessive_routes),
+                    ),
+                ),
+                responsible_node=ResponsibleNode.ROUTE,
+                repair_action=RepairAction.RERUN_EXPLORE,
+            )
+        )
+    else:
+        pass_rule("route.transfers_within_quality_limit")
 
     lineage_mismatches = tuple(
         item.item_id

@@ -79,6 +79,13 @@ def apply_plan_revision(
         ):
             raise PlanRevisionProtocolError("revision would move an item outside its target date")
         revised_days.append(day.model_copy(update={"items": shifted_items}))
+        if day.departure_from_stay_at is not None:
+            revised_days[-1] = revised_days[-1].model_copy(
+                update={
+                    "departure_from_stay_at": day.departure_from_stay_at
+                    + timedelta(minutes=revision.shift_minutes)
+                }
+            )
 
     days = tuple(DayPlan.model_validate(day.model_dump(mode="python")) for day in revised_days)
     revised_plan = TripPlan.model_validate(

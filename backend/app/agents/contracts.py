@@ -96,7 +96,7 @@ class PlannerPlacementProposal(DomainModel):
 
 
 class PlannerProposalBatch(DomainModel):
-    items: tuple[PlannerPlacementProposal, ...] = Field(min_length=1, max_length=12)
+    items: tuple[PlannerPlacementProposal, ...] = Field(min_length=1, max_length=15)
 
 
 class PlannerModelResponse(DomainModel):
@@ -165,7 +165,7 @@ class ExploreQueryProposal(DomainModel):
 
 
 class ExploreQueryProposalBatch(DomainModel):
-    items: tuple[ExploreQueryProposal, ...] = Field(min_length=1, max_length=4)
+    items: tuple[ExploreQueryProposal, ...] = Field(min_length=1, max_length=5)
 
 
 class ExploreQueryModelResponse(DomainModel):
@@ -185,7 +185,7 @@ class ExploreSearchQuery(DomainModel):
 
 class ExploreCandidateObservation(DomainModel):
     candidate: CandidatePOI
-    query_ids: tuple[Identifier, ...] = Field(min_length=1, max_length=4)
+    query_ids: tuple[Identifier, ...] = Field(min_length=1, max_length=5)
 
     @model_validator(mode="after")
     def validate_unique_query_ids(self) -> "ExploreCandidateObservation":
@@ -201,13 +201,13 @@ class ExploreEvidenceReference(DomainModel):
 
 class ExploreCandidateSelectionProposal(DomainModel):
     candidate_id: Identifier
-    rank: int = Field(ge=1, le=6)
+    rank: int = Field(ge=1, le=25)
     reason: str = Field(min_length=1, max_length=160)
     evidence: tuple[ExploreEvidenceReference, ...] = Field(min_length=1, max_length=4)
 
 
 class ExploreSelectionProposalBatch(DomainModel):
-    items: tuple[ExploreCandidateSelectionProposal, ...] = Field(min_length=1, max_length=6)
+    items: tuple[ExploreCandidateSelectionProposal, ...] = Field(min_length=1, max_length=25)
 
 
 class ExploreSelectionModelResponse(DomainModel):
@@ -220,7 +220,7 @@ class ExploreSelectionModelResponse(DomainModel):
 class ExploreRecommendation(DomainModel):
     proposal: ExploreCandidateSelectionProposal
     candidate: CandidatePOI
-    query_ids: tuple[Identifier, ...] = Field(min_length=1, max_length=4)
+    query_ids: tuple[Identifier, ...] = Field(min_length=1, max_length=5)
 
     @model_validator(mode="after")
     def validate_candidate_identity(self) -> "ExploreRecommendation":
@@ -239,9 +239,9 @@ class ExploreAgentResult(DomainModel):
     request_id: Identifier
     context_id: Identifier
     candidate_set_sha256: Sha256Digest
-    queries: tuple[ExploreSearchQuery, ...] = Field(min_length=1, max_length=4)
-    observations: tuple[ExploreCandidateObservation, ...] = Field(min_length=1, max_length=12)
-    recommendations: tuple[ExploreRecommendation, ...] = Field(min_length=1, max_length=6)
+    queries: tuple[ExploreSearchQuery, ...] = Field(min_length=1, max_length=5)
+    observations: tuple[ExploreCandidateObservation, ...] = Field(min_length=1, max_length=25)
+    recommendations: tuple[ExploreRecommendation, ...] = Field(min_length=1, max_length=25)
     query_model: NonEmptyText
     selection_model: NonEmptyText
     query_latency_ms: int = Field(ge=0)

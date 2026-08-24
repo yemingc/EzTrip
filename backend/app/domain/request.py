@@ -33,6 +33,11 @@ class ConstraintKind(StrEnum):
     SCHEDULE = "schedule"
 
 
+class TripPace(StrEnum):
+    RELAXED = "relaxed"
+    STANDARD = "standard"
+
+
 ConstraintValue = str | int | float | bool | list[str]
 
 
@@ -133,6 +138,7 @@ class TripRequest(DomainModel):
     end_date: date
     party: Party
     budget: BudgetConstraint | None = None
+    pace: TripPace | None = Field(default=None, exclude_if=lambda value: value is None)
     travel_styles: tuple[NonEmptyText, ...] = ()
     constraints: ConstraintSet = Field(default_factory=ConstraintSet)
 

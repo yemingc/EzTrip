@@ -31,6 +31,7 @@ from app.core.config import Settings
 from app.domain.candidates import CandidatePOI
 from app.domain.context import PlannerCapability, PlannerContext
 from app.domain.provider import ProviderErrorCategory
+from app.itinerary_quality import major_activity_target
 from app.observability.probe import build_langsmith_client, require_secret
 from app.observability.redaction import TraceRedactor
 from app.providers.errors import ProviderRequestError
@@ -41,10 +42,12 @@ EXPLORE_QUERY_PROMPT_VERSION = "explore-query-strategy-v1"
 EXPLORE_SELECTION_PROMPT_VERSION = "explore-candidate-selection-v1"
 EXPLORE_QUERY_TOOL_NAME = "submit_explore_queries"
 EXPLORE_SELECTION_TOOL_NAME = "submit_explore_selection"
-MAX_CANDIDATES_PER_QUERY = 3
+MAX_CANDIDATES_PER_QUERY = 5
 
 QUERY_SYSTEM_PROMPT = """你是 EzTrip Explore Agent 的搜索策略节点。
-只根据结构化 PlannerContext 设计 1 到 4 条高德 POI 文本搜索关键词, 可选择 attraction 或 dining。
+只根据结构化 PlannerContext 设计 1 到 5 条高德 POI 文本搜索关键词, 可选择 attraction 或 dining。
+优先使用 4 条不同主题/片区的 attraction 查询和 1 条 dining 查询,
+为多日主活动与附近餐饮建议提供候选池。
 搜索要覆盖已确认的必去项、兴趣、旅行风格和同行人特征; 不要自行添加用户没有表达的硬约束。
 context_refs 只能复制输入 allowed_context_refs 中的完整字符串; 没有对应依据时留空。
 只决定 kind、keywords、reason 和 context_refs。
@@ -52,8 +55,9 @@ context_refs 只能复制输入 allowed_context_refs 中的完整字符串; 没�
 必须调用 submit_explore_queries, 不要输出正文。"""
 
 SELECTION_SYSTEM_PROMPT = """你是 EzTrip Explore Agent 的候选筛选节点。
-只能从输入 provider_candidates 中选择 1 到 6 个 candidate_id, 并给出从 1 开始连续的 rank。
-这是相关性筛选, 不是候选全量覆盖任务; 有合适候选时也可以只选 1 个。
+只能从输入 provider_candidates 中选择 1 到 25 个 candidate_id, 并给出从 1 开始连续的 rank。
+若输入存在足够相关事实, 至少选择 required_major_activity_count 个非餐饮候选;
+餐饮候选只作为附近用餐建议池, 不计入 required_major_activity_count。
 不得为了凑数选择与 confirmed_constraints、travel_styles 或同行人特征没有直接关系的候选。
 若某候选的类别和标签明显偏离用户偏好, 必须排除, 即使它来自同一查询结果。
 不得新增候选、改名或补充未提供的事实。每条推荐必须提供至少一个可核验 evidence:
@@ -139,6 +143,11 @@ def _query_input_payload(context: PlannerContext) -> str:
         },
         "trip": {
             "day_count": context.day_count,
+            "pace": context.pace.value if context.pace is not None else "unspecified",
+            "required_major_activity_count": major_activity_target(
+                context.day_count,
+                context.pace,
+            ),
             "party": {
                 "adults": context.party.adults,
                 "children": context.party.children,
@@ -174,6 +183,12 @@ def _selection_input_payload(
 ) -> str:
     payload = {
         "destination": context.destination.normalized_name,
+        "pace": context.pace.value if context.pace is not None else "unspecified",
+        "required_major_activity_count": major_activity_target(
+            context.day_count,
+            context.pace,
+        ),
+        "meal_candidates_are_recommendations_only": True,
         "travel_styles": list(context.travel_styles),
         "confirmed_constraints": [
             {
@@ -305,7 +320,7 @@ class DeepSeekExploreProposalModel:
             payload=_selection_input_payload(context, queries, observations),
             schema=EXPLORE_SELECTION_TOOL_SCHEMA,
             tool_name=EXPLORE_SELECTION_TOOL_NAME,
-            max_tokens=1200,
+            max_tokens=2400,
         )
         try:
             proposal = ExploreSelectionProposalBatch.model_validate_json(arguments)
