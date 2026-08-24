@@ -18,6 +18,7 @@ from app.domain.opening_hours import OpeningHoursEvidenceBundle
 from app.domain.planning import TripPlan
 from app.domain.request import TripRequest
 from app.domain.sources import DataMode
+from app.domain.validation import PlanValidationReport
 from app.planning.hard_validator import validate_hard_trip_plan
 from app.planning.material_contracts import PlanningMaterialBundle, PlanningMaterialIssueCode
 from app.planning.plan_revision import apply_plan_revision
@@ -45,7 +46,27 @@ from app.planning.stateful_contracts import (
 )
 
 PRODUCT_PLANNING_GRAPH_NAME = "eztrip-product-planning-graph-v2"
+LIVE_REVIEW_ONLY_RULE_CODES = frozenset(
+    {
+        "opening_hours.evidence_missing",
+        "route.missing_for_grounded_item",
+    }
+)
 ProductProgressCallback = Callable[[ProductPlanningProgress], Awaitable[None]]
+
+
+def should_skip_live_repair(
+    data_mode: DataMode,
+    validation: PlanValidationReport,
+) -> bool:
+    """Send current live-provider fact gaps to HITL without replaying paid stages."""
+
+    if data_mode != DataMode.LIVE or validation.can_finalize:
+        return False
+    error_codes = frozenset(
+        issue.rule_code for issue in validation.issues if issue.severity.value == "error"
+    )
+    return bool(error_codes) and error_codes <= LIVE_REVIEW_ONLY_RULE_CODES
 
 
 class ProductPlanningProtocolError(RuntimeError):
@@ -467,7 +488,10 @@ def build_product_planning_graph(
         state = _require_state(graph_state)
         if state.validation is None:
             raise ProductPlanningProtocolError("hard validation route requires a report")
-        if state.validation.can_finalize:
+        if state.validation.can_finalize or should_skip_live_repair(
+            state.data_mode,
+            state.validation,
+        ):
             return ProductPlanningNodeName.PREPARE_HUMAN_REVIEW.value
         return ProductPlanningNodeName.RUN_REPAIR.value
 
