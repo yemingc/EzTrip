@@ -55,6 +55,7 @@ class PlanningTaskCreateRequest(DomainModel):
     selected_destination_adcode: str | None = Field(default=None, pattern=r"^\d{6}$")
     cost_items: tuple[CostItem, ...] = ()
     data_mode: Literal[DataMode.FIXTURE, DataMode.LIVE] = DataMode.FIXTURE
+    intake_confirmation_id: Identifier | None = None
 
 
 class PlanningTaskSubmission(PlanningTaskCreateRequest):

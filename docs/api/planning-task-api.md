@@ -2,14 +2,17 @@
 
 EZ-401 established the asynchronous FastAPI boundary, EZ-403A/403B added checkpoint HITL and a
 bounded PlanVersion v2 revision, EZ-405 moved the task executor to Product Graph V2, EZ-405B
-connected issue-directed product repair before HITL, and EZ-406A added provider-backed destination
-resolution. The API accepts an already structured `TripRequest`; Chinese free-text extraction is
-not silently implied by this endpoint.
+connected issue-directed product repair before HITL, EZ-406A added provider-backed destination
+resolution, and EZ-406B added a separate evidence-backed request-intake confirmation boundary. The
+planning-task endpoint still accepts an already structured `TripRequest`; Chinese free text reaches
+it only after the client explicitly confirms a request-intake draft.
 
 ## Endpoints
 
 | Method | Path | Purpose |
 |---|---|---|
+| `POST` | `/api/request-intakes` | Propose evidence-backed request fields and constraints without creating a planning task |
+| `POST` | `/api/request-intakes/{draft_id}/confirm` | Confirm the proposal or the explicit form and return a versioned `TripRequest` |
 | `POST` | `/api/destinations/resolve` | Resolve a typed domestic administrative destination before planning |
 | `POST` | `/api/planning-tasks` | Create a task and return `202 queued` |
 | `GET` | `/api/planning-tasks/{task_id}` | Read the current typed snapshot |
@@ -18,6 +21,25 @@ not silently implied by this endpoint.
 
 The committed JSON Schema bundle is
 [`evals/schemas/planning-task-api.v1.json`](../../evals/schemas/planning-task-api.v1.json).
+
+## Request-intake confirmation boundary
+
+`POST /api/request-intakes` receives the raw Chinese request, current structured form values,
+reference date, and fixture/live mode. Request Intake and Constraint Agent outputs are proposals,
+not authority: each proposed value must cite an exact raw-text evidence span, and deterministic code
+recomputes or rejects dates, trip length, party counts, budget, city text, pace, and other string
+values. The response exposes matched, conflict, proposed, unmentioned, and needs-confirmation field
+states plus clarifications. It does not create a planning task.
+
+The frontend may run one bounded destination-resolution preflight for the selected proposal/form.
+After the user explicitly selects `proposal` or `form` and chooses an unambiguous administrative
+candidate, `POST /api/request-intakes/{draft_id}/confirm` returns a `request-confirmation-*` ID and a
+schema-constrained `TripRequest`. The subsequent planning-task request carries that confirmation ID.
+
+Fixture intake is a bounded deterministic parser for committed browser and API scenarios, not a
+general Chinese NLU claim. Live intake requires configured DeepSeek/LangSmith and has not been
+validated by the EZ-406B local fixture gate. Draft records are process-local: a backend restart
+returns `request-intake-not-found`, so cross-refresh/restart recovery remains an EZ-407A requirement.
 
 ## Destination resolution
 

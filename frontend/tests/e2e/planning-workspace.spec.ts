@@ -1,10 +1,23 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+async function understandAndStart(
+  page: Page,
+  selection: "proposal" | "form" = "proposal",
+) {
+  await page.getByTestId("submit-planning-task").click();
+  const confirmation = page.getByTestId("request-intake-confirmation");
+  await expect(confirmation).toBeVisible();
+  if (selection === "form") {
+    await confirmation.getByText("保留结构化表单", { exact: true }).click();
+  }
+  await page.getByTestId("confirm-request-intake").click();
+}
 
 test("submits a real fixture planning task and renders its evidence", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "一份旅行计划，一条完整证据链。" })).toBeVisible();
-  await page.getByTestId("submit-planning-task").click();
+  await understandAndStart(page);
 
   const trace = page.getByTestId("event-trace");
   await expect(trace).toContainText("任务已入队");
@@ -63,7 +76,7 @@ test("renders three main activities per day in standard pace without counting me
   await page.goto("/");
 
   await page.getByLabel("行程节奏").selectOption("standard");
-  await page.getByTestId("submit-planning-task").click();
+  await understandAndStart(page, "form");
 
   const results = page.getByTestId("planning-results");
   await expect(results).toBeVisible({ timeout: 20_000 });
@@ -114,7 +127,7 @@ test("renders a plan when the API omits empty meal recommendations", async ({ pa
   });
 
   await page.goto("/");
-  await page.getByTestId("submit-planning-task").click();
+  await understandAndStart(page);
 
   const results = page.getByTestId("planning-results");
   await expect(results).toBeVisible({ timeout: 20_000 });
@@ -127,7 +140,7 @@ test("does not present missing cost facts as a zero-cost trip", async ({ page })
   await page.goto("/");
 
   await page.getByLabel("整趟预算目标").fill("2000");
-  await page.getByTestId("submit-planning-task").click();
+  await understandAndStart(page);
 
   const results = page.getByTestId("planning-results");
   await expect(results).toBeVisible({ timeout: 20_000 });
@@ -149,7 +162,7 @@ test("resolves Shanghai and plans a three-day fixture trip", async ({ page }) =>
 
   await page.getByLabel("目的城市").fill("上海");
   await page.getByLabel("行程天数").selectOption("3");
-  await page.getByTestId("submit-planning-task").click();
+  await understandAndStart(page);
 
   await expect(page.getByTestId("destination-resolution")).toContainText("adcode 310000");
   const results = page.getByTestId("planning-results");
@@ -209,7 +222,7 @@ test("renders the live itinerary on a proxied AMap basemap", async ({ page }) =>
   });
 
   await page.goto("/");
-  await page.getByTestId("submit-planning-task").click();
+  await understandAndStart(page);
 
   const map = page.getByTestId("amap-static-map");
   await expect(map).toBeVisible({ timeout: 20_000 });
@@ -276,7 +289,7 @@ test("explains verification gaps without calling every error a hard conflict", a
   });
 
   await page.goto("/");
-  await page.getByTestId("submit-planning-task").click();
+  await understandAndStart(page);
 
   const results = page.getByTestId("planning-results");
   await expect(results).toContainText("关键事实待确认");
@@ -287,7 +300,7 @@ test("explains verification gaps without calling every error a hard conflict", a
 
 test("applies a structured day-scoped revision and renders plan version v2", async ({ page }) => {
   await page.goto("/");
-  await page.getByTestId("submit-planning-task").click();
+  await understandAndStart(page);
   const results = page.getByTestId("planning-results");
   await expect(results).toBeVisible({ timeout: 20_000 });
 
@@ -309,12 +322,55 @@ test("applies a structured day-scoped revision and renders plan version v2", asy
   });
 });
 
+test("requires confirmation and sends the confirmed raw intent instead of old defaults", async ({ page }) => {
+  let planningPostCount = 0;
+  type PlanningPayload = {
+    intake_confirmation_id?: string;
+    request?: {
+      party?: { adults?: number; children?: number };
+      travel_styles?: string[];
+      constraints?: { items?: Array<{ kind?: string; value?: string }> };
+    };
+  };
+  const captured: { payload?: PlanningPayload } = {};
+  await page.route(/\/api\/planning-tasks$/, async (route) => {
+    if (route.request().method() === "POST") {
+      planningPostCount += 1;
+      captured.payload = route.request().postDataJSON() as PlanningPayload;
+    }
+    await route.continue();
+  });
+  await page.goto("/");
+  await page.getByLabel("旅行需求").fill("带一个孩子去北京看科技馆，不要寺庙，节奏轻松一些。");
+
+  await page.getByTestId("submit-planning-task").click();
+
+  const confirmation = page.getByTestId("request-intake-confirmation");
+  await expect(confirmation).toBeVisible();
+  await expect(confirmation).toContainText("带一个孩子");
+  await expect(confirmation).toContainText("不要寺庙");
+  expect(planningPostCount).toBe(0);
+
+  await page.getByTestId("confirm-request-intake").click();
+  await expect(page.getByTestId("event-trace")).toContainText("任务已入队");
+  expect(planningPostCount).toBe(1);
+  expect(captured.payload?.intake_confirmation_id).toMatch(/^request-confirmation-/);
+  expect(captured.payload?.request?.party).toMatchObject({ adults: 1, children: 1 });
+  expect(captured.payload?.request?.travel_styles).toEqual(["科技"]);
+  expect(captured.payload?.request?.constraints?.items).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ kind: "avoid", value: "寺庙" }),
+      expect.objectContaining({ kind: "interest", value: "科技馆" }),
+    ]),
+  );
+});
+
 test("keeps the planning flow usable on a mobile viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
 
   await expect(page.getByTestId("submit-planning-task")).toBeVisible();
-  await page.getByTestId("submit-planning-task").click();
+  await understandAndStart(page);
   await expect(page.getByTestId("planning-results")).toBeVisible({ timeout: 20_000 });
 
   await page.screenshot({

@@ -311,22 +311,30 @@ def build_constraint_run_config(request_id: str, *, model: str) -> RunnableConfi
     }
 
 
-def run_constraint_agent(
-    request: TripRequest,
+def run_constraint_agent_for_text(
+    request_id: str,
+    raw_text: str,
     model: ConstraintProposalModel,
 ) -> ConstraintAgentResult:
     graph = build_constraint_agent_graph(model)
     final_state = cast(
         ConstraintAgentState,
         graph.invoke(
-            {"request_id": request.request_id, "raw_text": request.raw_text},
-            config=build_constraint_run_config(request.request_id, model="injected-model"),
+            {"request_id": request_id, "raw_text": raw_text},
+            config=build_constraint_run_config(request_id, model="injected-model"),
         ),
     )
     result = final_state.get("result")
     if result is None:
         raise ConstraintAgentProtocolError("constraint Agent completed without a result")
     return result
+
+
+def run_constraint_agent(
+    request: TripRequest,
+    model: ConstraintProposalModel,
+) -> ConstraintAgentResult:
+    return run_constraint_agent_for_text(request.request_id, request.raw_text, model)
 
 
 def replace_trip_request_constraints(
@@ -342,8 +350,9 @@ def replace_trip_request_constraints(
     return TripRequest.model_validate(payload)
 
 
-def run_live_constraint_agent(
-    request: TripRequest,
+def run_live_constraint_agent_for_text(
+    request_id: str,
+    raw_text: str,
     settings: Settings,
 ) -> ConstraintAgentResult:
     if not settings.langsmith_tracing:
@@ -366,9 +375,9 @@ def run_live_constraint_agent(
             final_state = cast(
                 ConstraintAgentState,
                 graph.invoke(
-                    {"request_id": request.request_id, "raw_text": request.raw_text},
+                    {"request_id": request_id, "raw_text": raw_text},
                     config=build_constraint_run_config(
-                        request.request_id,
+                        request_id,
                         model=settings.deepseek_model,
                     ),
                 ),
@@ -379,3 +388,14 @@ def run_live_constraint_agent(
     if result is None:
         raise ConstraintAgentProtocolError("live Constraint Agent completed without a result")
     return result
+
+
+def run_live_constraint_agent(
+    request: TripRequest,
+    settings: Settings,
+) -> ConstraintAgentResult:
+    return run_live_constraint_agent_for_text(
+        request.request_id,
+        request.raw_text,
+        settings,
+    )

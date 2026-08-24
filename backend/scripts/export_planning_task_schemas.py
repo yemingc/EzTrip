@@ -9,6 +9,12 @@ from app.planning.revision_contracts import (
     PlanRevisionRequest,
     PlanRevisionResult,
 )
+from app.request_intake import (
+    ConfirmedRequestIntake,
+    RequestConfirmationDraft,
+    RequestIntakeConfirmRequest,
+    RequestIntakeCreateRequest,
+)
 from app.tasks.contracts import (
     PlanningTaskAccepted,
     PlanningTaskCreateRequest,
@@ -26,6 +32,10 @@ OUTPUT_PATH = REPOSITORY_ROOT / "evals" / "schemas" / "planning-task-api.v1.json
 SCHEMA_MODELS = (
     DestinationResolveRequest,
     DestinationResolution,
+    RequestIntakeCreateRequest,
+    RequestConfirmationDraft,
+    RequestIntakeConfirmRequest,
+    ConfirmedRequestIntake,
     PlanningTaskCreateRequest,
     PlanningTaskAccepted,
     PlanningTaskEvent,

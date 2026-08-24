@@ -517,9 +517,122 @@ export interface PlannerFormValues {
   startDate: string;
   tripDays: number;
   adults: number;
+  children: number;
+  seniors: number;
+  rooms: number;
   budgetLimit: string;
   pace: "relaxed" | "standard";
   dataMode: PlanningDataMode;
+}
+
+export type RequestIntakeSelection = "proposal" | "form";
+
+export type RequestFieldDecisionStatus =
+  | "matched"
+  | "conflict"
+  | "proposed"
+  | "unmentioned"
+  | "needs_confirmation";
+
+export interface RequestFieldDecision {
+  field:
+    | "origin_city"
+    | "destination_city"
+    | "start_date"
+    | "trip_days"
+    | "adults"
+    | "children"
+    | "seniors"
+    | "budget_limit"
+    | "pace"
+    | "travel_style";
+  status: RequestFieldDecisionStatus;
+  form_value: string | null;
+  raw_proposed_value: string | null;
+  proposed_value: string | null;
+  evidence: string | null;
+  evidence_mode: "explicit" | "inferred" | null;
+  message: string;
+}
+
+export interface RequestConstraint {
+  constraint_id: string;
+  kind: string;
+  value: string | number | boolean | string[];
+  strength: "hard" | "soft";
+  priority: number;
+  source: "user_explicit" | "user_confirmed" | "agent_inferred" | "system";
+  applies_to_dates: string[];
+  confirmed: boolean;
+}
+
+export interface RequestConfirmationDraft {
+  schema_version: "1.0";
+  intake_version: "request-to-plan-v1";
+  draft_id: string;
+  data_mode: PlanningDataMode;
+  raw_text_sha256: string;
+  field_model: string;
+  constraint_model: string;
+  model_call_count: number;
+  field_decisions: RequestFieldDecision[];
+  proposed_fields: {
+    origin_city: string | null;
+    destination_city: string | null;
+    start_date: string | null;
+    trip_days: number | null;
+    adults: number | null;
+    children: number | null;
+    seniors: number | null;
+    budget_limit: string | number | null;
+    pace: "relaxed" | "standard" | null;
+    travel_styles: string[];
+  };
+  constraint_decisions: {
+    constraint: RequestConstraint;
+    evidence: string;
+    evidence_mode: "explicit" | "inferred";
+  }[];
+  proposed_constraints: { items: RequestConstraint[] };
+  clarifications: string[];
+  proposal_can_confirm: boolean;
+}
+
+export interface ConfirmedRequestIntake {
+  schema_version: "1.0";
+  confirmation_id: string;
+  draft_id: string;
+  selection: RequestIntakeSelection;
+  data_mode: PlanningDataMode;
+  selected_destination_adcode: string | null;
+  request: {
+    schema_version: "1.0";
+    request_id: string;
+    locale: "zh-CN";
+    raw_text: string;
+    origin_city: string | null;
+    destination_city: string;
+    destination_adcode?: string | null;
+    start_date: string;
+    end_date: string;
+    party: {
+      adults: number;
+      children: number;
+      seniors: number;
+      rooms: number | null;
+    };
+    budget: {
+      total_limit: string | number;
+      currency: "CNY";
+      scope: "party_total";
+      period: "whole_trip";
+      included_categories: BudgetCategory[];
+      hard_limit: boolean;
+    } | null;
+    pace: "relaxed" | "standard" | null;
+    travel_styles: string[];
+    constraints: { items: RequestConstraint[] };
+  };
 }
 
 const fallbackApiBaseUrl = "http://localhost:8000";
@@ -527,56 +640,6 @@ const fallbackApiBaseUrl = "http://localhost:8000";
 export const apiBaseUrl = (
   process.env.NEXT_PUBLIC_API_BASE_URL ?? fallbackApiBaseUrl
 ).replace(/\/$/, "");
-
-function addCalendarDays(date: string, days: number): string {
-  const [year, month, day] = date.split("-").map(Number);
-  const result = new Date(Date.UTC(year, month - 1, day + days));
-  return result.toISOString().slice(0, 10);
-}
-
-export function buildPlanningTaskRequest(
-  values: PlannerFormValues,
-  selectedDestinationAdcode: string,
-) {
-  const requestId = `web-request-${crypto.randomUUID().replaceAll("-", "")}`;
-  const budget = {
-    total_limit: values.budgetLimit.trim(),
-    currency: "CNY" as const,
-    scope: "party_total" as const,
-    period: "whole_trip" as const,
-    included_categories: ["transport", "food", "admission", "activity"],
-    hard_limit: false,
-  };
-
-  return {
-    schema_version: "1.0",
-    request: {
-      schema_version: "1.0",
-      request_id: requestId,
-      locale: "zh-CN",
-      raw_text: values.rawText.trim(),
-      origin_city: values.originCity.trim() || null,
-      destination_city: values.destinationCity.trim(),
-      start_date: values.startDate,
-      end_date: addCalendarDays(values.startDate, values.tripDays - 1),
-      party: {
-        adults: values.adults,
-        children: 0,
-        seniors: 0,
-        rooms: 1,
-      },
-      budget,
-      pace: values.pace,
-      travel_styles: ["历史文化", "轻步行"],
-      constraints: {
-        items: [],
-      },
-    },
-    selected_destination_adcode: selectedDestinationAdcode,
-    cost_items: [],
-    data_mode: values.dataMode,
-  };
-}
 
 async function parseJsonResponse<T>(response: Response): Promise<T> {
   if (response.ok) {
@@ -608,15 +671,90 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
 }
 
 export async function createPlanningTask(
-  values: PlannerFormValues,
-  selectedDestinationAdcode: string,
+  confirmation: ConfirmedRequestIntake,
 ): Promise<PlanningTaskAccepted> {
   const response = await fetch(`${apiBaseUrl}/api/planning-tasks`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(buildPlanningTaskRequest(values, selectedDestinationAdcode)),
+    body: JSON.stringify({
+      schema_version: "1.0",
+      request: confirmation.request,
+      selected_destination_adcode: confirmation.selected_destination_adcode,
+      cost_items: [],
+      data_mode: confirmation.data_mode,
+      intake_confirmation_id: confirmation.confirmation_id,
+    }),
   });
   return parseJsonResponse<PlanningTaskAccepted>(response);
+}
+
+export async function proposeRequestIntake(
+  values: PlannerFormValues,
+): Promise<RequestConfirmationDraft> {
+  const response = await fetch(`${apiBaseUrl}/api/request-intakes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      schema_version: "1.0",
+      raw_text: values.rawText.trim(),
+      reference_date: new Date().toISOString().slice(0, 10),
+      data_mode: values.dataMode,
+      form: {
+        origin_city: values.originCity.trim() || null,
+        destination_city: values.destinationCity.trim(),
+        start_date: values.startDate,
+        trip_days: values.tripDays,
+        adults: values.adults,
+        children: values.children,
+        seniors: values.seniors,
+        rooms: values.rooms,
+        budget_limit: values.budgetLimit.trim(),
+        pace: values.pace,
+      },
+    }),
+  });
+  return parseJsonResponse<RequestConfirmationDraft>(response);
+}
+
+export async function confirmRequestIntake(
+  draftId: string,
+  selection: RequestIntakeSelection,
+  selectedDestinationAdcode: string,
+): Promise<ConfirmedRequestIntake> {
+  const response = await fetch(`${apiBaseUrl}/api/request-intakes/${draftId}/confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      schema_version: "1.0",
+      selection,
+      selected_destination_adcode: selectedDestinationAdcode,
+    }),
+  });
+  return parseJsonResponse<ConfirmedRequestIntake>(response);
+}
+
+export function previewRequestIntakeValues(
+  values: PlannerFormValues,
+  draft: RequestConfirmationDraft,
+  selection: RequestIntakeSelection,
+): PlannerFormValues {
+  if (selection === "form") {
+    return values;
+  }
+  const proposed = draft.proposed_fields;
+  return {
+    ...values,
+    originCity: proposed.origin_city ?? values.originCity,
+    destinationCity: proposed.destination_city ?? values.destinationCity,
+    startDate: proposed.start_date ?? values.startDate,
+    tripDays: proposed.trip_days ?? values.tripDays,
+    adults: proposed.adults ?? values.adults,
+    children: proposed.children ?? values.children,
+    seniors: proposed.seniors ?? values.seniors,
+    budgetLimit:
+      proposed.budget_limit === null ? values.budgetLimit : String(proposed.budget_limit),
+    pace: proposed.pace ?? values.pace,
+  };
 }
 
 export async function resolveDestination(
