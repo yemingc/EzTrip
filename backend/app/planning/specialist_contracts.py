@@ -3,13 +3,20 @@ from typing import Literal
 
 from pydantic import Field, model_validator
 
-from app.agents.contracts import ExploreAgentResult, ModelTokenUsage, StayAgentResult
+from app.agents.contracts import (
+    MAX_EXPLORE_QUERY_COUNT,
+    ExploreAgentResult,
+    ModelTokenUsage,
+    StayAgentResult,
+)
 from app.domain.base import DomainModel, Identifier, NonEmptyText
 from app.domain.context import PlannerContext
 from app.domain.provider import ProviderErrorCategory
 from app.domain.request import TripRequest
 from app.domain.sources import DataMode
 from app.domain.travel_data import WeatherRisk
+
+MAX_SPECIALIST_PROVIDER_CALL_COUNT = MAX_EXPLORE_QUERY_COUNT
 
 
 class SpecialistName(StrEnum):
@@ -64,7 +71,7 @@ class SpecialistBranchResult(DomainModel):
     status: SpecialistBranchStatus
     elapsed_ms: int = Field(ge=0)
     model_call_count: int = Field(ge=0, le=2)
-    provider_call_count: int = Field(ge=0, le=4)
+    provider_call_count: int = Field(ge=0, le=MAX_SPECIALIST_PROVIDER_CALL_COUNT)
     model_usages: tuple[ModelTokenUsage, ...] = Field(default=(), max_length=2)
     explore_result: ExploreAgentResult | None = None
     stay_result: StayAgentResult | None = None

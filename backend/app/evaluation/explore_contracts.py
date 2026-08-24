@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import Field, model_validator
 
-from app.agents.contracts import ExploreQueryKind, ModelTokenUsage
+from app.agents.contracts import MAX_EXPLORE_QUERY_COUNT, ExploreQueryKind, ModelTokenUsage
 from app.domain.base import DomainModel, Identifier, NonEmptyText, Sha256Digest
 from app.domain.candidates import ActivityEnvironment, GeoPoint
 from app.domain.request import TripRequest
@@ -104,8 +104,8 @@ class ExploreAgentCaseResult(DomainModel):
     case_id: Identifier
     passed: bool
     model_call_count: int = Field(ge=0, le=2)
-    provider_call_count: int = Field(ge=0, le=4)
-    query_count: int = Field(ge=0, le=4)
+    provider_call_count: int = Field(ge=0, le=MAX_EXPLORE_QUERY_COUNT)
+    query_count: int = Field(ge=0, le=MAX_EXPLORE_QUERY_COUNT)
     required_query_kind_count: int = Field(ge=1, le=2)
     matched_query_kind_count: int = Field(ge=0, le=2)
     recommendation_count: int = Field(ge=0, le=6)
@@ -153,7 +153,7 @@ class ExploreAgentBaselineReport(DomainModel):
     passed_case_count: int = Field(ge=0, le=6)
     case_pass_rate: Decimal = Field(ge=0, le=1, decimal_places=4)
     model_call_count: int = Field(ge=0, le=12)
-    provider_call_count: int = Field(ge=0, le=24)
+    provider_call_count: int = Field(ge=0, le=6 * MAX_EXPLORE_QUERY_COUNT)
     required_query_kind_count: int = Field(ge=6, le=12)
     matched_query_kind_count: int = Field(ge=0, le=12)
     query_kind_coverage_rate: Decimal = Field(ge=0, le=1, decimal_places=4)
