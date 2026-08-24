@@ -122,6 +122,65 @@ def test_amap_resolver_normalizes_city_and_municipality_results() -> None:
     assert all(candidate.source.provider == "amap-geocode-rest" for candidate in result.candidates)
 
 
+def test_live_resolution_is_enabled_by_request_when_key_is_configured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen_address = ""
+    real_async_client = httpx.AsyncClient
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal seen_address
+        seen_address = request.url.params["address"]
+        return httpx.Response(
+            200,
+            json={
+                "status": "1",
+                "info": "OK",
+                "infocode": "10000",
+                "count": "1",
+                "geocodes": [
+                    {
+                        "formatted_address": "福建省泉州市",
+                        "province": "福建省",
+                        "city": "泉州市",
+                        "district": [],
+                        "adcode": "350500",
+                        "location": "118.675675,24.874132",
+                        "level": "市",
+                    }
+                ],
+            },
+        )
+
+    class MockClientContext:
+        def __init__(self) -> None:
+            self.client = real_async_client(transport=httpx.MockTransport(handler))
+
+        async def __aenter__(self) -> httpx.AsyncClient:
+            return self.client
+
+        async def __aexit__(self, *args: object) -> None:
+            await self.client.aclose()
+
+    monkeypatch.setattr(
+        "app.destinations.service.httpx.AsyncClient",
+        lambda **kwargs: MockClientContext(),
+    )
+    service = DestinationResolutionService(
+        Settings(
+            _env_file=None,
+            environment="test",
+            amap_maps_api_key=SecretStr("amap-test-key"),
+        )
+    )
+
+    result = asyncio.run(service.resolve("泉州", data_mode=DataMode.LIVE))
+
+    assert seen_address == "泉州"
+    assert result.status == DestinationResolutionStatus.RESOLVED
+    assert result.candidates[0].administrative_code == "350500"
+
+
 def test_amap_resolver_returns_typed_no_result() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         del request
@@ -213,11 +272,12 @@ def test_destination_resolution_api_exposes_fixture_boundaries() -> None:
         assert unsupported.status_code == 200
         assert unsupported.json()["status"] == "unsupported"
 
-        live_disabled = client.post(
+        live_without_key = client.post(
             "/api/destinations/resolve",
             json={"input_name": "泉州", "data_mode": "live"},
         )
-        assert live_disabled.status_code == 409
-        assert live_disabled.json()["detail"]["error_code"] == (
-            "destination-resolution-configuration"
-        )
+        assert live_without_key.status_code == 409
+        assert live_without_key.json()["detail"] == {
+            "error_code": "destination-resolution-configuration",
+            "message": "服务端尚未配置高德 Key, 无法使用实时城市解析。",
+        }

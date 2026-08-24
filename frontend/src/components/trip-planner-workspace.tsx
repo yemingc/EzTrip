@@ -596,7 +596,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
 
           {values.dataMode === "live" ? (
             <p className="mt-3 text-[11px] leading-5 text-amber-700">
-              实时模式需要后端启用 EZTRIP_PLANNING_LIVE_ENABLED，并会消耗高德与模型配额；所有城市可输入，但规划质量不会被描述为全部已验证。
+              当前选择会直接启用实时调用，并消耗高德与模型配额；Key 仍只保存在服务端，所有城市可输入，但规划质量不会被描述为全部已验证。
             </p>
           ) : null}
 

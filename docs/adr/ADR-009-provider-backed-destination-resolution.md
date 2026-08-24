@@ -22,6 +22,7 @@
 - `resolved`、`ambiguous`、`no_result`、`unsupported` 和 Provider/configuration failure 保持不同语义；
 - 重名行政区必须先选择候选，未确认时不创建 planning task；
 - planning executor 必须重新解析并校验客户端提交的 `selected_destination_adcode`，再把统一城市身份交给 Explore、Stay、Weather、Route 和 Plan 链路；
+- 前端选择 live 模式即为单次请求的显式外部调用授权，不再叠加部署级布尔开关；Key 仍只保存在服务端，缺失凭据时在 checkpoint/付费规划前 typed fail；
 - live 产品范围由 Provider 可解析性决定，不把 fixture 城市当成产品白名单；一次任务仍只支持一个国内目的地、2–5 天。
 
 ## 后果

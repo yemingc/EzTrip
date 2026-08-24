@@ -233,8 +233,9 @@ the automatic repair loop; its returned v2 remains a draft that has not been rev
   a typed `400 invalid-event-cursor` response.
 - Provider, configuration, workflow, timeout, and internal failures return stable codes and
   user-safe messages. Raw exception text is not copied into snapshots or SSE.
-- Live mode is disabled by default. Set `EZTRIP_PLANNING_LIVE_ENABLED=true` deliberately; this can
-  call AMap and DeepSeek and consume quota.
+- Fixture is the frontend default. Selecting live mode is the explicit per-request opt-in; it can
+  call AMap and DeepSeek and consume quota. Credentials remain server-side, and missing AMap or
+  model credentials fail with typed configuration errors.
 
 ## Current durability boundary
 

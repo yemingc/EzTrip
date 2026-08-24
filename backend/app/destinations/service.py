@@ -29,9 +29,9 @@ class DestinationResolutionService:
             raise DestinationResolutionConfigurationError(
                 "destination resolution only supports fixture or live data modes"
             )
-        if not self._settings.planning_live_enabled:
+        if self._settings.amap_maps_api_key is None:
             raise DestinationResolutionConfigurationError(
-                "live destination resolution requires EZTRIP_PLANNING_LIVE_ENABLED=true"
+                "live destination resolution requires AMAP_MAPS_API_KEY"
             )
         async with httpx.AsyncClient(timeout=self._settings.amap_mcp_timeout_seconds) as client:
             provider = AmapCityResolverProvider(self._settings, client)

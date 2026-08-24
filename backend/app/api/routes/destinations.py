@@ -39,7 +39,7 @@ async def resolve_destination(
             status_code=status.HTTP_409_CONFLICT,
             detail={
                 "error_code": "destination-resolution-configuration",
-                "message": "实时城市解析尚未启用, 请检查 live 配置。",
+                "message": "服务端尚未配置高德 Key, 无法使用实时城市解析。",
             },
         ) from error
     except ProviderRequestError as error:

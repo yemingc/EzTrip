@@ -59,10 +59,11 @@ uv run pytest tests/test_planning_task_api.py tests/test_planning_task_service.p
 ```
 
 The default `fixture` mode uses deterministic Beijing, Shanghai, and Chengdu product data and
-never calls an external service. `live` mode resolves the destination through AMap REST and is
-rejected unless `EZTRIP_PLANNING_LIVE_ENABLED=true`; enabling it can call AMap and DeepSeek and
-consume quota. SSE emits committed graph-node events, heartbeat comments, typed terminal failures,
-and supports `Last-Event-ID` replay within the same server process.
+never calls an external service. Selecting `live` mode in the frontend is the explicit opt-in: it
+resolves the destination through AMap REST and can call AMap and DeepSeek, consuming quota. Keys
+remain server-side, and missing credentials fail before a checkpoint or paid planning stage is
+created. SSE emits committed graph-node events, heartbeat comments, typed terminal failures, and
+supports `Last-Event-ID` replay within the same server process.
 
 Compile the committed Beijing request into a deterministic planning context:
 
