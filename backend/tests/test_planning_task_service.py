@@ -96,12 +96,12 @@ def test_idle_stream_emits_heartbeat_without_fabricating_progress() -> None:
     asyncio.run(exercise())
 
 
-def test_live_mode_is_explicitly_disabled_by_default(tmp_path: Path) -> None:
+def test_live_mode_requires_server_credentials_before_checkpoint(tmp_path: Path) -> None:
     async def exercise() -> None:
         settings = Settings(
+            _env_file=None,
             environment="test",
             planning_checkpoint_dir=tmp_path,
-            planning_live_enabled=False,
         )
         service = PlanningTaskService(
             StatefulGraphPlanningTaskExecutor(settings),

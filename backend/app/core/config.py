@@ -85,7 +85,6 @@ class Settings(BaseSettings):
         default="https://restapi.amap.com/v3/geocode/geo",
         validation_alias="AMAP_REST_GEOCODE_URL",
     )
-    planning_live_enabled: bool = False
     planning_checkpoint_dir: Path = Path("tmp/planning-task-checkpoints")
     planning_sse_heartbeat_seconds: float = Field(default=15.0, gt=0)
     planning_task_timeout_seconds: float = Field(default=120.0, gt=0)

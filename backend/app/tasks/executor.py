@@ -179,10 +179,6 @@ class ProductGraphPlanningTaskExecutor:
                     on_progress=emit_progress,
                 )
 
-        if not self._settings.planning_live_enabled:
-            raise PlanningTaskConfigurationError(
-                "live task execution requires EZTRIP_PLANNING_LIVE_ENABLED=true"
-            )
         async with open_live_amap_provider(self._settings) as provider:
             live_pipeline = LiveProductPlanningPipeline(self._settings, provider)
             async with open_sqlite_product_runtime(checkpoint_path, live_pipeline) as runtime:

@@ -105,6 +105,15 @@ test("does not pretend fixture mode supports an arbitrary city", async ({ page }
   await expect(page.getByTestId("planning-results")).not.toBeVisible();
 });
 
+test("treats live Provider selection as the explicit per-request opt-in", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByLabel("旅行数据模式").selectOption("live");
+
+  await expect(page.getByText("当前选择会直接启用实时调用")).toBeVisible();
+  await expect(page.getByText("Key 仍只保存在服务端", { exact: false })).toBeVisible();
+});
+
 test("applies a structured day-scoped revision and renders plan version v2", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("submit-planning-task").click();
