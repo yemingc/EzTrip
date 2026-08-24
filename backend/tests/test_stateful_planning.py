@@ -360,6 +360,8 @@ def test_conflicted_plan_rejects_approval_and_preserves_pending_checkpoint(
             assert review.kind == HumanReviewKind.CONFLICT_RESOLUTION
             assert review.can_finalize is False
             assert HumanReviewAction.APPROVE_DRAFT not in review.allowed_actions
+            assert "关键问题尚未解决" in review.prompt
+            assert "硬冲突" not in review.prompt
 
             with pytest.raises(StatefulPlanningProtocolError, match="not allowed"):
                 await runtime.resume(

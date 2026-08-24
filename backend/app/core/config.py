@@ -85,11 +85,20 @@ class Settings(BaseSettings):
         default="https://restapi.amap.com/v3/geocode/geo",
         validation_alias="AMAP_REST_GEOCODE_URL",
     )
+    amap_rest_static_map_url: str = Field(
+        default="https://restapi.amap.com/v3/staticmap",
+        validation_alias="AMAP_REST_STATIC_MAP_URL",
+    )
     planning_checkpoint_dir: Path = Path("tmp/planning-task-checkpoints")
     planning_sse_heartbeat_seconds: float = Field(default=15.0, gt=0)
     planning_task_timeout_seconds: float = Field(default=120.0, gt=0)
 
-    @field_validator("amap_mcp_url", "amap_rest_weather_url", "amap_rest_geocode_url")
+    @field_validator(
+        "amap_mcp_url",
+        "amap_rest_weather_url",
+        "amap_rest_geocode_url",
+        "amap_rest_static_map_url",
+    )
     @classmethod
     def validate_amap_endpoint(cls, value: str) -> str:
         if not value.startswith("https://"):

@@ -15,6 +15,7 @@ def test_settings_have_safe_local_defaults() -> None:
     assert settings.langsmith_tracing is False
     assert settings.amap_mcp_url == "https://mcp.amap.com/mcp"
     assert settings.amap_mcp_transport == "streamable_http"
+    assert settings.amap_rest_static_map_url == "https://restapi.amap.com/v3/staticmap"
 
 
 @pytest.mark.parametrize(
@@ -24,6 +25,8 @@ def test_settings_have_safe_local_defaults() -> None:
         ("amap_mcp_url", "https://mcp.amap.com/mcp?key=must-not-live-here"),
         ("amap_rest_weather_url", "http://restapi.amap.com/weather"),
         ("amap_rest_weather_url", "https://restapi.amap.com/weather?key=unsafe"),
+        ("amap_rest_static_map_url", "http://restapi.amap.com/v3/staticmap"),
+        ("amap_rest_static_map_url", "https://restapi.amap.com/v3/staticmap?key=unsafe"),
     ],
 )
 def test_amap_endpoint_settings_reject_insecure_or_credential_bearing_urls(
