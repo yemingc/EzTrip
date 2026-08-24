@@ -13,7 +13,7 @@ from app.domain.travel_data import RouteEndpoint, RouteLeg, RouteMode, WeatherRi
 class POISearchRequest(DomainModel):
     keywords: NonEmptyText
     city_adcode: str = Field(pattern=r"^\d{6}$")
-    limit: int = Field(default=1, ge=1, le=3)
+    limit: int = Field(default=1, ge=1, le=5)
 
 
 class StaySearchRequest(DomainModel):

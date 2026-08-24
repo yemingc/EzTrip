@@ -238,6 +238,14 @@
           ],
           "title": "Party",
           "type": "object"
+        },
+        "TripPace": {
+          "enum": [
+            "relaxed",
+            "standard"
+          ],
+          "title": "TripPace",
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -314,6 +322,17 @@
           "anyOf": [
             {
               "$ref": "#/$defs/BudgetConstraint"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "pace": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TripPace"
             },
             {
               "type": "null"
@@ -1200,6 +1219,14 @@
           ],
           "title": "PlanningClarification",
           "type": "object"
+        },
+        "TripPace": {
+          "enum": [
+            "relaxed",
+            "standard"
+          ],
+          "title": "TripPace",
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -1286,6 +1313,17 @@
           "anyOf": [
             {
               "$ref": "#/$defs/BudgetPlanningContext"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "pace": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TripPace"
             },
             {
               "type": "null"
@@ -2033,6 +2071,17 @@
               ],
               "default": null
             },
+            "pace": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/TripPace"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
             "travel_styles": {
               "default": [],
               "items": {
@@ -2406,6 +2455,14 @@
           ],
           "title": "SourceReference",
           "type": "object"
+        },
+        "TripPace": {
+          "enum": [
+            "relaxed",
+            "standard"
+          ],
+          "title": "TripPace",
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -3173,7 +3230,7 @@
           "items": {
             "$ref": "#/$defs/ExploreQueryProposal"
           },
-          "maxItems": 4,
+          "maxItems": 5,
           "minItems": 1,
           "title": "Items",
           "type": "array"
@@ -3198,7 +3255,7 @@
               "type": "string"
             },
             "rank": {
-              "maximum": 6,
+              "maximum": 25,
               "minimum": 1,
               "title": "Rank",
               "type": "integer"
@@ -3265,7 +3322,7 @@
           "items": {
             "$ref": "#/$defs/ExploreCandidateSelectionProposal"
           },
-          "maxItems": 6,
+          "maxItems": 25,
           "minItems": 1,
           "title": "Items",
           "type": "array"
@@ -3412,7 +3469,7 @@
                 "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
                 "type": "string"
               },
-              "maxItems": 4,
+              "maxItems": 5,
               "minItems": 1,
               "title": "Query Ids",
               "type": "array"
@@ -3436,7 +3493,7 @@
               "type": "string"
             },
             "rank": {
-              "maximum": 6,
+              "maximum": 25,
               "minimum": 1,
               "title": "Rank",
               "type": "integer"
@@ -3520,7 +3577,7 @@
                 "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
                 "type": "string"
               },
-              "maxItems": 4,
+              "maxItems": 5,
               "minItems": 1,
               "title": "Query Ids",
               "type": "array"
@@ -3731,7 +3788,7 @@
           "items": {
             "$ref": "#/$defs/ExploreSearchQuery"
           },
-          "maxItems": 4,
+          "maxItems": 5,
           "minItems": 1,
           "title": "Queries",
           "type": "array"
@@ -3740,7 +3797,7 @@
           "items": {
             "$ref": "#/$defs/ExploreCandidateObservation"
           },
-          "maxItems": 12,
+          "maxItems": 25,
           "minItems": 1,
           "title": "Observations",
           "type": "array"
@@ -3749,7 +3806,7 @@
           "items": {
             "$ref": "#/$defs/ExploreRecommendation"
           },
-          "maxItems": 6,
+          "maxItems": 25,
           "minItems": 1,
           "title": "Recommendations",
           "type": "array"
@@ -3858,7 +3915,7 @@
           "items": {
             "$ref": "#/$defs/PlannerPlacementProposal"
           },
-          "maxItems": 12,
+          "maxItems": 15,
           "minItems": 1,
           "title": "Items",
           "type": "array"
@@ -3872,6 +3929,16 @@
     },
     "SinglePlannerAgentResult": {
       "$defs": {
+        "ActivityEnvironment": {
+          "enum": [
+            "indoor",
+            "outdoor",
+            "mixed",
+            "unknown"
+          ],
+          "title": "ActivityEnvironment",
+          "type": "string"
+        },
         "ActivityKind": {
           "enum": [
             "attraction",
@@ -3882,6 +3949,106 @@
           ],
           "title": "ActivityKind",
           "type": "string"
+        },
+        "CandidatePOI": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Candidate Id",
+              "type": "string"
+            },
+            "name": {
+              "minLength": 1,
+              "title": "Name",
+              "type": "string"
+            },
+            "city": {
+              "minLength": 1,
+              "title": "City",
+              "type": "string"
+            },
+            "district": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "District"
+            },
+            "address": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Address"
+            },
+            "location": {
+              "$ref": "#/$defs/GeoPoint"
+            },
+            "categories": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Categories",
+              "type": "array"
+            },
+            "environment": {
+              "$ref": "#/$defs/ActivityEnvironment",
+              "default": "unknown"
+            },
+            "suggested_duration_minutes": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "maximum": 720,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Suggested Duration Minutes"
+            },
+            "tags": {
+              "default": [],
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "Tags",
+              "type": "array"
+            },
+            "source": {
+              "$ref": "#/$defs/SourceReference"
+            }
+          },
+          "required": [
+            "candidate_id",
+            "name",
+            "city",
+            "location",
+            "categories",
+            "source"
+          ],
+          "title": "CandidatePOI",
+          "type": "object"
         },
         "DataMode": {
           "enum": [
@@ -3907,6 +4074,28 @@
               },
               "minItems": 1,
               "title": "Items",
+              "type": "array"
+            },
+            "departure_from_stay_at": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Departure From Stay At"
+            },
+            "meal_recommendations": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/MealRecommendation"
+              },
+              "maxItems": 3,
+              "title": "Meal Recommendations",
               "type": "array"
             },
             "weather_risk_ids": {
@@ -4045,6 +4234,48 @@
             "end_at"
           ],
           "title": "ItineraryItem",
+          "type": "object"
+        },
+        "MealRecommendation": {
+          "additionalProperties": false,
+          "properties": {
+            "recommendation_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Recommendation Id",
+              "type": "string"
+            },
+            "anchor_candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Anchor Candidate Id",
+              "type": "string"
+            },
+            "candidate": {
+              "$ref": "#/$defs/CandidatePOI"
+            },
+            "straight_line_distance_meters": {
+              "maximum": 5000,
+              "minimum": 0,
+              "title": "Straight Line Distance Meters",
+              "type": "integer"
+            },
+            "reason": {
+              "minLength": 1,
+              "title": "Reason",
+              "type": "string"
+            }
+          },
+          "required": [
+            "recommendation_id",
+            "anchor_candidate_id",
+            "candidate",
+            "straight_line_distance_meters",
+            "reason"
+          ],
+          "title": "MealRecommendation",
           "type": "object"
         },
         "ModelTokenUsage": {
@@ -6100,6 +6331,16 @@
     },
     "DayPlan": {
       "$defs": {
+        "ActivityEnvironment": {
+          "enum": [
+            "indoor",
+            "outdoor",
+            "mixed",
+            "unknown"
+          ],
+          "title": "ActivityEnvironment",
+          "type": "string"
+        },
         "ActivityKind": {
           "enum": [
             "attraction",
@@ -6110,6 +6351,106 @@
           ],
           "title": "ActivityKind",
           "type": "string"
+        },
+        "CandidatePOI": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Candidate Id",
+              "type": "string"
+            },
+            "name": {
+              "minLength": 1,
+              "title": "Name",
+              "type": "string"
+            },
+            "city": {
+              "minLength": 1,
+              "title": "City",
+              "type": "string"
+            },
+            "district": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "District"
+            },
+            "address": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Address"
+            },
+            "location": {
+              "$ref": "#/$defs/GeoPoint"
+            },
+            "categories": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Categories",
+              "type": "array"
+            },
+            "environment": {
+              "$ref": "#/$defs/ActivityEnvironment",
+              "default": "unknown"
+            },
+            "suggested_duration_minutes": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "maximum": 720,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Suggested Duration Minutes"
+            },
+            "tags": {
+              "default": [],
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "Tags",
+              "type": "array"
+            },
+            "source": {
+              "$ref": "#/$defs/SourceReference"
+            }
+          },
+          "required": [
+            "candidate_id",
+            "name",
+            "city",
+            "location",
+            "categories",
+            "source"
+          ],
+          "title": "CandidatePOI",
+          "type": "object"
         },
         "DataMode": {
           "enum": [
@@ -6238,6 +6579,48 @@
             "end_at"
           ],
           "title": "ItineraryItem",
+          "type": "object"
+        },
+        "MealRecommendation": {
+          "additionalProperties": false,
+          "properties": {
+            "recommendation_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Recommendation Id",
+              "type": "string"
+            },
+            "anchor_candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Anchor Candidate Id",
+              "type": "string"
+            },
+            "candidate": {
+              "$ref": "#/$defs/CandidatePOI"
+            },
+            "straight_line_distance_meters": {
+              "maximum": 5000,
+              "minimum": 0,
+              "title": "Straight Line Distance Meters",
+              "type": "integer"
+            },
+            "reason": {
+              "minLength": 1,
+              "title": "Reason",
+              "type": "string"
+            }
+          },
+          "required": [
+            "recommendation_id",
+            "anchor_candidate_id",
+            "candidate",
+            "straight_line_distance_meters",
+            "reason"
+          ],
+          "title": "MealRecommendation",
           "type": "object"
         },
         "RouteEndpoint": {
@@ -6398,6 +6781,28 @@
           "title": "Items",
           "type": "array"
         },
+        "departure_from_stay_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Departure From Stay At"
+        },
+        "meal_recommendations": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/MealRecommendation"
+          },
+          "maxItems": 3,
+          "title": "Meal Recommendations",
+          "type": "array"
+        },
         "weather_risk_ids": {
           "default": [],
           "items": {
@@ -6419,6 +6824,16 @@
     },
     "TripPlan": {
       "$defs": {
+        "ActivityEnvironment": {
+          "enum": [
+            "indoor",
+            "outdoor",
+            "mixed",
+            "unknown"
+          ],
+          "title": "ActivityEnvironment",
+          "type": "string"
+        },
         "ActivityKind": {
           "enum": [
             "attraction",
@@ -6441,6 +6856,106 @@
           ],
           "title": "BudgetCategory",
           "type": "string"
+        },
+        "CandidatePOI": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Candidate Id",
+              "type": "string"
+            },
+            "name": {
+              "minLength": 1,
+              "title": "Name",
+              "type": "string"
+            },
+            "city": {
+              "minLength": 1,
+              "title": "City",
+              "type": "string"
+            },
+            "district": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "District"
+            },
+            "address": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Address"
+            },
+            "location": {
+              "$ref": "#/$defs/GeoPoint"
+            },
+            "categories": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Categories",
+              "type": "array"
+            },
+            "environment": {
+              "$ref": "#/$defs/ActivityEnvironment",
+              "default": "unknown"
+            },
+            "suggested_duration_minutes": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "maximum": 720,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Suggested Duration Minutes"
+            },
+            "tags": {
+              "default": [],
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "Tags",
+              "type": "array"
+            },
+            "source": {
+              "$ref": "#/$defs/SourceReference"
+            }
+          },
+          "required": [
+            "candidate_id",
+            "name",
+            "city",
+            "location",
+            "categories",
+            "source"
+          ],
+          "title": "CandidatePOI",
+          "type": "object"
         },
         "CostItem": {
           "additionalProperties": false,
@@ -6520,6 +7035,28 @@
               },
               "minItems": 1,
               "title": "Items",
+              "type": "array"
+            },
+            "departure_from_stay_at": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Departure From Stay At"
+            },
+            "meal_recommendations": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/MealRecommendation"
+              },
+              "maxItems": 3,
+              "title": "Meal Recommendations",
               "type": "array"
             },
             "weather_risk_ids": {
@@ -6658,6 +7195,48 @@
             "end_at"
           ],
           "title": "ItineraryItem",
+          "type": "object"
+        },
+        "MealRecommendation": {
+          "additionalProperties": false,
+          "properties": {
+            "recommendation_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Recommendation Id",
+              "type": "string"
+            },
+            "anchor_candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Anchor Candidate Id",
+              "type": "string"
+            },
+            "candidate": {
+              "$ref": "#/$defs/CandidatePOI"
+            },
+            "straight_line_distance_meters": {
+              "maximum": 5000,
+              "minimum": 0,
+              "title": "Straight Line Distance Meters",
+              "type": "integer"
+            },
+            "reason": {
+              "minLength": 1,
+              "title": "Reason",
+              "type": "string"
+            }
+          },
+          "required": [
+            "recommendation_id",
+            "anchor_candidate_id",
+            "candidate",
+            "straight_line_distance_meters",
+            "reason"
+          ],
+          "title": "MealRecommendation",
           "type": "object"
         },
         "MoneyRange": {
@@ -7176,6 +7755,16 @@
     },
     "PlanVersion": {
       "$defs": {
+        "ActivityEnvironment": {
+          "enum": [
+            "indoor",
+            "outdoor",
+            "mixed",
+            "unknown"
+          ],
+          "title": "ActivityEnvironment",
+          "type": "string"
+        },
         "ActivityKind": {
           "enum": [
             "attraction",
@@ -7198,6 +7787,106 @@
           ],
           "title": "BudgetCategory",
           "type": "string"
+        },
+        "CandidatePOI": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Candidate Id",
+              "type": "string"
+            },
+            "name": {
+              "minLength": 1,
+              "title": "Name",
+              "type": "string"
+            },
+            "city": {
+              "minLength": 1,
+              "title": "City",
+              "type": "string"
+            },
+            "district": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "District"
+            },
+            "address": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Address"
+            },
+            "location": {
+              "$ref": "#/$defs/GeoPoint"
+            },
+            "categories": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Categories",
+              "type": "array"
+            },
+            "environment": {
+              "$ref": "#/$defs/ActivityEnvironment",
+              "default": "unknown"
+            },
+            "suggested_duration_minutes": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "maximum": 720,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Suggested Duration Minutes"
+            },
+            "tags": {
+              "default": [],
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "Tags",
+              "type": "array"
+            },
+            "source": {
+              "$ref": "#/$defs/SourceReference"
+            }
+          },
+          "required": [
+            "candidate_id",
+            "name",
+            "city",
+            "location",
+            "categories",
+            "source"
+          ],
+          "title": "CandidatePOI",
+          "type": "object"
         },
         "CostItem": {
           "additionalProperties": false,
@@ -7277,6 +7966,28 @@
               },
               "minItems": 1,
               "title": "Items",
+              "type": "array"
+            },
+            "departure_from_stay_at": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Departure From Stay At"
+            },
+            "meal_recommendations": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/MealRecommendation"
+              },
+              "maxItems": 3,
+              "title": "Meal Recommendations",
               "type": "array"
             },
             "weather_risk_ids": {
@@ -7415,6 +8126,48 @@
             "end_at"
           ],
           "title": "ItineraryItem",
+          "type": "object"
+        },
+        "MealRecommendation": {
+          "additionalProperties": false,
+          "properties": {
+            "recommendation_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Recommendation Id",
+              "type": "string"
+            },
+            "anchor_candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Anchor Candidate Id",
+              "type": "string"
+            },
+            "candidate": {
+              "$ref": "#/$defs/CandidatePOI"
+            },
+            "straight_line_distance_meters": {
+              "maximum": 5000,
+              "minimum": 0,
+              "title": "Straight Line Distance Meters",
+              "type": "integer"
+            },
+            "reason": {
+              "minLength": 1,
+              "title": "Reason",
+              "type": "string"
+            }
+          },
+          "required": [
+            "recommendation_id",
+            "anchor_candidate_id",
+            "candidate",
+            "straight_line_distance_meters",
+            "reason"
+          ],
+          "title": "MealRecommendation",
           "type": "object"
         },
         "MoneyRange": {

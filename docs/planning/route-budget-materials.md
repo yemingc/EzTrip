@@ -13,13 +13,16 @@ flowchart LR
 
 ## 候选范围与路线矩阵
 
-`planning-shortlist-v1` 按 Agent 已给出的 rank 取前四个 POI，并取排名第一的 Stay 作为住宿锚点；未进入路线计算的 candidate ID 会显式保存在 `omitted_*_ids`。这避免候选数量增长时产生无界的外部调用。
+`planning-shortlist-v2` 先把 Explore 候选拆成主要游览活动与餐饮推荐候选。主要活动目标由行程天数和显式节奏决定：轻松模式每天 2–3 个，标准模式每天 3–4 个，当前整趟上限为 15 个；餐饮最多保留 15 个，但不会进入主要活动覆盖集合。Provider 事实不足时返回稳定的 coverage issue，不会用餐厅或自由时间凑数。
 
-对于 `n` 个 POI，矩阵包含 `n × (n - 1)` 条 POI 有向边；存在住宿锚点时再加入 `2n` 条 Stay ↔ POI 边。V1 最多四个 POI，因此最多 20 条边。路线固定为公交 `transit`，默认并发上限为 4，每一条边恰好调用一次最小 `RouteProvider.get_route()` 接口。
+主要活动先按 Provider 坐标做跨日平衡地理分组，再按近邻顺序形成逐日链路。显式节奏请求只查询每天 `Stay → 首站` 和相邻活动之间的边，因此 `n` 个主要活动只产生 `n` 条路线调用，而不是扩成 O(n²) 的全组合矩阵。路线固定为公交 `transit`，每一条计划边恰好调用一次最小 `RouteProvider.get_route()` 接口；超过 90 分钟的单段路线会阻断材料进入 Planner。
+
+未显式携带 `pace` 的冻结评测请求继续使用原 V1 最多四个 POI、最多 20 条全组合路线契约，以保证旧数据集和历史报告可重放。产品前端始终显式提交节奏并走 V2 链路；兼容分支不代表推荐的产品行为。
 
 - capability 被阻断时返回 `blocked/capability_blocked`，Provider 零调用；
 - 没有 Explore 候选时返回 `unavailable/no_explore_candidates`；
-- 只有一个 POI 且没有住宿锚点时返回 `not_required/insufficient_candidate_pair`；
+- 显式节奏下主要活动不足时返回 `partial/activity_coverage_insufficient`；
+- 单段路线超过质量上限时返回 `partial/excessive_transfer`；
 - 单边失败保留为 `partial`，所有边失败为 `failed`，成功边不被删除；
 - Provider timeout 会保留 `provider/timeout/retryable=true`；未知依赖错误与 Provider 错误分开；
 - Provider 返回不同端点属于协议违规，会抛出 `PlanningMaterialProtocolError`，不能降级成普通超时。
@@ -41,7 +44,7 @@ flowchart LR
 
 ## Bundle 状态
 
-`PlanningMaterialBundle` 同时保留完整 specialist 结果、shortlist、路线矩阵和预算分配，并校验 request/context/data-mode 血缘。只有 specialist 完整、路线完整且预算已分配时才是 `ready`；可继续但有缺口时为 `partial`；Explore 不可用或路线能力被阻断时为 `blocked`。缺口以稳定 issue code 暴露，而不是自由文本。
+`PlanningMaterialBundle` 同时保留完整 specialist 结果、主活动、餐饮候选、逐日地理分组、路线材料和预算分配，并校验 request/context/data-mode 血缘。只有 specialist 完整、活动数量满足节奏、计划链路路线完整且预算已分配时才是 `ready`；可继续但有缺口时为 `partial`；Explore 不可用或路线能力被阻断时为 `blocked`。缺口以稳定 issue code 暴露，而不是自由文本。
 
 ## 验证
 

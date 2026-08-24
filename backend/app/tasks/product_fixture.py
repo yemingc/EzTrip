@@ -75,95 +75,110 @@ def _source(provider: str, provider_id: str) -> SourceReference:
     )
 
 
+def _fixture_pois(
+    city: str,
+    rows: tuple[tuple[str, str, str, float, float, str], ...],
+) -> tuple[CandidatePOI, ...]:
+    return tuple(
+        CandidatePOI(
+            candidate_id=f"product-fixture-{slug}",
+            name=name,
+            city=city,
+            district=district,
+            address=f"{name} fixture 地址",
+            location=GeoPoint(latitude=latitude, longitude=longitude),
+            categories=(("餐饮服务", "本地美食") if kind == "dining" else ("景点", "城市体验")),
+            environment=(
+                ActivityEnvironment.INDOOR if kind == "dining" else ActivityEnvironment.MIXED
+            ),
+            suggested_duration_minutes=90 if kind == "dining" else 120,
+            tags=(("附近餐饮推荐",) if kind == "dining" else ("主要游览项目",)),
+            source=_source("eztrip-product-fixture", slug.upper()),
+        )
+        for slug, name, district, latitude, longitude, kind in rows
+    )
+
+
 def _beijing_pois() -> tuple[CandidatePOI, ...]:
-    return (
-        CandidatePOI(
-            candidate_id="product-fixture-palace-museum",
-            name="故宫博物院",
-            city="北京市",
-            district="东城区",
-            address="景山前街4号",
-            location=GeoPoint(latitude=39.9178, longitude=116.3970),
-            categories=("博物馆", "世界遗产"),
-            environment=ActivityEnvironment.MIXED,
-            suggested_duration_minutes=180,
-            tags=("历史文化", "雨天可优先室内展馆"),
-            source=_source("eztrip-product-fixture", "BJ-PALACE-MUSEUM"),
-        ),
-        CandidatePOI(
-            candidate_id="product-fixture-temple-of-heaven",
-            name="天坛公园",
-            city="北京市",
-            district="东城区",
-            address="天坛东里甲1号",
-            location=GeoPoint(latitude=39.8819, longitude=116.4108),
-            categories=("风景名胜", "公园"),
-            environment=ActivityEnvironment.OUTDOOR,
-            suggested_duration_minutes=150,
-            tags=("历史文化", "户外步行"),
-            source=_source("eztrip-product-fixture", "BJ-TEMPLE-OF-HEAVEN"),
+    return _fixture_pois(
+        "北京市",
+        (
+            ("palace-museum", "故宫博物院", "东城区", 39.9178, 116.3970, "activity"),
+            ("temple-of-heaven", "天坛公园", "东城区", 39.8819, 116.4108, "activity"),
+            ("national-museum", "中国国家博物馆", "东城区", 39.9051, 116.4010, "activity"),
+            ("jingshan-park", "景山公园", "西城区", 39.9251, 116.3965, "activity"),
+            ("beihai-park", "北海公园", "西城区", 39.9255, 116.3890, "activity"),
+            ("shichahai", "什刹海", "西城区", 39.9402, 116.3852, "activity"),
+            ("gongwangfu", "恭王府", "西城区", 39.9371, 116.3863, "activity"),
+            ("capital-museum", "首都博物馆", "西城区", 39.9054, 116.3430, "activity"),
+            ("nanluoguxiang", "南锣鼓巷", "东城区", 39.9372, 116.4034, "activity"),
+            ("lama-temple", "雍和宫文化片区", "东城区", 39.9471, 116.4173, "activity"),
+            ("summer-palace", "颐和园", "海淀区", 39.9999, 116.2755, "activity"),
+            ("yuanmingyuan", "圆明园", "海淀区", 40.0081, 116.2984, "activity"),
+            ("beijing-zoo", "北京动物园", "西城区", 39.9386, 116.3376, "activity"),
+            ("olympic-park", "奥林匹克公园", "朝阳区", 40.0016, 116.3928, "activity"),
+            ("798-art", "798 艺术区", "朝阳区", 39.9840, 116.4950, "activity"),
+            ("bj-food-1", "前门本地餐饮示例一", "东城区", 39.8995, 116.3980, "dining"),
+            ("bj-food-2", "故宫附近餐饮示例二", "东城区", 39.9188, 116.3990, "dining"),
+            ("bj-food-3", "什刹海餐饮示例三", "西城区", 39.9390, 116.3860, "dining"),
+            ("bj-food-4", "海淀餐饮示例四", "海淀区", 40.0005, 116.2800, "dining"),
+            ("bj-food-5", "朝阳餐饮示例五", "朝阳区", 39.9850, 116.4920, "dining"),
         ),
     )
 
 
 def _shanghai_pois() -> tuple[CandidatePOI, ...]:
-    return (
-        CandidatePOI(
-            candidate_id="product-fixture-shanghai-museum",
-            name="上海博物馆",
-            city="上海市",
-            district="黄浦区",
-            address="人民大道201号",
-            location=GeoPoint(latitude=31.2303, longitude=121.4700),
-            categories=("博物馆", "历史文化"),
-            environment=ActivityEnvironment.MIXED,
-            suggested_duration_minutes=150,
-            tags=("历史文化", "雨天可优先室内展馆"),
-            source=_source("eztrip-product-fixture", "SH-MUSEUM"),
-        ),
-        CandidatePOI(
-            candidate_id="product-fixture-yuyuan",
-            name="豫园",
-            city="上海市",
-            district="黄浦区",
-            address="福佑路168号",
-            location=GeoPoint(latitude=31.2272, longitude=121.4921),
-            categories=("园林", "历史街区"),
-            environment=ActivityEnvironment.OUTDOOR,
-            suggested_duration_minutes=150,
-            tags=("历史文化", "户外步行"),
-            source=_source("eztrip-product-fixture", "SH-YUYUAN"),
+    return _fixture_pois(
+        "上海市",
+        (
+            ("shanghai-museum", "上海博物馆", "黄浦区", 31.2303, 121.4700, "activity"),
+            ("yuyuan", "豫园", "黄浦区", 31.2272, 121.4921, "activity"),
+            ("the-bund", "外滩", "黄浦区", 31.2400, 121.4900, "activity"),
+            ("nanjing-road", "南京路步行街", "黄浦区", 31.2354, 121.4751, "activity"),
+            ("xintiandi", "新天地", "黄浦区", 31.2192, 121.4753, "activity"),
+            ("tianzifang", "田子坊", "黄浦区", 31.2080, 121.4680, "activity"),
+            ("wukang-road", "武康路历史文化街区", "徐汇区", 31.2101, 121.4380, "activity"),
+            ("natural-history", "上海自然博物馆", "静安区", 31.2330, 121.4540, "activity"),
+            ("power-station-art", "上海当代艺术博物馆", "黄浦区", 31.2012, 121.4970, "activity"),
+            ("china-art-palace", "中华艺术宫", "浦东新区", 31.1850, 121.4900, "activity"),
+            ("pudong-art", "浦东美术馆", "浦东新区", 31.2422, 121.5010, "activity"),
+            ("oriental-pearl", "东方明珠城市观景区", "浦东新区", 31.2397, 121.4998, "activity"),
+            ("long-museum", "龙美术馆西岸馆", "徐汇区", 31.1840, 121.4490, "activity"),
+            ("sinan-mansions", "思南公馆", "黄浦区", 31.2135, 121.4670, "activity"),
+            ("north-bund", "北外滩滨水区", "虹口区", 31.2520, 121.4980, "activity"),
+            ("sh-food-1", "人民广场餐饮示例一", "黄浦区", 31.2310, 121.4720, "dining"),
+            ("sh-food-2", "豫园餐饮示例二", "黄浦区", 31.2268, 121.4910, "dining"),
+            ("sh-food-3", "徐汇餐饮示例三", "徐汇区", 31.2090, 121.4400, "dining"),
+            ("sh-food-4", "陆家嘴餐饮示例四", "浦东新区", 31.2400, 121.5005, "dining"),
+            ("sh-food-5", "北外滩餐饮示例五", "虹口区", 31.2510, 121.4970, "dining"),
         ),
     )
 
 
 def _chengdu_pois() -> tuple[CandidatePOI, ...]:
-    return (
-        CandidatePOI(
-            candidate_id="product-fixture-jinsha-museum",
-            name="金沙遗址博物馆",
-            city="成都市",
-            district="青羊区",
-            address="金沙遗址路2号",
-            location=GeoPoint(latitude=30.6803, longitude=104.0196),
-            categories=("博物馆", "考古遗址"),
-            environment=ActivityEnvironment.MIXED,
-            suggested_duration_minutes=180,
-            tags=("历史文化", "雨天可优先室内展馆"),
-            source=_source("eztrip-product-fixture", "CD-JINSHA-MUSEUM"),
-        ),
-        CandidatePOI(
-            candidate_id="product-fixture-panda-base",
-            name="成都大熊猫繁育研究基地",
-            city="成都市",
-            district="成华区",
-            address="熊猫大道1375号",
-            location=GeoPoint(latitude=30.7381, longitude=104.1471),
-            categories=("动物园", "亲子"),
-            environment=ActivityEnvironment.OUTDOOR,
-            suggested_duration_minutes=180,
-            tags=("亲子", "户外步行"),
-            source=_source("eztrip-product-fixture", "CD-PANDA-BASE"),
+    return _fixture_pois(
+        "成都市",
+        (
+            ("jinsha-museum", "金沙遗址博物馆", "青羊区", 30.6803, 104.0196, "activity"),
+            ("panda-base", "成都大熊猫繁育研究基地", "成华区", 30.7381, 104.1471, "activity"),
+            ("chengdu-museum", "成都博物馆", "青羊区", 30.6573, 104.0648, "activity"),
+            ("people-park", "人民公园", "青羊区", 30.6570, 104.0550, "activity"),
+            ("kuanzhai", "宽窄巷子", "青羊区", 30.6690, 104.0550, "activity"),
+            ("dufu-cottage", "杜甫草堂", "青羊区", 30.6600, 104.0280, "activity"),
+            ("sichuan-museum", "四川博物院", "青羊区", 30.6610, 104.0350, "activity"),
+            ("wuhou-shrine", "武侯祠文化片区", "武侯区", 30.6460, 104.0470, "activity"),
+            ("jinli", "锦里历史街区", "武侯区", 30.6450, 104.0480, "activity"),
+            ("wangjiang-park", "望江楼公园", "武侯区", 30.6300, 104.0900, "activity"),
+            ("east-suburb-memory", "东郊记忆", "成华区", 30.6710, 104.1200, "activity"),
+            ("tianfu-art", "天府艺术公园", "金牛区", 30.7240, 104.0390, "activity"),
+            ("jiuyanqiao", "九眼桥滨水区", "锦江区", 30.6400, 104.0900, "activity"),
+            ("huanhuaxi", "浣花溪公园", "青羊区", 30.6570, 104.0300, "activity"),
+            ("taikooli", "太古里城市街区", "锦江区", 30.6540, 104.0830, "activity"),
+            ("cd-food-1", "天府广场餐饮示例一", "青羊区", 30.6575, 104.0660, "dining"),
+            ("cd-food-2", "宽窄巷子餐饮示例二", "青羊区", 30.6680, 104.0560, "dining"),
+            ("cd-food-3", "武侯餐饮示例三", "武侯区", 30.6465, 104.0490, "dining"),
+            ("cd-food-4", "成华餐饮示例四", "成华区", 30.6740, 104.1190, "dining"),
+            ("cd-food-5", "锦江餐饮示例五", "锦江区", 30.6530, 104.0840, "dining"),
         ),
     )
 
@@ -231,7 +246,19 @@ class ProductFixtureProvider:
         self._request = request
 
     async def search_pois(self, request: POISearchRequest) -> tuple[CandidatePOI, ...]:
-        return POI_CATALOGS[self._request.destination_city][: request.limit]
+        catalog = POI_CATALOGS[self._request.destination_city]
+        if "餐饮" in request.keywords:
+            return catalog[-5:][: request.limit]
+        page = next(
+            (
+                index
+                for index, marker in enumerate(("主题一", "主题二", "主题三"))
+                if marker in request.keywords
+            ),
+            0,
+        )
+        start = page * 5
+        return catalog[start : start + request.limit]
 
     async def search_stays(self, request: StaySearchRequest) -> tuple[CandidateStay, ...]:
         return _stay_catalog(self._request.destination_city)[: request.limit]
@@ -292,12 +319,21 @@ class ProductFixtureExploreModel:
     def propose_queries(self, context: PlannerContext) -> ExploreQueryModelResponse:
         return ExploreQueryModelResponse(
             proposal=ExploreQueryProposalBatch(
-                items=(
+                items=tuple(
                     ExploreQueryProposal(
-                        kind=ExploreQueryKind.ATTRACTION,
-                        keywords=f"{context.destination.normalized_name}历史文化景点",
-                        reason="覆盖产品演示中的已确认必去地点与历史文化偏好。",
-                    ),
+                        kind=(
+                            ExploreQueryKind.DINING
+                            if marker == "餐饮"
+                            else ExploreQueryKind.ATTRACTION
+                        ),
+                        keywords=f"{context.destination.normalized_name}{marker}",
+                        reason=(
+                            "提供与主要景点分离的附近餐饮建议池。"
+                            if marker == "餐饮"
+                            else "扩展多日主要游览项目候选池。"
+                        ),
+                    )
+                    for marker in ("主题一", "主题二", "主题三", "餐饮")
                 )
             ),
             model="product-fixture-explore-model-v1",
@@ -310,7 +346,8 @@ class ProductFixtureExploreModel:
         queries: tuple[ExploreSearchQuery, ...],
         observations: tuple[ExploreCandidateObservation, ...],
     ) -> ExploreSelectionModelResponse:
-        del context, queries
+        del queries
+        selected_observations = observations[:2] if context.pace is None else observations
         return ExploreSelectionModelResponse(
             proposal=ExploreSelectionProposalBatch(
                 items=tuple(
@@ -325,7 +362,7 @@ class ProductFixtureExploreModel:
                             ),
                         ),
                     )
-                    for index, item in enumerate(observations, start=1)
+                    for index, item in enumerate(selected_observations, start=1)
                 )
             ),
             model="product-fixture-explore-model-v1",
@@ -385,41 +422,16 @@ class ProductFixtureStayModel:
 
 class ProductFixturePlanModel:
     def propose(self, materials: PlanningMaterialBundle) -> PlannerModelResponse:
-        candidates = materials.shortlist.poi_candidates
-        rainy_dates = {
-            risk.starts_at.date()
-            for branch in materials.specialist_result.branches
-            for risk in branch.weather_risks
-            if risk.risk_type == WeatherRiskType.RAIN
-        }
-        dry_day_number = next(
-            (
-                day.day_number
-                for day in materials.planner_context.days
-                if day.date not in rainy_dates
-            ),
-            1,
-        )
-        rainy_day_number = next(
-            (day.day_number for day in materials.planner_context.days if day.date in rainy_dates),
-            1,
-        )
+        start_times = ("09:00", "13:00", "16:00", "19:00")
         proposals = tuple(
             PlannerPlacementProposal(
-                candidate_id=candidate.candidate_id,
-                day_number=(
-                    dry_day_number
-                    if candidate.environment == ActivityEnvironment.OUTDOOR
-                    else rainy_day_number
-                ),
-                start_time="09:00",
-                reason=(
-                    "天气分支提示降雨, 将户外活动安排到无雨日期。"
-                    if candidate.environment == ActivityEnvironment.OUTDOOR
-                    else "降雨日优先安排室内或混合型活动。"
-                ),
+                candidate_id=candidate_id,
+                day_number=cluster.day_number,
+                start_time=start_times[index],
+                reason="遵循 fixture 地理分组与路线顺序安排主要游览项目。",
             )
-            for candidate in candidates
+            for cluster in materials.shortlist.day_clusters
+            for index, candidate_id in enumerate(cluster.poi_candidate_ids)
         )
         return PlannerModelResponse(
             proposal=PlannerProposalBatch(items=proposals),

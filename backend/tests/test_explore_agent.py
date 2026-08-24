@@ -195,7 +195,7 @@ def test_graph_searches_provider_then_returns_grounded_recommendation() -> None:
     assert model.selection_calls == [(candidate.candidate_id,)]
     assert len(provider.calls) == 1
     assert provider.calls[0].city_adcode == "110000"
-    assert provider.calls[0].limit == 3
+    assert provider.calls[0].limit == 5
     assert result.recommendations[0].candidate == candidate
     assert result.recommendations[0].proposal.reason != candidate.name
     assert result.observations[0].query_ids == (result.queries[0].query_id,)

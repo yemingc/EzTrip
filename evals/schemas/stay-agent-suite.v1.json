@@ -480,6 +480,14 @@
       "title": "StayFixtureCandidateSpec",
       "type": "object"
     },
+    "TripPace": {
+      "enum": [
+        "relaxed",
+        "standard"
+      ],
+      "title": "TripPace",
+      "type": "string"
+    },
     "TripRequest": {
       "additionalProperties": false,
       "properties": {
@@ -555,6 +563,17 @@
           "anyOf": [
             {
               "$ref": "#/$defs/BudgetConstraint"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "pace": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TripPace"
             },
             {
               "type": "null"

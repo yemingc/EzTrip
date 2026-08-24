@@ -976,6 +976,17 @@
           ],
           "default": null
         },
+        "pace": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TripPace"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "travel_styles": {
           "default": [],
           "items": {
@@ -1356,8 +1367,8 @@
           "type": "string"
         },
         "matrix_version": {
-          "const": "route-matrix-v1",
-          "default": "route-matrix-v1",
+          "const": "route-matrix-v2",
+          "default": "route-matrix-v2",
           "title": "Matrix Version",
           "type": "string"
         },
@@ -1410,7 +1421,7 @@
             "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
             "type": "string"
           },
-          "maxItems": 4,
+          "maxItems": 15,
           "title": "Poi Candidate Ids",
           "type": "array"
         },
@@ -1647,6 +1658,14 @@
         "historical_estimate"
       ],
       "title": "StayPriceBasis",
+      "type": "string"
+    },
+    "TripPace": {
+      "enum": [
+        "relaxed",
+        "standard"
+      ],
+      "title": "TripPace",
       "type": "string"
     },
     "WeatherRisk": {

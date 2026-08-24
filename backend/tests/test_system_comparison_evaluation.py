@@ -114,9 +114,9 @@ def test_fixture_report_preserves_cost_and_claim_boundaries(
         186,
     )
     assert (single.provider_call_count, no_gate.provider_call_count, full.provider_call_count) == (
-        435,
-        435,
-        638,
+        357,
+        357,
+        518,
     )
     assert single.total_tokens == 6720
     assert no_gate.total_tokens is None and full.total_tokens is None

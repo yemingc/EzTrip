@@ -257,6 +257,7 @@ def compile_planner_context(request: TripRequest) -> PlannerContext:
             ),
         ),
         budget=budget,
+        pace=request.pace,
         travel_styles=request.travel_styles,
         confirmed_hard_constraints=confirmed_hard,
         confirmed_soft_constraints=confirmed_soft,

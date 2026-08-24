@@ -36,7 +36,7 @@ def test_fixture_plan_agent_suite_proves_grounding_material_use_and_zero_call_st
     assert report.planned_case_count == 4
     assert report.skipped_case_count == 2
     assert report.model_call_count == 4
-    assert report.candidate_count == report.scheduled_candidate_count == 12
+    assert report.candidate_count == report.scheduled_candidate_count == 10
     assert report.grounding_rate == 1
     assert report.source_traceability_rate == 1
     assert report.route_lineage_rate == 1
