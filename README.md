@@ -80,6 +80,14 @@ pnpm test:e2e
 
 `test:e2e` 会同时启动 fixture backend 与 frontend，不调用 DeepSeek 或实时高德，也不需要 API Key。
 
+显式 live 浏览器 canary 与默认 CI 隔离；它会调用 DeepSeek 与高德并消耗配额。2026-08-25 的泉州 2 日点时运行在确认后 39 秒保存 1 个 PlanVersion，完成冲突确认并跨刷新恢复；同轮也观察到一次可重试的 Provider 空结果降级，因此这不是全国质量或 SLA 证明。详见 [`docs/evaluation/live-browser-canary-2026-08-25.md`](docs/evaluation/live-browser-canary-2026-08-25.md)。
+
+```powershell
+Set-Location frontend
+$env:EZTRIP_RUN_LIVE_BROWSER_CANARY = "1"
+try { pnpm test:live-canary } finally { Remove-Item Env:EZTRIP_RUN_LIVE_BROWSER_CANARY -ErrorAction SilentlyContinue }
+```
+
 ## Gate 0 smoke scenarios
 
 `evals/cases/smoke/` 固化了 3 条端到端规格场景：正常北京三日游、确定性预算冲突、天气工具主动发现风险。它们定义跨组件输入、注入条件和必须/禁止行为；Product Graph V2 已在北京两日 fixture 浏览器链路中验证主动天气查询与 Hard Validator，但三条 smoke 仍是更广的规格级基线，不等同于全部 live 产品能力。
@@ -398,7 +406,7 @@ uv run python -m scripts.run_live_system_comparison_pilot --live --confirm-max-m
 - 不提供订票、订房、支付或实时房价；
 - 当前健康页不是旅行规划产品完成度；
 - 当前三节点探针只证明观测链路可接入，不证明模型规划质量；
-- Request Intake 与 Constraint Agent 已接入 Web 确认入口，但 fixture 解析只覆盖冻结的中文场景，live 抽取路径尚未执行本轮 canary；确认前的 Request Intake 草案仍保存在单进程内存，刷新后需要重新理解需求；确认并创建任务后，URL、snapshot、SSE 与审核幂等状态可跨刷新和单实例后端重启恢复；
+- Request Intake 与 Constraint Agent 已接入 Web 确认入口；fixture 解析只覆盖冻结中文场景，另有一次 2026-08-25 泉州 live 浏览器点时 canary，不能外推为通用中文理解或全国城市质量；确认前的 Request Intake 草案仍保存在单进程内存，刷新后需要重新理解需求；确认并创建任务后，URL、snapshot、SSE 与审核幂等状态可跨刷新和单实例后端重启恢复；
 - Product Graph V2 已在产品 API 中连通 Explore、Stay、主动 Weather、路线/预算材料、Plan Agent、Hard Validator、真实责任节点 Repair Router、checkpoint HITL 和结构化 revision；Weather Repair Coordinator 仍是独立能力，定时 WeatherWatch 已从计划中取消；
 - 高德 live fixture 是 2026-08-20 的点时样本，不是当前天气、实时酒店价格或生产 SLA；
 - 后续功能必须通过真实 provider contract、固定评测和可回放 trace 验证后再写入项目成果。

@@ -10,6 +10,8 @@ The 30-case system-comparison inventory is frozen under `evals/cases/comparison`
 
 The repeated-live pilot under `evals/cases/live-comparison` has now run over three existing development cases with two repetitions each. All 42 base DeepSeek calls succeeded and all three arms finalized 6/6 trials, so this clean-case pilot observed no finalization lift and triggered no repair. Product produced exact-repeat plans for 3/3 cases versus Single at 2/3, while using 30 versus 12 logical calls and higher cumulative model latency. The point-in-time result uses frozen Provider catalogs, six LangSmith trial traces, and zero AMap calls; it is development-set evidence, not a holdout, generalization, real-user-success, or real-time-data claim.
 
+An opt-in Chromium canary now covers the real browser → Request Intake → AMap/DeepSeek Product Graph → HITL → durable task snapshot path. The 2026-08-25 Quanzhou observation saved one two-day PlanVersion in 39 seconds after confirmation, acknowledged explicit validation gaps, and restored after reload. A prior same-city attempt also persisted a retryable `planning-materials-blocked` outcome, preserving Provider volatility instead of silently substituting fixture facts. This single point-in-time canary is not nationwide quality or SLA evidence; see [`docs/evaluation/live-browser-canary-2026-08-25.md`](../docs/evaluation/live-browser-canary-2026-08-25.md).
+
 ```powershell
 uv sync --all-groups
 uv run uvicorn app.main:app --reload

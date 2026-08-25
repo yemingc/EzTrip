@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "report_type": "live_browser_canary",
+  "execution_mode": "live",
+  "base_commit": "a64c267",
+  "city_scope": {
+    "input_name": "泉州",
+    "resolved_name": "泉州市",
+    "administrative_code": "350500",
+    "trip_days": 2
+  },
+  "successful_observation": {
+    "observed_at": "2026-08-25T02:15:40.503Z",
+    "elapsed_seconds": 50,
+    "planning_elapsed_seconds": 39,
+    "terminal_outcome": "saved_plan_version",
+    "task_id": "planning-task-05710cb67986471ca46f2db2408ca27b",
+    "task_status": "succeeded",
+    "data_mode": "live",
+    "event_count": 12,
+    "plan_version_count": 1,
+    "day_count": 2,
+    "validation_status": "conflicted",
+    "can_finalize": false,
+    "issue_rule_codes": [
+      "budget.incomplete_category_coverage",
+      "route.missing_for_grounded_item",
+      "opening_hours.evidence_missing"
+    ],
+    "specialist_statuses": {
+      "explore": "succeeded",
+      "stay": "succeeded",
+      "weather": "succeeded"
+    },
+    "route_edges": {
+      "status": "partial",
+      "expected": 4,
+      "succeeded": 3,
+      "failed": 1,
+      "provider_calls": 4
+    },
+    "review_action": "acknowledge_conflict",
+    "restored_after_browser_reload": true
+  },
+  "prior_honest_degradation_observation": {
+    "started_at": "2026-08-25T02:05:21.947589Z",
+    "finished_at": "2026-08-25T02:05:51.967537Z",
+    "elapsed_seconds": 30,
+    "task_id": "planning-task-cb2551287d534125b77a3679a8023d5f",
+    "task_status": "failed",
+    "data_mode": "live",
+    "event_count": 5,
+    "plan_version_count": 0,
+    "error_code": "planning-materials-blocked",
+    "category": "workflow",
+    "retryable": true,
+    "restored_after_backend_restart": true
+  },
+  "claim_boundary": "This point-in-time opt-in canary proves one Quanzhou browser path and its honest degradation behavior. It is not nationwide quality, availability, itinerary accuracy, or production SLA evidence."
+}
