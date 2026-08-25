@@ -115,7 +115,9 @@ export interface WeatherRisk {
   ends_at: string;
   risk_type: string;
   severity: string;
+  metrics?: Record<string, number>;
   threshold_description: string;
+  affected_activity_types?: string[];
   advisory: string;
   source: SourceReference;
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { apiBaseUrl } from "@/lib/planning-task";
+import { WeatherOutlook } from "@/components/weather-outlook";
 
 import type {
   BudgetCategory,
@@ -121,22 +122,6 @@ function friendlyReason(reason: string) {
 function sourceLabel(dataMode: string) {
   return dataMode === "live" ? "高德地图" : "示例数据";
 }
-
-const weatherRiskLabels: Record<string, string> = {
-  rain: "降雨",
-  heat: "高温",
-  cold: "低温",
-  wind: "大风",
-  thunderstorm: "雷雨",
-  snow: "降雪",
-};
-
-const weatherSeverityLabels: Record<string, string> = {
-  low: "较低",
-  medium: "中等",
-  high: "较高",
-  critical: "严重",
-};
 
 function AmapPlanOverview({
   plan,
@@ -955,26 +940,7 @@ export function PlanningResults({
             </p>
           </article>
 
-          <article className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="eyebrow">出行提醒</p>
-            <h3 className="mt-2 font-semibold">天气风险</h3>
-            {plan.weather_risks.length ? (
-              <div className="mt-4 space-y-3">
-                {plan.weather_risks.map((risk) => (
-                  <div className="rounded-2xl bg-sky-50 p-4 text-sm" key={risk.risk_id}>
-                    <p className="font-semibold">
-                      {weatherRiskLabels[risk.risk_type] ?? "天气变化"} · {weatherSeverityLabels[risk.severity] ?? risk.severity}
-                    </p>
-                    <p className="mt-1 text-xs leading-5 text-slate-600">{risk.advisory}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-3 text-xs leading-5 text-slate-500">
-                暂未发现需要特别提醒的天气风险，出发前请再次查看天气预报。
-              </p>
-            )}
-          </article>
+          <WeatherOutlook candidates={candidates} plan={plan} />
         </div>
 
         <AmapPlanOverview

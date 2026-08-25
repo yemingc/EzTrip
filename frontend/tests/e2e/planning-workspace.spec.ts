@@ -67,6 +67,13 @@ test("generates a complete sample itinerary with user-facing copy", async ({ pag
   await expect(results).toContainText("从住宿地点出发前往首站");
   await expect(results).toContainText("附近用餐建议");
   await expect(results).toContainText("首日优先室内或混合型活动");
+  const weather = results.getByTestId("weather-outlook");
+  await expect(weather).toContainText("逐日天气提醒");
+  expect(await weather.getByTestId("weather-day-card").count()).toBeGreaterThan(0);
+  await expect(weather).toContainText("降雨");
+  await expect(weather).toContainText("当天怎么安排");
+  await expect(weather.getByTestId("weather-affected-plans").first()).toContainText("优先检查");
+  expect(await weather.innerText()).not.toMatch(/\b(?:rain|heat|low|medium|high|extreme)\b/);
   await expect(results.getByTestId("stay-recommendation")).toContainText("住宿推荐");
   await expect(results.getByTestId("stay-recommendation")).toContainText("推荐理由");
   await expect(results.getByTestId("stay-recommendation")).toContainText("价格和空房情况以预订平台为准");
@@ -152,6 +159,52 @@ test("restores one task across in-flight, review, and completed refreshes", asyn
   await expect(results).toContainText("行程已确认");
   await expect(trace).toContainText("已收到你的选择");
   await expect(trace).toContainText("行程已完成");
+});
+
+test("does not present missing weather coverage as risk-free", async ({ page }) => {
+  await page.route(/\/api\/planning-tasks\/planning-task-[^/]+$/, async (route) => {
+    const response = await route.fetch();
+    const payload = (await response.json()) as {
+      result?: {
+        state?: {
+          plan?: { weather_risks?: unknown[]; days?: Array<{ weather_risk_ids?: unknown[] }> };
+          plan_agent?: {
+            plan?: { weather_risks?: unknown[]; days?: Array<{ weather_risk_ids?: unknown[] }> };
+          };
+          repair?: {
+            final_plan?: {
+              weather_risks?: unknown[];
+              days?: Array<{ weather_risk_ids?: unknown[] }>;
+            };
+          };
+        };
+      };
+      plan_versions?: Array<{
+        plan?: { weather_risks?: unknown[]; days?: Array<{ weather_risk_ids?: unknown[] }> };
+      }>;
+    };
+    const plans = [
+      payload.result?.state?.plan,
+      payload.result?.state?.plan_agent?.plan,
+      payload.result?.state?.repair?.final_plan,
+      ...(payload.plan_versions ?? []).map((version) => version.plan),
+    ];
+    for (const plan of plans) {
+      if (!plan) continue;
+      plan.weather_risks = [];
+      for (const day of plan.days ?? []) day.weather_risk_ids = [];
+    }
+    await route.fulfill({ response, json: payload });
+  });
+
+  await page.goto("/");
+  await understandAndStart(page);
+
+  const weather = page.getByTestId("weather-outlook");
+  await expect(weather).toContainText("当前没有逐日风险信息", { timeout: 20_000 });
+  await expect(weather).toContainText("这不代表天气一定适宜");
+  await expect(weather).toContainText("可能尚未进入短期预报范围");
+  await expect(weather).not.toContainText("暂未发现需要特别提醒的天气风险");
 });
 
 test("renders three main activities per day in standard pace without counting meals", async ({ page }) => {
