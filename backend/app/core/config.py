@@ -95,6 +95,21 @@ class Settings(BaseSettings):
     planning_task_timeout_seconds: float = Field(default=120.0, gt=0)
 
     @field_validator(
+        "deepseek_api_key",
+        "langsmith_api_key",
+        "amap_maps_api_key",
+        mode="before",
+    )
+    @classmethod
+    def normalize_optional_secret(cls, value: object) -> object:
+        if isinstance(value, SecretStr):
+            value = value.get_secret_value()
+        if isinstance(value, str):
+            stripped = value.strip()
+            return stripped or None
+        return value
+
+    @field_validator(
         "amap_mcp_url",
         "amap_rest_weather_url",
         "amap_rest_geocode_url",

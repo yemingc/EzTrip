@@ -20,6 +20,8 @@ uv run uvicorn app.main:app --reload
 Run offline checks:
 
 ```powershell
+uv lock --check
+uv run pip-audit
 uv run pytest
 uv run ruff check .
 uv run ruff format --check .

@@ -40,7 +40,8 @@ jobs:
       - run: uv sync --locked --all-groups
       - run: uv run ruff check .
       - run: uv run ruff format --check .
-      - run: uv run mypy app
+      - run: uv run mypy app scripts
+      - run: uv run pip-audit
       - run: uv run pytest
       - run: uv run alembic upgrade head
 
@@ -58,6 +59,7 @@ jobs:
       - run: corepack enable
       - run: corepack prepare pnpm@11.19.0 --activate
       - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --audit-level high
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm build

@@ -61,9 +61,11 @@ Backend：
 
 ```powershell
 Set-Location backend
+uv lock --check
 uv run ruff check .
 uv run ruff format --check .
-uv run mypy app
+uv run mypy app scripts
+uv run pip-audit
 uv run pytest
 ```
 
@@ -71,6 +73,7 @@ Frontend：
 
 ```powershell
 Set-Location frontend
+pnpm audit --audit-level high
 pnpm lint
 pnpm typecheck
 pnpm build
@@ -79,6 +82,8 @@ pnpm test:e2e
 ```
 
 `test:e2e` 会同时启动 fixture backend 与 frontend，不调用 DeepSeek 或实时高德，也不需要 API Key。
+
+完整发布加固结果与 clean-checkout 复现边界见 [`docs/release-readiness.md`](docs/release-readiness.md)。
 
 显式 live 浏览器 canary 与默认 CI 隔离；它会调用 DeepSeek 与高德并消耗配额。2026-08-25 的泉州 2 日点时运行在确认后 39 秒保存 1 个 PlanVersion，完成冲突确认并跨刷新恢复；同轮也观察到一次可重试的 Provider 空结果降级，因此这不是全国质量或 SLA 证明。详见 [`docs/evaluation/live-browser-canary-2026-08-25.md`](docs/evaluation/live-browser-canary-2026-08-25.md)。
 

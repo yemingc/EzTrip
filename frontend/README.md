@@ -17,6 +17,7 @@ pnpm dev
 ## 质量检查
 
 ```powershell
+pnpm audit --audit-level high
 pnpm lint
 pnpm typecheck
 pnpm build

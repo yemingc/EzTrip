@@ -21,6 +21,40 @@ def test_settings_have_safe_local_defaults() -> None:
     assert settings.planning_task_store_path == Path("tmp/planning-task-store.sqlite3")
 
 
+@pytest.mark.parametrize("value", ["", "   "])
+def test_optional_secret_settings_normalize_blank_values_to_none(value: str) -> None:
+    settings = Settings(
+        _env_file=None,
+        deepseek_api_key=value,
+        langsmith_api_key=value,
+        amap_maps_api_key=value,
+    )
+
+    assert settings.deepseek_api_key is None
+    assert settings.langsmith_api_key is None
+    assert settings.amap_maps_api_key is None
+
+
+def test_root_environment_example_is_safe_without_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for name in (
+        "DEEPSEEK_API_KEY",
+        "LANGSMITH_API_KEY",
+        "AMAP_MAPS_API_KEY",
+        "LANGSMITH_TRACING",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    example_path = Path(__file__).parents[2] / ".env.example"
+    settings = Settings(_env_file=example_path)
+
+    assert settings.deepseek_api_key is None
+    assert settings.langsmith_api_key is None
+    assert settings.amap_maps_api_key is None
+    assert settings.langsmith_tracing is False
+
+
 @pytest.mark.parametrize(
     "field,value",
     [
