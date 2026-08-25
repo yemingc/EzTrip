@@ -1,12 +1,26 @@
 import { TripPlannerWorkspace } from "@/components/trip-planner-workspace";
 
-function dateAfterToday(days: number) {
-  const result = new Date();
-  result.setUTCDate(result.getUTCDate() + days);
-  return result.toISOString().slice(0, 10);
+export const dynamic = "force-dynamic";
+
+const CHINA_TIME_ZONE = "Asia/Shanghai";
+const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
+
+function dateInChinaAfter(days: number, now: Date) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: CHINA_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date(now.getTime() + days * DAY_IN_MILLISECONDS));
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
 }
 
 export default function Home() {
+  const now = new Date();
+  const earliestStartDate = dateInChinaAfter(0, now);
+  const defaultStartDate = dateInChinaAfter(7, now);
+
   return (
     <main className="min-h-screen overflow-hidden bg-[#f4f3ed] text-slate-950">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[680px] bg-[radial-gradient(circle_at_12%_10%,rgba(16,185,129,.16),transparent_28%),radial-gradient(circle_at_82%_0%,rgba(14,116,144,.10),transparent_26%)]" />
@@ -72,7 +86,10 @@ export default function Home() {
       </section>
 
       <div id="planner">
-        <TripPlannerWorkspace defaultStartDate={dateAfterToday(7)} />
+        <TripPlannerWorkspace
+          defaultStartDate={defaultStartDate}
+          earliestStartDate={earliestStartDate}
+        />
       </div>
     </main>
   );

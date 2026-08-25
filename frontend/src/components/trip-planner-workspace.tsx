@@ -210,7 +210,13 @@ function PlanningTrace({
   );
 }
 
-export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: string }) {
+export function TripPlannerWorkspace({
+  defaultStartDate,
+  earliestStartDate,
+}: {
+  defaultStartDate: string;
+  earliestStartDate: string;
+}) {
   const [values, setValues] = useState<PlannerFormValues>({
     rawText: "帮我规划一次历史文化之旅，节奏轻松一些。",
     originCity: "上海",
@@ -729,7 +735,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
               <input
                 className="field-control"
                 disabled={isBusy}
-                min={defaultStartDate}
+                min={earliestStartDate}
                 onChange={(event) => updateValue("startDate", event.target.value)}
                 required
                 type="date"
