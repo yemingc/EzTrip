@@ -24,7 +24,7 @@ test("runs one explicit non-fixture browser planning loop to a restorable termin
   await page.getByLabel("老人数量").selectOption("2");
   await page.getByLabel("整趟预算目标").fill("3000");
   await page.getByLabel("行程节奏").selectOption("relaxed");
-  await page.getByLabel("旅行数据模式").selectOption("live");
+  await page.getByLabel("规划方式").selectOption("live");
   await expect(page.getByText("当前选择会直接启用实时调用")).toBeVisible();
 
   await page.getByTestId("submit-planning-task").click();
@@ -52,18 +52,18 @@ test("runs one explicit non-fixture browser planning loop to a restorable termin
   if (await results.isVisible()) {
     terminalOutcome = "saved_plan_version";
     await expect(results).toContainText("泉州");
-    await expect(results).toContainText("live");
-    await expect(page.getByTestId("event-trace")).toContainText("等待人工审核");
+  await expect(results).toContainText("高德地图");
+  await expect(page.getByTestId("event-trace")).toContainText("行程等待确认");
 
-    const acknowledge = page.getByRole("button", { name: "保留待验证草案" });
-    const approve = page.getByRole("button", { name: "批准草案" });
+  const acknowledge = page.getByRole("button", { name: "保留当前方案" });
+  const approve = page.getByRole("button", { name: "确认行程" });
     if (await acknowledge.isVisible()) {
       await acknowledge.click();
     } else {
       await expect(approve).toBeVisible();
       await approve.click();
     }
-    await expect(results).toContainText("审核已完成");
+  await expect(results).toContainText("本次选择已保存");
   } else {
     terminalOutcome = "honest_degradation";
     await expect(failure).toContainText("任务没有完成");
@@ -73,7 +73,7 @@ test("runs one explicit non-fixture browser planning loop to a restorable termin
   await page.reload();
   await expect(page).toHaveURL(taskUrl);
   if (terminalOutcome === "saved_plan_version") {
-    await expect(results).toContainText("审核已完成", { timeout: 30_000 });
+  await expect(results).toContainText("本次选择已保存", { timeout: 30_000 });
   } else {
     await expect(failure).toContainText("任务没有完成", { timeout: 30_000 });
   }

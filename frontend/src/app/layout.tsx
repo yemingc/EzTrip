@@ -3,9 +3,9 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "EzTrip | 可解释的多 Agent 旅行规划",
+  title: "EzTrip | 旅行规划助手",
   description:
-    "面向中国用户的多 Agent 旅行规划与行程变化处理项目。",
+    "根据目的地、日期、预算和偏好，生成可确认、可调整的旅行方案。",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

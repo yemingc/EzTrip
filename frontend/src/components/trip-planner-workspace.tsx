@@ -4,7 +4,6 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 
 import { PlanningResults } from "@/components/planning-results";
 import {
-  apiBaseUrl,
   buildPlanRevisionRequest,
   confirmRequestIntake,
   createPlanningTask,
@@ -41,26 +40,26 @@ const eventKinds: PlanningTaskEventKind[] = [
 ];
 
 const eventLabels: Record<PlanningTaskEventKind, string> = {
-  task_created: "任务已入队",
-  task_started: "工作流启动",
-  graph_node_completed: "图节点已提交",
-  task_awaiting_input: "等待人工审核",
-  task_review_submitted: "审核决定已接收",
-  task_succeeded: "规划已完成",
-  task_failed: "任务失败",
+  task_created: "已收到旅行需求",
+  task_started: "开始生成行程",
+  graph_node_completed: "完成一项规划步骤",
+  task_awaiting_input: "行程等待确认",
+  task_review_submitted: "已收到你的选择",
+  task_succeeded: "行程已完成",
+  task_failed: "行程生成失败",
 };
 
 const nodeLabels: Record<string, string> = {
-  run_vertical_slice: "搜索、规划与校验",
-  run_specialists: "景点、住宿与天气并行查询",
-  build_materials: "合并路线与预算材料",
-  run_plan_agent: "生成多 Agent 行程草案",
-  validate_hard_plan: "执行硬约束校验",
-  run_repair: "执行有界局部修复",
-  prepare_human_review: "生成审核请求",
-  human_review: "人工审核",
-  apply_review_decision: "应用审核决定",
-  apply_plan_revision: "应用局部修改",
+  run_vertical_slice: "整理旅行方案",
+  run_specialists: "查找景点、住宿与天气",
+  build_materials: "计算路线与预算",
+  run_plan_agent: "安排每日行程",
+  validate_hard_plan: "检查时间与行程要求",
+  run_repair: "调整不合理安排",
+  prepare_human_review: "准备确认",
+  human_review: "等待你的确认",
+  apply_review_decision: "保存你的选择",
+  apply_plan_revision: "更新所选行程",
 };
 
 const requestFieldLabels: Record<string, string> = {
@@ -77,12 +76,27 @@ const requestFieldLabels: Record<string, string> = {
 };
 
 const requestStatusLabels: Record<RequestFieldDecisionStatus, string> = {
-  matched: "与表单一致",
+  matched: "已确认",
   conflict: "需要选择",
-  proposed: "原文新增",
-  unmentioned: "沿用表单",
-  needs_confirmation: "无法唯一确定",
+  proposed: "来自旅行需求",
+  unmentioned: "沿用当前填写",
+  needs_confirmation: "需要补充",
 };
+
+const constraintKindLabels: Record<string, string> = {
+  avoid: "不想去",
+  interest: "感兴趣",
+  must_visit: "一定要去",
+  preference: "偏好",
+};
+
+function requestValueLabel(field: string, value: unknown) {
+  if (value === null || value === undefined) return "";
+  if (field === "pace") {
+    return value === "relaxed" ? "轻松" : value === "standard" ? "标准" : String(value);
+  }
+  return Array.isArray(value) ? value.join("、") : String(value);
+}
 
 const requestStatusClasses: Record<RequestFieldDecisionStatus, string> = {
   matched: "bg-emerald-100 text-emerald-800",
@@ -110,11 +124,11 @@ function writeTaskIdToUrl(taskId: string | null) {
 
 function connectionLabel(state: ConnectionState) {
   return {
-    idle: "尚未连接",
-    connecting: "连接进度流",
-    open: "SSE 已连接",
-    reconnecting: "正在重连",
-    closed: "进度流已结束",
+    idle: "等待开始",
+    connecting: "正在连接",
+    open: "实时更新中",
+    reconnecting: "正在恢复进度",
+    closed: "进度已更新",
   }[state];
 }
 
@@ -146,8 +160,8 @@ function PlanningTrace({
       <div className="relative">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-300">Live workflow</p>
-            <h2 className="mt-2 text-xl font-semibold tracking-tight">Agent 执行轨迹</h2>
+            <p className="text-[11px] font-bold tracking-[0.16em] text-emerald-300">规划进度</p>
+            <h2 className="mt-2 text-xl font-semibold tracking-tight">正在准备你的行程</h2>
           </div>
           <span className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] text-slate-300">
             <span className={`size-2 rounded-full ${active ? "animate-pulse bg-emerald-400" : "bg-slate-500"}`} />
@@ -155,8 +169,8 @@ function PlanningTrace({
           </span>
         </div>
 
-        <div className="mt-4 min-h-5 font-mono text-[10px] text-slate-500">
-          {taskId ? `task / ${taskId}` : "等待提交任务"}
+        <div className="mt-4 min-h-5 text-[11px] text-slate-500">
+          {taskId ? "本次行程可以在刷新页面后继续查看" : "填写需求后即可开始"}
         </div>
 
         <ol className="mt-6 space-y-1" aria-live="polite" data-testid="event-trace">
@@ -174,20 +188,19 @@ function PlanningTrace({
                     <p className="text-sm font-semibold text-slate-100">{eventLabels[event.kind]}</p>
                     <time className="font-mono text-[10px] text-slate-500">{formatEventTime(event.occurred_at)}</time>
                   </div>
-                  {event.node ? (
+                  {event.node && event.kind === "graph_node_completed" ? (
                     <p className="mt-1 text-xs font-medium text-emerald-300/80">
-                      {nodeLabels[event.node] ?? event.node} · {event.state_status}
+                      {nodeLabels[event.node] ?? "更新行程进度"}
                     </p>
                   ) : null}
-                  <p className="mt-1 text-xs leading-5 text-slate-500">{event.message}</p>
                 </div>
               </li>
             ))
           ) : (
             <li className="rounded-2xl border border-dashed border-white/10 bg-white/[.025] p-5">
-              <p className="text-sm font-medium text-slate-300">提交后，这里会显示真实 SSE 事件</p>
+              <p className="text-sm font-medium text-slate-300">开始后，这里会显示规划进度</p>
               <p className="mt-2 text-xs leading-5 text-slate-500">
-                事件来自 LangGraph 节点提交，不是前端定时器模拟。
+                景点、住宿、路线和预算会依次整理，完成后即可查看并调整。
               </p>
             </li>
           )}
@@ -269,7 +282,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
     }
     setError(
       resolution.status === "unsupported"
-        ? "Fixture 模式仅覆盖北京、上海和成都。请选择实时 Provider，或改用演示城市。"
+        ? "示例体验仅支持北京、上海和成都。请选择“实时规划”，或改用示例城市。"
         : "没有解析到可规划的国内城市，请补充省份或检查名称。",
     );
   }
@@ -295,7 +308,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
       const result = await getPlanningTask(currentTaskId);
       setSnapshot(result);
       if (result.status === "failed") {
-        setError(result.failure?.user_message ?? "规划任务失败，请稍后重试。");
+        setError(result.failure?.user_message ?? "行程生成失败，请稍后重试。");
         setPhase("error");
       } else {
         setPhase("complete");
@@ -334,7 +347,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
                 setConnection("closed");
                 setSnapshot(currentSnapshot);
                 if (currentSnapshot.status === "failed") {
-                  setError(currentSnapshot.failure?.user_message ?? "规划任务失败，请稍后重试。");
+                  setError(currentSnapshot.failure?.user_message ?? "行程生成失败，请稍后重试。");
                   setPhase("error");
                 } else {
                   setPhase("complete");
@@ -357,7 +370,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
         terminalRef.current = true;
         source.close();
         setConnection("closed");
-        setError("进度事件不符合 JSON 协议，任务展示已停止。");
+        setError("规划进度暂时无法读取，请刷新页面重试。");
         setPhase("error");
         return;
       }
@@ -393,7 +406,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
     if (!planningTaskIdPattern.test(restoredTaskId)) {
       queueMicrotask(() => {
         if (!cancelled) {
-          setError("URL 中的 task_id 格式无效。请重新开始一次规划任务。");
+          setError("链接中的行程信息无效，请重新开始规划。");
           setPhase("error");
           setConnection("closed");
         }
@@ -415,7 +428,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
         setConnection("connecting");
         setSnapshot(restoredSnapshot);
         if (restoredSnapshot.status === "failed") {
-          setError(restoredSnapshot.failure?.user_message ?? "规划任务失败，请重新开始。");
+          setError(restoredSnapshot.failure?.user_message ?? "行程生成失败，请重新开始。");
           setPhase("error");
         } else if (["queued", "running"].includes(restoredSnapshot.status)) {
           setPhase("streaming");
@@ -430,8 +443,8 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
         }
         setError(
           restoreError instanceof Error
-            ? `无法恢复 URL 中的规划任务：${restoreError.message}`
-            : "无法恢复 URL 中的规划任务。",
+            ? `无法恢复之前的行程：${restoreError.message}`
+            : "无法恢复之前的行程。",
         );
         setPhase("error");
         setConnection("closed");
@@ -469,7 +482,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
       setError(
         submitError instanceof Error
           ? submitError.message
-          : `无法连接规划 API（${apiBaseUrl}）`,
+          : "暂时无法连接行程服务，请稍后重试。",
       );
       setPhase("error");
       setConnection("closed");
@@ -478,7 +491,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
 
   async function confirmAndCreatePlanningTask() {
     if (!intakeDraft || !selectedDestinationAdcode) {
-      setError("请先确认系统理解和正确的目的行政区。");
+      setError("请先确认旅行信息和正确的目的地。");
       return;
     }
     setPhase("submitting");
@@ -498,7 +511,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
       setError(
         confirmationError instanceof Error
           ? confirmationError.message
-          : `无法连接规划 API（${apiBaseUrl}）`,
+          : "暂时无法连接行程服务，请稍后重试。",
       );
       setPhase("error");
       setConnection("closed");
@@ -512,7 +525,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
   ) {
     const review = snapshot?.result?.state.review_request;
     if (!taskId || !snapshot || !review) {
-      setReviewError("当前没有可提交的审核请求。");
+      setReviewError("当前没有等待确认的行程。");
       return;
     }
 
@@ -550,7 +563,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
           };
     } catch (revisionError) {
       setReviewError(
-        revisionError instanceof Error ? revisionError.message : "无法构造结构化修改请求。",
+        revisionError instanceof Error ? revisionError.message : "无法准备本次修改，请重试。",
       );
       return;
     }
@@ -571,7 +584,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
       setReviewError(
         reviewSubmitError instanceof Error
           ? reviewSubmitError.message
-          : "审核决定提交失败，请重试。",
+          : "本次选择未能保存，请重试。",
       );
       setPhase("complete");
       setConnection("closed");
@@ -614,13 +627,13 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="eyebrow">Create a planning task</p>
+              <p className="eyebrow">填写旅行信息</p>
               <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">
                 规划{previewValues.destinationCity.trim() || "国内城市"}旅行
               </h2>
             </div>
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold text-slate-500">
-              {previewValues.tripDays} 日 · {values.dataMode === "fixture" ? "可回放 Fixture" : "实时 Provider"}
+              {previewValues.tripDays} 天行程
             </span>
           </div>
 
@@ -636,14 +649,14 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
             />
           </label>
           <p className="mt-2 text-[11px] leading-5 text-slate-500">
-            系统会先提议字段和约束、标出原文 evidence 与表单冲突；只有你确认后，才会调用旅行检索和规划链路。
+            点击“检查旅行需求”后，我们会整理目的地、日期和偏好，供你确认后再生成行程。
           </p>
 
           <div className="mt-5 rounded-2xl border border-emerald-900/10 bg-emerald-50/70 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-900">城市事实与结构化输入</p>
+              <p className="text-xs font-bold tracking-[0.1em] text-emerald-900">确认行程信息</p>
               <span className="text-[10px] text-emerald-800/60">
-                {values.dataMode === "fixture" ? "三城市 Fixture" : "高德 live 解析"}
+                {values.dataMode === "fixture" ? "示例体验" : "实时规划"}
               </span>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -656,13 +669,13 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
               </span>
               {intakeDraft?.proposed_fields.travel_styles.length ? (
                 <span className="constraint-chip constraint-chip-soft">
-                  原文主题 · {intakeDraft.proposed_fields.travel_styles.join(" / ")}
+                  旅行主题 · {intakeDraft.proposed_fields.travel_styles.join(" / ")}
                 </span>
               ) : null}
             </div>
             {selectedDestination ? (
               <p className="mt-3 text-[11px] leading-5 text-emerald-900/70" data-testid="destination-resolution">
-                已由 {selectedDestination.source.provider} 解析 · adcode {selectedDestination.administrative_code} · {selectedDestination.level}
+                已确认目的地：{selectedDestination.qualified_name}
               </p>
             ) : null}
             {destinationResolution?.status === "ambiguous" ? (
@@ -820,7 +833,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
               </div>
             </label>
             <label className="sm:col-span-2">
-              <span className="field-label">旅行数据模式</span>
+              <span className="field-label">规划方式</span>
               <select
                 className="field-control"
                 disabled={isBusy}
@@ -829,15 +842,15 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
                 }
                 value={values.dataMode}
               >
-                <option value="fixture">Fixture · 北京 / 上海 / 成都，可回放且不调用外部 API</option>
-                <option value="live">实时 Provider · 动态解析国内城市，会调用高德与 DeepSeek</option>
+                <option value="fixture">示例体验 · 北京 / 上海 / 成都</option>
+                <option value="live">实时规划 · 支持国内城市</option>
               </select>
             </label>
           </div>
 
           {values.dataMode === "live" ? (
             <p className="mt-3 text-[11px] leading-5 text-amber-700">
-              当前选择会直接启用实时调用，并消耗高德与模型配额；Key 仍只保存在服务端，所有城市可输入，但规划质量不会被描述为全部已验证。
+              将查询实时地点和路线信息，生成时间可能稍长。开放时间、票价和房态请在出发前再次确认。
             </p>
           ) : null}
 
@@ -848,14 +861,11 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-cyan-950">确认系统理解</p>
+                  <p className="text-sm font-semibold text-cyan-950">确认旅行信息</p>
                   <p className="mt-1 text-[11px] leading-5 text-cyan-900/70">
-                    预检尚未创建规划任务 · {intakeDraft.field_model} / {intakeDraft.constraint_model}
+                    请检查下面的信息是否符合你的想法
                   </p>
                 </div>
-                <span className="rounded-full bg-white px-3 py-1 text-[10px] font-semibold text-cyan-800">
-                  {intakeDraft.model_call_count} 次模型调用
-                </span>
               </div>
 
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
@@ -875,13 +885,13 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
                     </div>
                     <p className="mt-2 text-[11px] leading-5 text-slate-600">
                       {decision.proposed_value ?? decision.raw_proposed_value
-                        ? `原文提议：${decision.proposed_value ?? decision.raw_proposed_value}`
-                        : "原文未提及"}
-                      {decision.form_value !== null ? ` · 表单：${decision.form_value}` : ""}
+                        ? `旅行需求：${requestValueLabel(decision.field, decision.proposed_value ?? decision.raw_proposed_value)}`
+                        : "旅行需求中未提及"}
+                      {decision.form_value !== null ? ` · 当前填写：${requestValueLabel(decision.field, decision.form_value)}` : ""}
                     </p>
                     {decision.evidence ? (
                       <p className="mt-1 text-[10px] leading-4 text-cyan-800">
-                        evidence · “{decision.evidence}”{decision.evidence_mode === "inferred" ? " · 推断" : ""}
+                        来自需求：“{decision.evidence}”{decision.evidence_mode === "inferred" ? " · 根据语义理解" : ""}
                       </p>
                     ) : null}
                   </div>
@@ -890,11 +900,11 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
 
               {intakeDraft.constraint_decisions.length ? (
                 <div className="mt-4">
-                  <p className="text-[11px] font-semibold text-cyan-950">偏好与约束</p>
+                  <p className="text-[11px] font-semibold text-cyan-950">偏好和要求</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {intakeDraft.constraint_decisions.map((decision) => (
                       <span className="constraint-chip" key={decision.constraint.constraint_id}>
-                        {decision.constraint.kind} · {String(decision.constraint.value)} · “{decision.evidence}”
+                        {constraintKindLabels[decision.constraint.kind] ?? "旅行偏好"} · {String(decision.constraint.value)} · “{decision.evidence}”
                       </span>
                     ))}
                   </div>
@@ -908,7 +918,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
               ) : null}
 
               <fieldset className="mt-4 grid gap-2 sm:grid-cols-2">
-                <legend className="mb-2 text-[11px] font-semibold text-cyan-950">采用哪组结构化字段</legend>
+                <legend className="mb-2 text-[11px] font-semibold text-cyan-950">选择用于规划的信息</legend>
                 <label className="flex items-start gap-2 rounded-xl border border-cyan-200 bg-white p-3 text-xs text-slate-700">
                   <input
                     checked={intakeSelection === "proposal"}
@@ -917,7 +927,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
                     onChange={() => void changeIntakeSelection("proposal")}
                     type="radio"
                   />
-                  <span><strong>采用原文提议</strong><br />有效提议覆盖表单；模糊字段继续沿用已显示的表单值。</span>
+                  <span><strong>采用旅行需求</strong><br />优先使用需求中的信息，未提及的内容沿用当前表单。</span>
                 </label>
                 <label className="flex items-start gap-2 rounded-xl border border-cyan-200 bg-white p-3 text-xs text-slate-700">
                   <input
@@ -927,7 +937,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
                     onChange={() => void changeIntakeSelection("form")}
                     type="radio"
                   />
-                  <span><strong>保留结构化表单</strong><br />不采用本次字段、主题或约束提议，并记录该决定。</span>
+                  <span><strong>使用当前表单</strong><br />按当前填写的目的地、日期、人数和预算生成行程。</span>
                 </label>
               </fieldset>
 
@@ -938,7 +948,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
                 onClick={() => void confirmAndCreatePlanningTask()}
                 type="button"
               >
-                确认理解并开始规划 <span aria-hidden="true">→</span>
+                确认信息并生成行程 <span aria-hidden="true">→</span>
               </button>
             </section>
           ) : null}
@@ -949,9 +959,8 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
               data-testid="planning-error"
               role="alert"
             >
-              <p className="text-sm font-semibold text-rose-900">任务没有完成</p>
+              <p className="text-sm font-semibold text-rose-900">行程没有生成</p>
               <p className="mt-1 text-xs leading-5 text-rose-700">{error}</p>
-              <p className="mt-2 break-all font-mono text-[10px] text-rose-500">API: {apiBaseUrl}</p>
             </div>
           ) : null}
 
@@ -963,17 +972,17 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
               type="submit"
             >
               {phase === "submitting"
-                ? intakeDraft ? "正在确认并创建任务…" : "正在理解需求…"
+                ? intakeDraft ? "正在确认信息…" : "正在整理需求…"
                 : phase === "streaming" || phase === "loading_result"
-                  ? "Agent 正在规划…"
-                  : intakeDraft ? "重新理解需求" : "理解旅行需求"}
+                  ? "正在生成行程…"
+                  : intakeDraft ? "重新检查需求" : "检查旅行需求"}
               <span aria-hidden="true">→</span>
             </button>
             {phase === "complete" || phase === "error" ? (
               <button className="secondary-button" onClick={reset} type="button">重新开始</button>
             ) : null}
             <p className="text-[11px] text-slate-400">
-              {values.destinationCity || "目的地待填写"} · {values.tripDays} 天 · 确认前不会进入旅行检索与规划
+              {values.destinationCity || "目的地待填写"} · {values.tripDays} 天
             </p>
           </div>
         </form>
