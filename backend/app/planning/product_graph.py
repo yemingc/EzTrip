@@ -18,10 +18,11 @@ from app.domain.opening_hours import OpeningHoursEvidenceBundle
 from app.domain.planning import TripPlan
 from app.domain.request import TripRequest
 from app.domain.sources import DataMode
+from app.domain.travel_data import RouteLeg
 from app.domain.validation import PlanValidationReport
 from app.planning.hard_validator import validate_hard_trip_plan
 from app.planning.material_contracts import PlanningMaterialBundle, PlanningMaterialIssueCode
-from app.planning.plan_revision import apply_plan_revision
+from app.planning.plan_revision import apply_activity_replacement, apply_plan_revision
 from app.planning.product_contracts import (
     ProductPlanningData,
     ProductPlanningEvent,
@@ -44,6 +45,7 @@ from app.planning.stateful_contracts import (
     StatefulPlanningNodeOutcome,
     utc_now,
 )
+from app.providers.ports import RouteRequest
 
 PRODUCT_PLANNING_GRAPH_NAME = "eztrip-product-planning-graph-v2"
 LIVE_REVIEW_ONLY_RULE_CODES = frozenset(
@@ -112,6 +114,13 @@ class ProductPlanningPipeline(ProductRepairPipeline, Protocol):
         *,
         data_mode: DataMode,
     ) -> OpeningHoursEvidenceBundle: ...
+
+    async def get_revision_route(
+        self,
+        request: TripRequest,
+        route_request: RouteRequest,
+        data_mode: DataMode,
+    ) -> RouteLeg: ...
 
 
 class ProductPlanningGraphState(TypedDict):
@@ -437,7 +446,7 @@ def build_product_planning_graph(
             )
         }
 
-    def apply_plan_revision_node(
+    async def apply_plan_revision_node(
         graph_state: ProductPlanningGraphState,
     ) -> dict[str, Any]:
         state = _require_state(graph_state)
@@ -450,22 +459,37 @@ def build_product_planning_graph(
             or state.opening_hours is None
         ):
             raise ProductPlanningProtocolError("revision node requires persisted product inputs")
-        revision = apply_plan_revision(
-            state.request,
-            state.plan,
-            state.review_decision.revision_request,
-        )
+        revision_request = state.review_decision.revision_request
+        if revision_request.operation.value == "replace_activity":
+            revision = await apply_activity_replacement(
+                state.request,
+                state.plan,
+                state.materials,
+                revision_request,
+                pipeline.get_revision_route,
+            )
+        else:
+            revision = apply_plan_revision(
+                state.request,
+                state.plan,
+                revision_request,
+            )
+        validation_materials = revision.revised_materials or state.materials
         hard_validation = validate_hard_trip_plan(
             state.request,
             revision.revised_plan,
-            state.materials,
+            validation_materials,
             state.opening_hours,
         )
         revision = revision.model_copy(update={"validation": hard_validation})
         event = ProductPlanningEvent(
             node=ProductPlanningNodeName.APPLY_PLAN_REVISION,
             outcome=StatefulPlanningNodeOutcome.REVISED,
-            detail="结构化修改复用上游结果, 并重新执行 Hard Validator。",
+            detail=(
+                "活动替换只使用原 Provider observations, 重算目标日路线、预算与 Hard Validator。"
+                if revision_request.operation.value == "replace_activity"
+                else "结构化修改复用上游结果, 并重新执行 Hard Validator。"
+            ),
         )
         return {
             "state": _state_update(

@@ -142,6 +142,19 @@ class PlanningShortlist(DomainModel):
         return self
 
 
+class PlanningActivityReplacement(DomainModel):
+    revision_id: Identifier
+    target_day_number: int = Field(ge=1, le=5)
+    removed_candidate_id: Identifier
+    replacement_candidate_id: Identifier
+
+    @model_validator(mode="after")
+    def validate_candidate_change(self) -> "PlanningActivityReplacement":
+        if self.removed_candidate_id == self.replacement_candidate_id:
+            raise ValueError("activity replacement must change the candidate")
+        return self
+
+
 class RouteEdgeFailure(DomainModel):
     category: RouteFailureCategory
     error_code: Identifier
@@ -347,6 +360,7 @@ class PlanningMaterialBundle(DomainModel):
     shortlist: PlanningShortlist
     route_matrix: RouteMatrix
     budget_allocation: BudgetAllocation
+    activity_replacement: PlanningActivityReplacement | None = None
 
     @model_validator(mode="after")
     def validate_bundle(self) -> "PlanningMaterialBundle":
@@ -414,6 +428,53 @@ class PlanningMaterialBundle(DomainModel):
             expected_stay,
             target=activity_target,
         )
+        expected_groups = cluster_major_activities(
+            expected_pois,
+            expected_stay,
+            day_count=self.planner_context.day_count,
+        )
+        if self.activity_replacement is not None:
+            replacement = self.activity_replacement
+            observations = (
+                explore_branch.explore_result.observations
+                if explore_branch.explore_result is not None
+                else ()
+            )
+            observed_by_id = {item.candidate.candidate_id: item.candidate for item in observations}
+            replacement_candidate = observed_by_id.get(replacement.replacement_candidate_id)
+            expected_ids = tuple(item.candidate_id for item in expected_pois)
+            if (
+                replacement.removed_candidate_id not in expected_ids
+                or replacement_candidate is None
+                or is_meal_candidate(replacement_candidate)
+                or replacement_candidate.city != self.planner_context.destination.normalized_name
+                or replacement.replacement_candidate_id in expected_ids
+            ):
+                raise ValueError(
+                    "activity replacement must use an eligible Explore Provider observation"
+                )
+            matching_days = tuple(
+                index
+                for index, group in enumerate(expected_groups, start=1)
+                if any(item.candidate_id == replacement.removed_candidate_id for item in group)
+            )
+            if matching_days != (replacement.target_day_number,):
+                raise ValueError("activity replacement target day must contain the removed POI")
+            expected_pois = tuple(
+                replacement_candidate
+                if item.candidate_id == replacement.removed_candidate_id
+                else item
+                for item in expected_pois
+            )
+            expected_groups = tuple(
+                tuple(
+                    replacement_candidate
+                    if item.candidate_id == replacement.removed_candidate_id
+                    else item
+                    for item in group
+                )
+                for group in expected_groups
+            )
         expected_meals = available_meals[: self.planner_context.day_count * 3]
         if self.shortlist.poi_candidates != expected_pois:
             raise ValueError("planning shortlist must take nearby highest-ranked activities")
@@ -433,11 +494,6 @@ class PlanningMaterialBundle(DomainModel):
             item.candidate_id for item in available_stays[1:]
         ):
             raise ValueError("planning shortlist must expose omitted stay ids")
-        expected_groups = cluster_major_activities(
-            expected_pois,
-            expected_stay,
-            day_count=self.planner_context.day_count,
-        )
         expected_cluster_ids = tuple(
             tuple(item.candidate_id for item in group) for group in expected_groups
         )

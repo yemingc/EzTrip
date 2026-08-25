@@ -522,3 +522,14 @@ class FixtureProductPlanningPipeline:
             data_mode=data_mode,
             items=items,
         )
+
+    async def get_revision_route(
+        self,
+        request: TripRequest,
+        route_request: RouteRequest,
+        data_mode: DataMode,
+    ) -> RouteLeg:
+        del request
+        if data_mode != DataMode.FIXTURE:
+            raise ValueError("fixture revision route requires fixture data mode")
+        return await self._provider.get_route(route_request)

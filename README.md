@@ -231,7 +231,7 @@ uv run pytest tests/test_vertical_slice.py --no-cov
 
 ## 可恢复主编排与 HITL
 
-[`docs/planning/stateful-checkpoint-hitl.md`](docs/planning/stateful-checkpoint-hitl.md) 在 Gate 2 外增加 `run_vertical_slice → prepare_human_review → interrupt → apply_review_decision` 主图；结构化修改决定会继续进入 `apply_plan_revision`。LangGraph 原生 `interrupt` 和 `Command(resume=...)` 配合 SQLite checkpoint，使 graph/runtime 关闭并重建后仍能从相同 `thread_id` 继续；内部候选搜索和 Planner 子图不会继承检查点，因此恢复与局部时间调整都不会重复调用 provider 或模型。
+[`docs/planning/stateful-checkpoint-hitl.md`](docs/planning/stateful-checkpoint-hitl.md) 在 Gate 2 外增加 `run_vertical_slice → prepare_human_review → interrupt → apply_review_decision` 主图；结构化修改决定会继续进入 `apply_plan_revision`。LangGraph 原生 `interrupt` 和 `Command(resume=...)` 配合 SQLite checkpoint，使 graph/runtime 关闭并重建后仍能从相同 `thread_id` 继续；内部候选搜索和 Planner 子图不会继承检查点，因此普通恢复和局部时间调整都不会重复调用 Provider 或模型。用户明确确认活动替换时是受限例外：只为目标日期重新查询路线，模型调用仍为 0。
 
 ```powershell
 Set-Location backend
@@ -371,7 +371,7 @@ uv run python -m scripts.run_amap_provider_smoke --live
 
 fixture 模式使用明确标记的北京合成数据：首日中雨由天气 Provider 主动返回，混合型故宫安排在首日，户外天坛安排到次日。fixture 住宿只充当位置锚点，不包含价格、房态或预订能力。live 模式使用 DeepSeek/LangSmith 与高德官方 MCP/REST adapter；由于当前高德 V1 contract 没有稳定的 typed 营业时间字段，live 结果会由 Hard Validator 显式报告证据缺失，而不会伪造营业时间。
 
-结构化 `shift_day_later` 修改从同一 checkpoint 恢复，不重跑外部 Provider 或模型，并基于已持久化的材料和营业证据重新执行 Hard Validator。Repair Router 已接入首次草案定稿前的产品链；Weather Repair、中文 Constraint Agent 入口和开放式增删景点仍未接入这条产品图。
+结构化 `shift_day_later` 修改从同一 checkpoint 恢复，不重跑外部 Provider 或模型，并基于已持久化的材料和营业证据重新执行 Hard Validator。`replace_activity` 只接受本次 Explore Provider observations 中未排程的非餐饮候选；它保持其他日期不变，仅重算目标日路线、时间、附近用餐建议、确定性预算分配和 Hard Validator。没有合格候选时页面显示不可提交的结构化空状态，不让模型补造地点。替换会为目标日产生最少的新路线 Provider 调用，模型调用为 0；未取得的新候选营业时间仍会显式阻止最终确认。Repair Router 已接入首次草案定稿前的产品链；Weather Repair 和开放式聊天增删景点仍未接入这条产品图。
 
 ## 30-case system comparison 协议
 

@@ -6,8 +6,11 @@ from typing import Literal
 from pydantic import TypeAdapter, model_validator
 
 from app.domain.base import DomainModel, Identifier
-from app.domain.planning import PlanVersion
+from app.domain.planning import ActivityKind, PlanVersion
+from app.itinerary_quality import is_meal_candidate
 from app.planning.product_contracts import ProductPlanningNodeName, ProductPlanningSnapshot
+from app.planning.revision_contracts import PlanRevisionOperation
+from app.planning.specialist_contracts import SpecialistName
 from app.planning.stateful_contracts import (
     HumanReviewAction,
     PlanningThreadStatus,
@@ -277,6 +280,67 @@ class InMemoryPlanningTaskStore:
                         "revision-scope-mismatch",
                         "修改请求的目标或保护项目与当前计划不一致。",
                     )
+                if revision.operation == PlanRevisionOperation.REPLACE_ACTIVITY:
+                    if not isinstance(previous.result, ProductPlanningSnapshot):
+                        raise PlanningTaskReviewConflictError(
+                            "revision-replacement-not-supported",
+                            "当前任务结果不支持活动候选替换。",
+                        )
+                    target_item = next(
+                        (
+                            item
+                            for day in target_days
+                            for item in day.items
+                            if item.item_id == revision.replaced_item_id
+                        ),
+                        None,
+                    )
+                    specialists = previous.result.state.specialists
+                    explore_branch = (
+                        next(
+                            (
+                                item
+                                for item in specialists.branches
+                                if item.specialist == SpecialistName.EXPLORE
+                            ),
+                            None,
+                        )
+                        if specialists is not None
+                        else None
+                    )
+                    observations = (
+                        explore_branch.explore_result.observations
+                        if explore_branch is not None and explore_branch.explore_result is not None
+                        else ()
+                    )
+                    replacement = next(
+                        (
+                            item.candidate
+                            for item in observations
+                            if item.candidate.candidate_id == revision.replacement_candidate_id
+                        ),
+                        None,
+                    )
+                    scheduled_candidate_ids = {
+                        item.candidate_id
+                        for day in current_version.plan.days
+                        for item in day.items
+                        if item.candidate_id is not None
+                    }
+                    if (
+                        target_item is None
+                        or target_item.kind != ActivityKind.ATTRACTION
+                        or target_item.candidate_id is None
+                        or replacement is None
+                        or is_meal_candidate(replacement)
+                        or replacement.candidate_id in scheduled_candidate_ids
+                        or replacement.city != current_version.plan.destination_city
+                    ):
+                        raise PlanningTaskReviewConflictError(
+                            "revision-replacement-not-eligible",
+                            "替换候选必须来自原 Explore Provider observations, "
+                            "且不能是餐饮或已排入行程的地点。",
+                        )
 
             self._review_decisions[key] = decision
             self._task_decision_ids[task_id] = decision.decision_id

@@ -2079,6 +2079,46 @@
       "title": "PlannerReadiness",
       "type": "string"
     },
+    "PlanningActivityReplacement": {
+      "additionalProperties": false,
+      "properties": {
+        "revision_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Revision Id",
+          "type": "string"
+        },
+        "target_day_number": {
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Target Day Number",
+          "type": "integer"
+        },
+        "removed_candidate_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Removed Candidate Id",
+          "type": "string"
+        },
+        "replacement_candidate_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Replacement Candidate Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "revision_id",
+        "target_day_number",
+        "removed_candidate_id",
+        "replacement_candidate_id"
+      ],
+      "title": "PlanningActivityReplacement",
+      "type": "object"
+    },
     "PlanningCandidateKind": {
       "enum": [
         "poi",
@@ -2244,6 +2284,17 @@
         },
         "budget_allocation": {
           "$ref": "#/$defs/BudgetAllocation"
+        },
+        "activity_replacement": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlanningActivityReplacement"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [

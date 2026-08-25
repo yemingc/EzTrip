@@ -228,7 +228,7 @@ dates.
 
 ### Structured revision request
 
-The current bounded operation is `shift_day_later`. The client must build its scope from the latest
+The bounded operations are `shift_day_later` and `replace_activity`. The client must build scope from the latest
 `PlanVersion`: all item IDs on the selected date are targets, and every item on all other dates is
 protected. For example:
 
@@ -253,16 +253,31 @@ protected. For example:
 }
 ```
 
-The server rejects stale base versions with `409 revision-base-version-mismatch` and incomplete or
-drifted scope with `409 revision-scope-mismatch`. The checkpoint revision node then shifts exactly
-the target-day items, rejects cross-date timestamps, preserves all other days and plan facts,
-re-runs `hard-trip-plan-validator-v1` against persisted materials and opening-hours evidence, and
-records `v1 → v2` with changed dates and rescheduled item IDs. It makes zero Provider and model
-calls.
+For activity replacement, use the same complete target/protected scope and replace the operation fields with:
 
-This is not an open-ended natural-language replan. It does not add/remove POIs or recalculate
-routes/opening hours. Explore, Stay, Weather, Route/Budget, Plan, Hard Validator, and the pre-review
-Repair Router are in the product task graph. The narrow `shift_day_later` revision does not re-enter
+```json
+{
+  "operation": "replace_activity",
+  "replaced_item_id": "plan-item-...",
+  "replacement_candidate_id": "provider-observation-candidate-..."
+}
+```
+
+The replacement candidate must be an unscheduled, non-dining candidate from the persisted Explore
+Provider observations. The server rejects stale bases with `409 revision-base-version-mismatch`,
+scope drift with `409 revision-scope-mismatch`, and ineligible candidates with
+`409 revision-replacement-not-eligible`.
+
+The checkpoint revision node preserves every other day and protected plan fact. `shift_day_later`
+reuses persisted materials and makes zero Provider/model calls. `replace_activity` recalculates only
+the target-day route chain, timing, nearby-meal recommendations, deterministic budget allocation,
+and `hard-trip-plan-validator-v1`; it records the incremental Provider call count and makes zero model
+calls. Missing opening-hours evidence for the replacement remains a blocking validation issue. Both
+operations record `v1 → v2` with an explicit item/date diff.
+
+This is not an open-ended natural-language replan. It cannot invent a POI, arbitrarily remove one,
+or broaden the observation set. Explore, Stay, Weather, Route/Budget, Plan, Hard Validator, and the
+pre-review Repair Router are in the product task graph. Neither bounded revision operation re-enters
 the automatic repair loop; its returned v2 remains a draft that has not been reviewed again.
 
 ## Reconnect and failure rules

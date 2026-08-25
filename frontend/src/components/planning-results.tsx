@@ -241,6 +241,11 @@ export function PlanningResults({
   const [revisionComment, setRevisionComment] = useState("");
   const [revisionTargetDate, setRevisionTargetDate] = useState("");
   const [revisionShiftMinutes, setRevisionShiftMinutes] = useState(120);
+  const [revisionMode, setRevisionMode] = useState<"shift_day_later" | "replace_activity">(
+    "shift_day_later",
+  );
+  const [replacementItemId, setReplacementItemId] = useState("");
+  const [replacementCandidateId, setReplacementCandidateId] = useState("");
   const state = snapshot.result?.state;
   const verticalSlice = state?.vertical_slice;
   const productPlan = state?.plan;
@@ -260,10 +265,10 @@ export function PlanningResults({
   const validation = revisionResult?.validation ?? baseValidation;
   const review = state.review_request;
   const reviewOutcome = snapshot.review_outcome;
+  const materials = revisionResult?.revised_materials ?? state.materials;
   const candidates =
-    state.materials?.shortlist.poi_candidates ?? verticalSlice?.upstream.candidates ?? [];
+    materials?.shortlist.poi_candidates ?? verticalSlice?.upstream.candidates ?? [];
   const specialists = state.specialists;
-  const materials = state.materials;
   const repair = state.repair;
   const stay = materials?.shortlist.primary_stay;
   const budget = validation.budget;
@@ -310,6 +315,30 @@ export function PlanningResults({
     excessive_transfer: "存在超长通勤候选",
   };
   const selectedRevisionDate = revisionTargetDate || plan.days.at(-1)?.date || plan.start_date;
+  const selectedRevisionDay = plan.days.find((day) => day.date === selectedRevisionDate);
+  const replacementTargets =
+    selectedRevisionDay?.items.filter(
+      (item) => item.kind === "attraction" && item.candidate_id !== null,
+    ) ?? [];
+  const selectedReplacementItemId = replacementItemId || replacementTargets[0]?.item_id || "";
+  const exploreObservations =
+    specialists?.branches.find((branch) => branch.specialist === "explore")?.explore_result
+      ?.observations ?? [];
+  const scheduledCandidateIds = new Set(
+    plan.days.flatMap((day) =>
+      day.items.flatMap((item) => (item.candidate_id ? [item.candidate_id] : [])),
+    ),
+  );
+  const eligibleReplacementCandidates = exploreObservations
+    .map((item) => item.candidate)
+    .filter(
+      (candidate) =>
+        !scheduledCandidateIds.has(candidate.candidate_id) &&
+        !candidate.categories.includes("餐饮服务") &&
+        candidate.city === plan.destination_city,
+    );
+  const selectedReplacementCandidateId =
+    replacementCandidateId || eligibleReplacementCandidates[0]?.candidate_id || "";
   const fromVersionNumber = reviewOutcome
     ? snapshot.plan_versions.find(
         (item) => item.version_id === reviewOutcome.plan_diff.from_version_id,
@@ -798,6 +827,22 @@ export function PlanningResults({
                 </div>
                 {showRevisionForm ? (
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                    <label className="text-[11px] font-semibold text-slate-300">
+                      修改方式
+                      <select
+                        aria-label="修改方式"
+                        className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 p-2.5 text-xs text-white outline-none focus:border-emerald-300"
+                        onChange={(event) =>
+                          setRevisionMode(
+                            event.target.value as "shift_day_later" | "replace_activity",
+                          )
+                        }
+                        value={revisionMode}
+                      >
+                        <option value="shift_day_later">整日延后</option>
+                        <option value="replace_activity">替换一个活动</option>
+                      </select>
+                    </label>
                     <div className="grid grid-cols-2 gap-2">
                       <label className="text-[11px] font-semibold text-slate-300">
                         目标日期
@@ -814,20 +859,62 @@ export function PlanningResults({
                           ))}
                         </select>
                       </label>
-                      <label className="text-[11px] font-semibold text-slate-300">
-                        整体延后
-                        <select
-                          aria-label="活动延后时间"
-                          className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 p-2.5 text-xs text-white outline-none focus:border-emerald-300"
-                          onChange={(event) => setRevisionShiftMinutes(Number(event.target.value))}
-                          value={revisionShiftMinutes}
-                        >
-                          <option value={60}>60 分钟</option>
-                          <option value={90}>90 分钟</option>
-                          <option value={120}>120 分钟</option>
-                        </select>
-                      </label>
+                      {revisionMode === "shift_day_later" ? (
+                        <label className="text-[11px] font-semibold text-slate-300">
+                          整体延后
+                          <select
+                            aria-label="活动延后时间"
+                            className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 p-2.5 text-xs text-white outline-none focus:border-emerald-300"
+                            onChange={(event) => setRevisionShiftMinutes(Number(event.target.value))}
+                            value={revisionShiftMinutes}
+                          >
+                            <option value={60}>60 分钟</option>
+                            <option value={90}>90 分钟</option>
+                            <option value={120}>120 分钟</option>
+                          </select>
+                        </label>
+                      ) : null}
                     </div>
+                    {revisionMode === "replace_activity" ? (
+                      eligibleReplacementCandidates.length ? (
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                          <label className="text-[11px] font-semibold text-slate-300">
+                            被替换活动
+                            <select
+                              aria-label="被替换活动"
+                              className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 p-2.5 text-xs text-white outline-none focus:border-emerald-300"
+                              onChange={(event) => setReplacementItemId(event.target.value)}
+                              value={selectedReplacementItemId}
+                            >
+                              {replacementTargets.map((item) => (
+                                <option key={item.item_id} value={item.item_id}>
+                                  {item.title}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="text-[11px] font-semibold text-slate-300">
+                            Provider 备选
+                            <select
+                              aria-label="Provider 备选活动"
+                              className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 p-2.5 text-xs text-white outline-none focus:border-emerald-300"
+                              onChange={(event) => setReplacementCandidateId(event.target.value)}
+                              value={selectedReplacementCandidateId}
+                            >
+                              {eligibleReplacementCandidates.map((candidate) => (
+                                <option key={candidate.candidate_id} value={candidate.candidate_id}>
+                                  {candidate.name} · {candidate.district ?? "区域待确认"}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+                      ) : (
+                        <p className="mt-3 rounded-xl bg-amber-300/10 px-3 py-2 text-[11px] leading-5 text-amber-100">
+                          本次 Provider observations 没有可替换候选；系统不会让模型补造地点。
+                        </p>
+                      )
+                    ) : null}
                     <label className="text-[11px] font-semibold text-slate-300" htmlFor="revision-comment">
                       <span className="mt-3 block">修改说明</span>
                     </label>
@@ -841,19 +928,38 @@ export function PlanningResults({
                     />
                     <button
                       className="mt-2 w-full rounded-xl bg-white px-3 py-2.5 text-xs font-semibold text-slate-950 disabled:opacity-40"
-                      disabled={reviewBusy || !revisionComment.trim()}
+                      disabled={
+                        reviewBusy ||
+                        !revisionComment.trim() ||
+                        (revisionMode === "replace_activity" &&
+                          (!selectedReplacementItemId || !selectedReplacementCandidateId))
+                      }
                       onClick={() =>
-                        void onReview("request_revision", revisionComment, {
-                          targetDate: selectedRevisionDate,
-                          shiftMinutes: revisionShiftMinutes,
-                        })
+                        void onReview(
+                          "request_revision",
+                          revisionComment,
+                          revisionMode === "replace_activity"
+                            ? {
+                                kind: "replace_activity",
+                                targetDate: selectedRevisionDate,
+                                replacedItemId: selectedReplacementItemId,
+                                replacementCandidateId: selectedReplacementCandidateId,
+                              }
+                            : {
+                                kind: "shift_day_later",
+                                targetDate: selectedRevisionDate,
+                                shiftMinutes: revisionShiftMinutes,
+                              },
+                        )
                       }
                       type="button"
                     >
                       生成局部修改草案
                     </button>
                     <p className="mt-2 text-[10px] leading-4 text-slate-500">
-                      系统只调整目标日现有活动时间；其他日期、候选、费用与来源均受保护。
+                      {revisionMode === "replace_activity"
+                        ? "新地点只取自本次 Explore Provider observations；仅目标日路线、时间、用餐建议、预算与校验会重算。"
+                        : "系统只调整目标日现有活动时间；其他日期、候选、费用与来源均受保护。"}
                     </p>
                   </div>
                 ) : null}

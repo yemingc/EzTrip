@@ -354,6 +354,84 @@ test("applies a structured day-scoped revision and renders plan version v2", asy
   });
 });
 
+test("replaces one activity from Provider observations and preserves the other day", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await understandAndStart(page);
+  const results = page.getByTestId("planning-results");
+  await expect(results).toBeVisible({ timeout: 20_000 });
+  const protectedDayBefore = await results
+    .getByTestId("itinerary-item")
+    .filter({ hasText: "中国国家博物馆" })
+    .textContent();
+
+  await page.getByRole("button", { name: "局部修改" }).click();
+  await page.getByLabel("修改方式").selectOption("replace_activity");
+  await page.getByLabel("被替换活动").selectOption({ label: "景山公园" });
+  await page.getByLabel("Provider 备选活动").selectOption({ label: "北海公园 · 西城区" });
+  await page.getByLabel("修改说明").fill("把第二天的景山公园换成同一观察池里的北海公园。");
+  await page.getByRole("button", { name: "生成局部修改草案" }).click();
+
+  await expect(page.getByTestId("event-trace")).toContainText("应用局部修改");
+  await expect(results).toContainText("v2 修改草案 · 尚未再次审核");
+  await expect(results).toContainText("北海公园");
+  await expect(results).not.toContainText("景山公园");
+  await expect(results).toContainText("计划已修改 · 1 个受影响日期");
+  await expect(
+    results.getByTestId("itinerary-item").filter({ hasText: "中国国家博物馆" }),
+  ).toHaveText(protectedDayBefore ?? "");
+});
+
+test("shows an honest empty state when Provider observations have no replacement", async ({
+  page,
+}) => {
+  await page.route(/\/api\/planning-tasks\/planning-task-[^/]+$/, async (route) => {
+    const response = await route.fetch();
+    const payload = (await response.json()) as {
+      result?: {
+        state?: {
+          plan?: { days?: Array<{ items?: Array<{ candidate_id?: string | null }> }> };
+          specialists?: {
+            branches?: Array<{
+              specialist?: string;
+              explore_result?: {
+                observations?: Array<{ candidate?: { candidate_id?: string } }>;
+              } | null;
+            }>;
+          };
+        };
+      };
+    };
+    const state = payload.result?.state;
+    const scheduledIds = new Set(
+      state?.plan?.days?.flatMap((day) =>
+        day.items?.flatMap((item) => (item.candidate_id ? [item.candidate_id] : [])) ?? [],
+      ) ?? [],
+    );
+    const explore = state?.specialists?.branches?.find(
+      (branch) => branch.specialist === "explore",
+    )?.explore_result;
+    if (explore?.observations) {
+      explore.observations = explore.observations.filter((item) =>
+        scheduledIds.has(item.candidate?.candidate_id ?? ""),
+      );
+    }
+    await route.fulfill({ response, json: payload });
+  });
+
+  await page.goto("/");
+  await understandAndStart(page);
+  await expect(page.getByTestId("planning-results")).toBeVisible({ timeout: 20_000 });
+  await page.getByRole("button", { name: "局部修改" }).click();
+  await page.getByLabel("修改方式").selectOption("replace_activity");
+
+  await expect(
+    page.getByText("本次 Provider observations 没有可替换候选；系统不会让模型补造地点。"),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "生成局部修改草案" })).toBeDisabled();
+});
+
 test("requires confirmation and sends the confirmed raw intent instead of old defaults", async ({ page }) => {
   let planningPostCount = 0;
   type PlanningPayload = {

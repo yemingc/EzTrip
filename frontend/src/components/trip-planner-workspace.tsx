@@ -518,10 +518,12 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
 
     const normalizedComment = comment?.trim() || undefined;
     const revisionKey = revisionSelection
-      ? `${revisionSelection.targetDate}:${revisionSelection.shiftMinutes}`
+      ? revisionSelection.kind === "replace_activity"
+        ? `${revisionSelection.targetDate}:replace:${revisionSelection.replacedItemId}:${revisionSelection.replacementCandidateId}`
+        : `${revisionSelection.targetDate}:shift:${revisionSelection.shiftMinutes}`
       : undefined;
     if (action === "request_revision" && !revisionSelection) {
-      setReviewError("请选择修改日期和延后幅度。");
+      setReviewError("请选择局部修改方式及其目标。");
       return;
     }
     const existing = pendingReviewRef.current;
