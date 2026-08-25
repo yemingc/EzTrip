@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 
 import { PlanningResults } from "@/components/planning-results";
 import {
@@ -91,6 +91,22 @@ const requestStatusClasses: Record<RequestFieldDecisionStatus, string> = {
   unmentioned: "bg-slate-100 text-slate-600",
   needs_confirmation: "bg-rose-100 text-rose-800",
 };
+
+const planningTaskIdPattern = /^planning-task-[a-f0-9]{32}$/;
+
+function writeTaskIdToUrl(taskId: string | null) {
+  const url = new URL(window.location.href);
+  if (taskId) {
+    url.searchParams.set("task_id", taskId);
+  } else {
+    url.searchParams.delete("task_id");
+  }
+  window.history.replaceState(
+    window.history.state,
+    "",
+    `${url.pathname}${url.search}${url.hash}`,
+  );
+}
 
 function connectionLabel(state: ConnectionState) {
   return {
@@ -223,10 +239,6 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
     revisionRequest?: PlanRevisionRequest;
   } | null>(null);
 
-  useEffect(() => {
-    return () => sourceRef.current?.close();
-  }, []);
-
   const updateValue = <Key extends keyof PlannerFormValues>(
     key: Key,
     value: PlannerFormValues[Key],
@@ -277,7 +289,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
     }
   }
 
-  async function loadFinalSnapshot(currentTaskId: string) {
+  const loadFinalSnapshot = useCallback(async (currentTaskId: string) => {
     setPhase("loading_result");
     try {
       const result = await getPlanningTask(currentTaskId);
@@ -292,22 +304,31 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
       setError(snapshotError instanceof Error ? snapshotError.message : "无法读取规划结果");
       setPhase("error");
     }
-  }
+  }, []);
 
-  function connectToEvents(currentTaskId: string, afterSequence = 0) {
+  const connectToEvents = useCallback((
+    currentTaskId: string,
+    afterSequence = 0,
+    knownEventCount = 0,
+  ) => {
+    sourceRef.current?.close();
     setConnection("connecting");
     const source = new EventSource(planningEventsUrl(currentTaskId, afterSequence));
     sourceRef.current = source;
+    let receivedSequence = afterSequence;
 
     source.onopen = () => setConnection("open");
     source.onerror = () => {
       if (!terminalRef.current) {
         setConnection("reconnecting");
         if (!recoveryRef.current) {
-          recoveryRef.current = true;
+            recoveryRef.current = true;
           void getPlanningTask(currentTaskId)
             .then((currentSnapshot) => {
-              if (["awaiting_input", "succeeded", "failed"].includes(currentSnapshot.status)) {
+              if (
+                ["awaiting_input", "succeeded", "failed"].includes(currentSnapshot.status) &&
+                receivedSequence >= currentSnapshot.event_count
+              ) {
                 terminalRef.current = true;
                 source.close();
                 setConnection("closed");
@@ -345,8 +366,12 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
           ? current
           : [...current, event].sort((left, right) => left.sequence - right.sequence),
       );
+      receivedSequence = Math.max(receivedSequence, event.sequence);
 
-      if (["task_awaiting_input", "task_succeeded", "task_failed"].includes(event.kind)) {
+      if (
+        ["task_awaiting_input", "task_succeeded", "task_failed"].includes(event.kind) &&
+        event.sequence >= knownEventCount
+      ) {
         terminalRef.current = true;
         source.close();
         setConnection("closed");
@@ -357,7 +382,66 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
     for (const kind of eventKinds) {
       source.addEventListener(kind, receiveEvent as EventListener);
     }
-  }
+  }, [loadFinalSnapshot]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const restoredTaskId = new URL(window.location.href).searchParams.get("task_id");
+    if (!restoredTaskId) {
+      return () => sourceRef.current?.close();
+    }
+    if (!planningTaskIdPattern.test(restoredTaskId)) {
+      queueMicrotask(() => {
+        if (!cancelled) {
+          setError("URL 中的 task_id 格式无效。请重新开始一次规划任务。");
+          setPhase("error");
+          setConnection("closed");
+        }
+      });
+      return () => {
+        cancelled = true;
+        sourceRef.current?.close();
+      };
+    }
+
+    void getPlanningTask(restoredTaskId)
+      .then((restoredSnapshot) => {
+        if (cancelled) {
+          return;
+        }
+        terminalRef.current = false;
+        recoveryRef.current = false;
+        setTaskId(restoredTaskId);
+        setConnection("connecting");
+        setSnapshot(restoredSnapshot);
+        if (restoredSnapshot.status === "failed") {
+          setError(restoredSnapshot.failure?.user_message ?? "规划任务失败，请重新开始。");
+          setPhase("error");
+        } else if (["queued", "running"].includes(restoredSnapshot.status)) {
+          setPhase("streaming");
+        } else {
+          setPhase("complete");
+        }
+        connectToEvents(restoredTaskId, 0, restoredSnapshot.event_count);
+      })
+      .catch((restoreError) => {
+        if (cancelled) {
+          return;
+        }
+        setError(
+          restoreError instanceof Error
+            ? `无法恢复 URL 中的规划任务：${restoreError.message}`
+            : "无法恢复 URL 中的规划任务。",
+        );
+        setPhase("error");
+        setConnection("closed");
+      });
+
+    return () => {
+      cancelled = true;
+      sourceRef.current?.close();
+    };
+  }, [connectToEvents]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -367,6 +451,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
     setEvents([]);
     setSnapshot(null);
     setTaskId(null);
+    writeTaskIdToUrl(null);
     setError(null);
     setReviewError(null);
     setIntakeDraft(null);
@@ -405,6 +490,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
         selectedDestinationAdcode,
       );
       const accepted = await createPlanningTask(confirmed);
+      writeTaskIdToUrl(accepted.task_id);
       setTaskId(accepted.task_id);
       setPhase("streaming");
       connectToEvents(accepted.task_id);
@@ -432,10 +518,12 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
 
     const normalizedComment = comment?.trim() || undefined;
     const revisionKey = revisionSelection
-      ? `${revisionSelection.targetDate}:${revisionSelection.shiftMinutes}`
+      ? revisionSelection.kind === "replace_activity"
+        ? `${revisionSelection.targetDate}:replace:${revisionSelection.replacedItemId}:${revisionSelection.replacementCandidateId}`
+        : `${revisionSelection.targetDate}:shift:${revisionSelection.shiftMinutes}`
       : undefined;
     if (action === "request_revision" && !revisionSelection) {
-      setReviewError("请选择修改日期和延后幅度。");
+      setReviewError("请选择局部修改方式及其目标。");
       return;
     }
     const existing = pendingReviewRef.current;
@@ -498,6 +586,7 @@ export function TripPlannerWorkspace({ defaultStartDate }: { defaultStartDate: s
     setConnection("idle");
     setEvents([]);
     setTaskId(null);
+    writeTaskIdToUrl(null);
     setSnapshot(null);
     setError(null);
     setReviewError(null);

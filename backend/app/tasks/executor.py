@@ -12,6 +12,7 @@ from app.domain.opening_hours import OpeningHoursEvidenceBundle
 from app.domain.planning import TripPlan
 from app.domain.request import TripRequest
 from app.domain.sources import DataMode
+from app.domain.travel_data import RouteLeg
 from app.planning.material_builder import build_planning_material_bundle
 from app.planning.material_contracts import PlanningMaterialBundle
 from app.planning.product_contracts import ProductPlanningSnapshot
@@ -20,6 +21,7 @@ from app.planning.specialist_contracts import SpecialistFanoutResult
 from app.planning.specialist_fanout import run_live_specialist_fanout
 from app.planning.stateful_contracts import HumanReviewResume
 from app.providers import open_live_amap_provider
+from app.providers.ports import RouteRequest
 from app.tasks.contracts import PlanningTaskSubmission
 from app.tasks.product_fixture import FixtureProductPlanningPipeline
 from app.tasks.service import PlanningProgressEmitter, PlanningTaskConfigurationError
@@ -81,9 +83,24 @@ class LiveProductPlanningPipeline:
             items=(),
         )
 
+    async def get_revision_route(
+        self,
+        request: TripRequest,
+        route_request: RouteRequest,
+        data_mode: DataMode,
+    ) -> RouteLeg:
+        del request
+        if data_mode != DataMode.LIVE:
+            raise ProductPlanningProtocolError("live revision route requires live data mode")
+        async with open_live_amap_provider(self._settings) as provider:
+            return await provider.get_route(route_request)
+
 
 class ResumeOnlyProductPipeline:
     """Fails if checkpoint resume unexpectedly replays a paid or external stage."""
+
+    def __init__(self, settings: Settings) -> None:
+        self._settings = settings
 
     @staticmethod
     def _unexpected() -> ProductPlanningProtocolError:
@@ -132,6 +149,21 @@ class ResumeOnlyProductPipeline:
     ) -> OpeningHoursEvidenceBundle:
         del request, plan, data_mode
         raise self._unexpected()
+
+    async def get_revision_route(
+        self,
+        request: TripRequest,
+        route_request: RouteRequest,
+        data_mode: DataMode,
+    ) -> RouteLeg:
+        if data_mode == DataMode.FIXTURE:
+            return await FixtureProductPlanningPipeline(request).get_revision_route(
+                request,
+                route_request,
+                data_mode,
+            )
+        async with open_live_amap_provider(self._settings) as provider:
+            return await provider.get_route(route_request)
 
 
 class ProductGraphPlanningTaskExecutor:
@@ -197,7 +229,7 @@ class ProductGraphPlanningTaskExecutor:
             raise PlanningTaskConfigurationError("planning checkpoint file does not exist")
         async with open_sqlite_product_runtime(
             checkpoint_path,
-            ResumeOnlyProductPipeline(),
+            ResumeOnlyProductPipeline(self._settings),
         ) as runtime:
             return await runtime.resume_with_progress(
                 task_id,

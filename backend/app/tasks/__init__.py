@@ -25,7 +25,12 @@ from app.tasks.service import (
     PlanningTaskReviewConflictError,
     PlanningTaskService,
 )
-from app.tasks.store import InMemoryPlanningTaskStore, PlanningTaskTransitionError
+from app.tasks.store import (
+    InMemoryPlanningTaskStore,
+    PlanningTaskPersistenceError,
+    PlanningTaskTransitionError,
+    SQLitePlanningTaskStore,
+)
 
 __all__ = [
     "PLANNING_TASK_WORKFLOW_VERSION",
@@ -39,6 +44,7 @@ __all__ = [
     "PlanningTaskFailure",
     "PlanningTaskFailureCategory",
     "PlanningTaskNotFoundError",
+    "PlanningTaskPersistenceError",
     "PlanningTaskPlanDiff",
     "PlanningTaskReviewConflictError",
     "PlanningTaskReviewDecisionAccepted",
@@ -50,5 +56,6 @@ __all__ = [
     "PlanningTaskSubmission",
     "PlanningTaskTransitionError",
     "ProductGraphPlanningTaskExecutor",
+    "SQLitePlanningTaskStore",
     "StatefulGraphPlanningTaskExecutor",
 ]

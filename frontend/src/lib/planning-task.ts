@@ -203,6 +203,10 @@ export interface ProductSpecialistBranch {
   specialist: "explore" | "stay" | "weather";
   status: "succeeded" | "skipped" | "failed";
   explore_result: {
+    observations: {
+      candidate: CandidatePoi;
+      query_ids: string[];
+    }[];
     recommendations: {
       candidate: CandidatePoi;
       proposal: {
@@ -328,15 +332,17 @@ export interface PlanRevisionRequest {
   base_version_id: string;
   base_plan_id: string;
   target_date: string;
-  operation: "shift_day_later";
-  shift_minutes: number;
+  operation: "shift_day_later" | "replace_activity";
+  shift_minutes?: number | null;
+  replaced_item_id?: string | null;
+  replacement_candidate_id?: string | null;
   target_item_ids: string[];
   protected_item_ids: string[];
   confirmed: true;
 }
 
 export interface PlanRevisionResult {
-  executor_version: "deterministic-local-revision-v1";
+  executor_version: "deterministic-local-revision-v1" | "deterministic-local-revision-v2";
   request: PlanRevisionRequest;
   revised_plan: TripPlan;
   validation: PlanValidation;
@@ -348,10 +354,11 @@ export interface PlanRevisionResult {
     added_item_ids: string[];
     removed_item_ids: string[];
   };
-  reused_provider_results: true;
+  revised_materials?: ProductPlanningMaterials | null;
+  reused_provider_results: boolean;
   reused_planner_result: true;
   model_call_count: 0;
-  provider_call_count: 0;
+  provider_call_count: number;
 }
 
 export interface PlanningTaskSnapshot {
@@ -477,10 +484,18 @@ export interface PlanningTaskReviewDecisionAccepted {
   events_url: string;
 }
 
-export interface PlanRevisionSelection {
-  targetDate: string;
-  shiftMinutes: number;
-}
+export type PlanRevisionSelection =
+  | {
+      kind?: "shift_day_later";
+      targetDate: string;
+      shiftMinutes: number;
+    }
+  | {
+      kind: "replace_activity";
+      targetDate: string;
+      replacedItemId: string;
+      replacementCandidateId: string;
+    };
 
 export type PlanningDataMode = "fixture" | "live";
 
@@ -823,19 +838,33 @@ export function buildPlanRevisionRequest(
   if (!targetDay) {
     throw new Error("修改日期不属于当前计划。");
   }
-  return {
+  const scope = {
     schema_version: "1.0",
     revision_id: `revision-${crypto.randomUUID().replaceAll("-", "")}`,
     base_version_id: version.version_id,
     base_plan_id: version.plan.plan_id,
     target_date: targetDay.date,
-    operation: "shift_day_later",
-    shift_minutes: selection.shiftMinutes,
     target_item_ids: targetDay.items.map((item) => item.item_id),
     protected_item_ids: version.plan.days
       .filter((day) => day.date !== targetDay.date)
       .flatMap((day) => day.items.map((item) => item.item_id)),
     confirmed: true,
+  } as const;
+  if (selection.kind === "replace_activity") {
+    if (!targetDay.items.some((item) => item.item_id === selection.replacedItemId)) {
+      throw new Error("被替换活动不属于目标日期。");
+    }
+    return {
+      ...scope,
+      operation: "replace_activity",
+      replaced_item_id: selection.replacedItemId,
+      replacement_candidate_id: selection.replacementCandidateId,
+    };
+  }
+  return {
+    ...scope,
+    operation: "shift_day_later",
+    shift_minutes: selection.shiftMinutes,
   };
 }
 

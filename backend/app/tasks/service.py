@@ -149,6 +149,15 @@ class PlanningTaskService:
             raise ValueError("event cursor is ahead of the task event log")
         return await self._store.events_after(task_id, sequence)
 
+    async def shutdown(self) -> None:
+        """Cancel process-local workers without replaying or rewriting durable task state."""
+        workers = tuple(self._workers)
+        for worker in workers:
+            worker.cancel()
+        if workers:
+            await asyncio.gather(*workers, return_exceptions=True)
+        self._workers.clear()
+
     async def stream_events(
         self,
         task_id: str,

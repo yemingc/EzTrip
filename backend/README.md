@@ -2,11 +2,15 @@
 
 Gate 0 FastAPI service plus the first offline Gate 2 vertical slice, recoverable HITL wrapper, specialist fan-out, deterministic planning-material layer, schema-constrained multi-Agent Plan Agent, deterministic Hard Validators, a bounded Repair Router, and provider-triggered local Weather Repair. It includes a liveness-style health endpoint, an empty Alembic baseline, an isolated LangGraph/LangSmith observability probe, versioned V1 travel contracts, a deterministic `TripRequest` to `PlannerContext` compiler, a typed AMap provider, schema-constrained Constraint/Explore/Stay Agents, a provider-grounded single-Planner baseline, a deterministic plan/budget validator, a fixture-backed complete Beijing three-day `TripPlan`, a SQLite-checkpointed main Graph using native LangGraph interrupt/resume, an independent parallel Explore/Stay/proactive-Weather information-gathering Graph, a bounded route matrix plus auditable budget allocator, a Plan Agent that consumes those materials into the shared `TripPlan` contract, a zero-model finalization gate, deterministic issue-directed retry/HITL routing with artifact-reuse guards, and a zero-model Weather Repair Coordinator that grades validated proposals before auto-apply or HITL.
 
-The product-facing planning API now runs Product Graph V2: parallel Explore/Stay/proactive-Weather specialists feed deterministic route/budget materials, a schema-constrained Plan Agent, the full Hard Validator, a bounded responsibility-node Repair Router, checkpoint-backed HITL, and structured PlanVersion revision. A typed destination-resolution API normalizes a free-form domestic destination to a canonical city and AMap `adcode` before the task starts; ambiguous administrative names require an explicit candidate selection. Beijing, Shanghai, and Chengdu are deterministic fixture coverage, while live coverage is provider-driven rather than a static product allow-list. Product repair can selectively rerun Explore, Stay, Route, Budget, or Plan while preserving unaffected artifacts and reporting delegated call counts. Task metadata and SSE logs remain process-local, and the separate Weather Repair Coordinator is not yet connected to this product Graph. EzTrip is an on-demand planner, so scheduled WeatherWatch is intentionally out of V1 scope. See [the planning task API protocol](../docs/api/planning-task-api.md).
+The product-facing planning API now runs Product Graph V2: parallel Explore/Stay/proactive-Weather specialists feed deterministic route/budget materials, a schema-constrained Plan Agent, the full Hard Validator, a bounded responsibility-node Repair Router, checkpoint-backed HITL, and structured PlanVersion revision. A typed destination-resolution API normalizes a free-form domestic destination to a canonical city and AMap `adcode` before the task starts; ambiguous administrative names require an explicit candidate selection. Beijing, Shanghai, and Chengdu are deterministic fixture coverage, while live coverage is provider-driven rather than a static product allow-list. Product repair can selectively rerun Explore, Stay, Route, Budget, or Plan while preserving unaffected artifacts and reporting delegated call counts. A versioned local SQLite task ledger persists snapshots, contiguous SSE events, and accepted review-decision idempotency metadata across a single backend restart; interrupted queued/running work becomes an actionable retryable failure instead of automatically replaying model or Provider stages. The separate Weather Repair Coordinator is not yet connected to this product Graph. EzTrip is an on-demand planner, so scheduled WeatherWatch is intentionally out of V1 scope. See [the planning task API protocol](../docs/api/planning-task-api.md).
+
+Bounded revision supports both a zero-call `shift_day_later` operation and `replace_activity`. Activity replacement must select an unscheduled, non-dining candidate from the persisted Explore Provider observations. It preserves every unaffected day, recalculates only the target-day route chain plus deterministic budget/validation artifacts, makes zero model calls, and records its incremental Provider call count. Missing replacement opening-hours evidence remains a hard validation gap rather than being inferred.
 
 The 30-case system-comparison inventory is frozen under `evals/cases/comparison`, with a deterministic report committed at `evals/reports/system-comparison-fixture.v1.json`. After recoverable partial-route materials were admitted to the draft path, the full single-Agent arm and Product Graph without the hard gate each finalize 5/29 eligible fixtures; Product Graph with Hard Validator and bounded repair finalizes 21/29. The paired +16 recoveries measure only the validator/repair control path over designed development faults. They do not establish Specialist-model quality or a real-user success rate, and the replay performs no DeepSeek, AMap, or LangSmith calls.
 
 The repeated-live pilot under `evals/cases/live-comparison` has now run over three existing development cases with two repetitions each. All 42 base DeepSeek calls succeeded and all three arms finalized 6/6 trials, so this clean-case pilot observed no finalization lift and triggered no repair. Product produced exact-repeat plans for 3/3 cases versus Single at 2/3, while using 30 versus 12 logical calls and higher cumulative model latency. The point-in-time result uses frozen Provider catalogs, six LangSmith trial traces, and zero AMap calls; it is development-set evidence, not a holdout, generalization, real-user-success, or real-time-data claim.
+
+An opt-in Chromium canary now covers the real browser → Request Intake → AMap/DeepSeek Product Graph → HITL → durable task snapshot path. The 2026-08-25 Quanzhou observation saved one two-day PlanVersion in 39 seconds after confirmation, acknowledged explicit validation gaps, and restored after reload. A prior same-city attempt also persisted a retryable `planning-materials-blocked` outcome, preserving Provider volatility instead of silently substituting fixture facts. This single point-in-time canary is not nationwide quality or SLA evidence; see [`docs/evaluation/live-browser-canary-2026-08-25.md`](../docs/evaluation/live-browser-canary-2026-08-25.md).
 
 ```powershell
 uv sync --all-groups
@@ -16,6 +20,8 @@ uv run uvicorn app.main:app --reload
 Run offline checks:
 
 ```powershell
+uv lock --check
+uv run pip-audit
 uv run pytest
 uv run ruff check .
 uv run ruff format --check .
@@ -63,7 +69,9 @@ never calls an external service. Selecting `live` mode in the frontend is the ex
 resolves the destination through AMap REST and can call AMap and DeepSeek, consuming quota. Keys
 remain server-side, and missing credentials fail before a checkpoint or paid planning stage is
 created. SSE emits committed graph-node events, heartbeat comments, typed terminal failures, and
-supports `Last-Event-ID` replay within the same server process.
+supports durable `Last-Event-ID` replay. The default ledger path is
+`tmp/planning-task-store.sqlite3`; it is local single-instance storage without multi-worker
+coordination, encryption, retention cleanup, high availability, or exactly-once external effects.
 
 Compile the committed Beijing request into a deterministic planning context:
 

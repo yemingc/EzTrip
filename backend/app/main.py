@@ -1,3 +1,6 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -8,6 +11,7 @@ from app.maps import AmapStaticMapService
 from app.request_intake import RequestIntakeService
 from app.tasks.executor import ProductGraphPlanningTaskExecutor
 from app.tasks.service import PlanningTaskService
+from app.tasks.store import SQLitePlanningTaskStore
 
 
 def create_app(
@@ -17,11 +21,30 @@ def create_app(
     request_intake_service: RequestIntakeService | None = None,
 ) -> FastAPI:
     resolved_settings = settings or get_settings()
+    destination_resolution_service = DestinationResolutionService(resolved_settings)
+    resolved_planning_task_service = planning_task_service or PlanningTaskService(
+        ProductGraphPlanningTaskExecutor(
+            resolved_settings,
+            destination_resolution_service=destination_resolution_service,
+        ),
+        store=SQLitePlanningTaskStore(resolved_settings.planning_task_store_path),
+        heartbeat_seconds=resolved_settings.planning_sse_heartbeat_seconds,
+        timeout_seconds=resolved_settings.planning_task_timeout_seconds,
+    )
+
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        try:
+            yield
+        finally:
+            await resolved_planning_task_service.shutdown()
+
     application = FastAPI(
         title=resolved_settings.app_name,
         version=resolved_settings.app_version,
         docs_url="/docs" if resolved_settings.environment != "production" else None,
         redoc_url=None,
+        lifespan=lifespan,
     )
     application.add_middleware(
         CORSMiddleware,
@@ -30,20 +53,12 @@ def create_app(
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    destination_resolution_service = DestinationResolutionService(resolved_settings)
     application.state.destination_resolution_service = destination_resolution_service
     application.state.static_map_service = AmapStaticMapService(resolved_settings)
     application.state.request_intake_service = request_intake_service or RequestIntakeService(
         resolved_settings
     )
-    application.state.planning_task_service = planning_task_service or PlanningTaskService(
-        ProductGraphPlanningTaskExecutor(
-            resolved_settings,
-            destination_resolution_service=destination_resolution_service,
-        ),
-        heartbeat_seconds=resolved_settings.planning_sse_heartbeat_seconds,
-        timeout_seconds=resolved_settings.planning_task_timeout_seconds,
-    )
+    application.state.planning_task_service = resolved_planning_task_service
     application.include_router(api_router, prefix="/api")
     return application
 

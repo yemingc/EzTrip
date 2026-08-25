@@ -431,7 +431,7 @@ async def build_route_matrix(
     )
 
 
-def _planning_material_issues(
+def planning_material_issues(
     specialist_result: SpecialistFanoutResult,
     shortlist: PlanningShortlist,
     route_matrix: RouteMatrix,
@@ -478,7 +478,7 @@ async def build_planning_material_bundle(
         max_concurrency=max_route_concurrency,
     )
     budget_allocation = allocate_budget(specialist_result.planner_context)
-    issues = _planning_material_issues(
+    issues = planning_material_issues(
         specialist_result,
         shortlist,
         route_matrix,

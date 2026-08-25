@@ -3,7 +3,8 @@
 EZ-401 established the asynchronous FastAPI boundary, EZ-403A/403B added checkpoint HITL and a
 bounded PlanVersion v2 revision, EZ-405 moved the task executor to Product Graph V2, EZ-405B
 connected issue-directed product repair before HITL, EZ-406A added provider-backed destination
-resolution, and EZ-406B added a separate evidence-backed request-intake confirmation boundary. The
+resolution, EZ-406B added a separate evidence-backed request-intake confirmation boundary, and
+EZ-407A added a local durable task ledger plus URL-based recovery. The
 planning-task endpoint still accepts an already structured `TripRequest`; Chinese free text reaches
 it only after the client explicitly confirms a request-intake draft.
 
@@ -38,8 +39,27 @@ schema-constrained `TripRequest`. The subsequent planning-task request carries t
 
 Fixture intake is a bounded deterministic parser for committed browser and API scenarios, not a
 general Chinese NLU claim. Live intake requires configured DeepSeek/LangSmith and has not been
-validated by the EZ-406B local fixture gate. Draft records are process-local: a backend restart
-returns `request-intake-not-found`, so cross-refresh/restart recovery remains an EZ-407A requirement.
+validated by the EZ-406B local fixture gate. Pre-task draft records are process-local: a backend
+restart returns `request-intake-not-found`, so the user must repeat request understanding if a
+refresh happens before the planning task is confirmed and created.
+
+## Durable task/session recovery
+
+After `POST /api/planning-tasks` succeeds, the default backend atomically persists one versioned
+record per task in `tmp/planning-task-store.sqlite3`. The record contains the typed snapshot,
+contiguous SSE events, the accepted review decision, and its idempotency index. The frontend writes
+the returned `task_id` to the URL. Opening or refreshing that URL reads the latest snapshot, replays
+the event ledger, continues an in-flight SSE connection, restores an awaiting review, or renders a
+completed review outcome.
+
+Awaiting-input and terminal tasks survive backend reconstruction and retain exact review-decision
+idempotency. A task found in `queued` or `running` during reconstruction instead receives a
+retryable `planning-task-interrupted` failure. The server never automatically replays a possibly
+paid model or Provider stage after process loss; the user starts a new task explicitly.
+
+This is a local single-instance recovery contract. It does not provide multi-process cache
+coherence, distributed worker ownership, encryption, retention cleanup, high availability, or an
+outbox/exactly-once guarantee for external effects.
 
 ## Destination resolution
 
@@ -208,7 +228,7 @@ dates.
 
 ### Structured revision request
 
-The current bounded operation is `shift_day_later`. The client must build its scope from the latest
+The bounded operations are `shift_day_later` and `replace_activity`. The client must build scope from the latest
 `PlanVersion`: all item IDs on the selected date are targets, and every item on all other dates is
 protected. For example:
 
@@ -233,16 +253,31 @@ protected. For example:
 }
 ```
 
-The server rejects stale base versions with `409 revision-base-version-mismatch` and incomplete or
-drifted scope with `409 revision-scope-mismatch`. The checkpoint revision node then shifts exactly
-the target-day items, rejects cross-date timestamps, preserves all other days and plan facts,
-re-runs `hard-trip-plan-validator-v1` against persisted materials and opening-hours evidence, and
-records `v1 → v2` with changed dates and rescheduled item IDs. It makes zero Provider and model
-calls.
+For activity replacement, use the same complete target/protected scope and replace the operation fields with:
 
-This is not an open-ended natural-language replan. It does not add/remove POIs or recalculate
-routes/opening hours. Explore, Stay, Weather, Route/Budget, Plan, Hard Validator, and the pre-review
-Repair Router are in the product task graph. The narrow `shift_day_later` revision does not re-enter
+```json
+{
+  "operation": "replace_activity",
+  "replaced_item_id": "plan-item-...",
+  "replacement_candidate_id": "provider-observation-candidate-..."
+}
+```
+
+The replacement candidate must be an unscheduled, non-dining candidate from the persisted Explore
+Provider observations. The server rejects stale bases with `409 revision-base-version-mismatch`,
+scope drift with `409 revision-scope-mismatch`, and ineligible candidates with
+`409 revision-replacement-not-eligible`.
+
+The checkpoint revision node preserves every other day and protected plan fact. `shift_day_later`
+reuses persisted materials and makes zero Provider/model calls. `replace_activity` recalculates only
+the target-day route chain, timing, nearby-meal recommendations, deterministic budget allocation,
+and `hard-trip-plan-validator-v1`; it records the incremental Provider call count and makes zero model
+calls. Missing opening-hours evidence for the replacement remains a blocking validation issue. Both
+operations record `v1 → v2` with an explicit item/date diff.
+
+This is not an open-ended natural-language replan. It cannot invent a POI, arbitrarily remove one,
+or broaden the observation set. Explore, Stay, Weather, Route/Budget, Plan, Hard Validator, and the
+pre-review Repair Router are in the product task graph. Neither bounded revision operation re-enters
 the automatic repair loop; its returned v2 remains a draft that has not been reviewed again.
 
 ## Reconnect and failure rules
@@ -267,8 +302,9 @@ the automatic repair loop; its returned v2 remains a draft that has not been rev
 
 ## Current durability boundary
 
-LangGraph planning state is persisted per task in ignored local SQLite checkpoint files, and the
-review endpoint resumes that checkpoint. Task metadata, accepted-decision indexes, and the SSE
-event log are currently stored in process memory, so API reconstruction and idempotency do not
-survive a server restart. Durable task/event/decision persistence, multi-worker coordination,
-worker cancellation, broader selective replanning, and a production outbox remain later product work.
+LangGraph planning state remains persisted per task in ignored local SQLite checkpoint files, and
+the review endpoint resumes that checkpoint. A separate local SQLite task ledger now persists API
+metadata, accepted-decision indexes, and the SSE event log across a single backend restart. The two
+stores are deliberately local portfolio/runtime evidence: multi-worker coordination, cleanup and
+retention policy, encryption, broader selective replanning, and a production outbox remain later
+product work.

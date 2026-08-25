@@ -90,8 +90,24 @@ class Settings(BaseSettings):
         validation_alias="AMAP_REST_STATIC_MAP_URL",
     )
     planning_checkpoint_dir: Path = Path("tmp/planning-task-checkpoints")
+    planning_task_store_path: Path = Path("tmp/planning-task-store.sqlite3")
     planning_sse_heartbeat_seconds: float = Field(default=15.0, gt=0)
     planning_task_timeout_seconds: float = Field(default=120.0, gt=0)
+
+    @field_validator(
+        "deepseek_api_key",
+        "langsmith_api_key",
+        "amap_maps_api_key",
+        mode="before",
+    )
+    @classmethod
+    def normalize_optional_secret(cls, value: object) -> object:
+        if isinstance(value, SecretStr):
+            value = value.get_secret_value()
+        if isinstance(value, str):
+            stripped = value.strip()
+            return stripped or None
+        return value
 
     @field_validator(
         "amap_mcp_url",

@@ -8878,16 +8878,57 @@
               "type": "string"
             },
             "operation": {
-              "const": "shift_day_later",
+              "enum": [
+                "shift_day_later",
+                "replace_activity"
+              ],
               "title": "Operation",
               "type": "string"
             },
             "shift_minutes": {
-              "maximum": 180,
-              "minimum": 30,
-              "multipleOf": 30,
-              "title": "Shift Minutes",
-              "type": "integer"
+              "anyOf": [
+                {
+                  "maximum": 180,
+                  "minimum": 30,
+                  "multipleOf": 30,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Shift Minutes"
+            },
+            "replaced_item_id": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Replaced Item Id"
+            },
+            "replacement_candidate_id": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Replacement Candidate Id"
             },
             "target_item_ids": {
               "items": {
@@ -8923,7 +8964,6 @@
             "base_plan_id",
             "target_date",
             "operation",
-            "shift_minutes",
             "target_item_ids",
             "confirmed"
           ],
