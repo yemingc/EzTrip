@@ -79,6 +79,23 @@ def _fixture_pois(
     city: str,
     rows: tuple[tuple[str, str, str, float, float, str], ...],
 ) -> tuple[CandidatePOI, ...]:
+    indoor_terms = ("博物馆", "博物院", "美术馆", "艺术宫")
+    outdoor_terms = (
+        "公园",
+        "动物园",
+        "繁育研究基地",
+        "外滩",
+        "滨水区",
+        "步行街",
+    )
+
+    def environment_for(name: str, kind: str) -> ActivityEnvironment:
+        if kind == "dining" or any(term in name for term in indoor_terms):
+            return ActivityEnvironment.INDOOR
+        if any(term in name for term in outdoor_terms):
+            return ActivityEnvironment.OUTDOOR
+        return ActivityEnvironment.MIXED
+
     return tuple(
         CandidatePOI(
             candidate_id=f"product-fixture-{slug}",
@@ -88,9 +105,7 @@ def _fixture_pois(
             address=f"{name} fixture 地址",
             location=GeoPoint(latitude=latitude, longitude=longitude),
             categories=(("餐饮服务", "本地美食") if kind == "dining" else ("景点", "城市体验")),
-            environment=(
-                ActivityEnvironment.INDOOR if kind == "dining" else ActivityEnvironment.MIXED
-            ),
+            environment=environment_for(name, kind),
             suggested_duration_minutes=90 if kind == "dining" else 120,
             tags=(("附近餐饮推荐",) if kind == "dining" else ("主要游览项目",)),
             source=_source("eztrip-product-fixture", slug.upper()),
