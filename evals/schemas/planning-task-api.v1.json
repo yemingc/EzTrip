@@ -4352,6 +4352,31 @@
           "title": "PartyPlanningContext",
           "type": "object"
         },
+        "PlanActivityReplacementInput": {
+          "additionalProperties": false,
+          "properties": {
+            "replaced_item_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Replaced Item Id",
+              "type": "string"
+            },
+            "replacement_candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Replacement Candidate Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "replaced_item_id",
+            "replacement_candidate_id"
+          ],
+          "title": "PlanActivityReplacementInput",
+          "type": "object"
+        },
         "PlanAgentDecision": {
           "additionalProperties": false,
           "properties": {
@@ -4761,6 +4786,15 @@
               "default": null,
               "title": "Replacement Candidate Id"
             },
+            "activity_replacements": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/PlanActivityReplacementInput"
+              },
+              "maxItems": 4,
+              "title": "Activity Replacements",
+              "type": "array"
+            },
             "target_item_ids": {
               "items": {
                 "maxLength": 100,
@@ -4814,7 +4848,8 @@
               "default": "deterministic-local-revision-v2",
               "enum": [
                 "deterministic-local-revision-v1",
-                "deterministic-local-revision-v2"
+                "deterministic-local-revision-v2",
+                "deterministic-local-revision-v3"
               ],
               "title": "Executor Version",
               "type": "string"
@@ -5603,6 +5638,15 @@
                 }
               ],
               "default": null
+            },
+            "activity_replacements": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/PlanningActivityReplacement"
+              },
+              "maxItems": 4,
+              "title": "Activity Replacements",
+              "type": "array"
             }
           },
           "required": [
@@ -8696,6 +8740,31 @@
           "title": "HumanReviewAction",
           "type": "string"
         },
+        "PlanActivityReplacementInput": {
+          "additionalProperties": false,
+          "properties": {
+            "replaced_item_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Replaced Item Id",
+              "type": "string"
+            },
+            "replacement_candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Replacement Candidate Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "replaced_item_id",
+            "replacement_candidate_id"
+          ],
+          "title": "PlanActivityReplacementInput",
+          "type": "object"
+        },
         "PlanRevisionRequest": {
           "additionalProperties": false,
           "properties": {
@@ -8783,6 +8852,15 @@
               ],
               "default": null,
               "title": "Replacement Candidate Id"
+            },
+            "activity_replacements": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/PlanActivityReplacementInput"
+              },
+              "maxItems": 4,
+              "title": "Activity Replacements",
+              "type": "array"
             },
             "target_item_ids": {
               "items": {
@@ -9243,6 +9321,33 @@
       "type": "object"
     },
     "PlanRevisionRequest": {
+      "$defs": {
+        "PlanActivityReplacementInput": {
+          "additionalProperties": false,
+          "properties": {
+            "replaced_item_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Replaced Item Id",
+              "type": "string"
+            },
+            "replacement_candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Replacement Candidate Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "replaced_item_id",
+            "replacement_candidate_id"
+          ],
+          "title": "PlanActivityReplacementInput",
+          "type": "object"
+        }
+      },
       "additionalProperties": false,
       "properties": {
         "schema_version": {
@@ -9329,6 +9434,15 @@
           ],
           "default": null,
           "title": "Replacement Candidate Id"
+        },
+        "activity_replacements": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/PlanActivityReplacementInput"
+          },
+          "maxItems": 4,
+          "title": "Activity Replacements",
+          "type": "array"
         },
         "target_item_ids": {
           "items": {
@@ -11068,6 +11182,31 @@
           "title": "PartyPlanningContext",
           "type": "object"
         },
+        "PlanActivityReplacementInput": {
+          "additionalProperties": false,
+          "properties": {
+            "replaced_item_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Replaced Item Id",
+              "type": "string"
+            },
+            "replacement_candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Replacement Candidate Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "replaced_item_id",
+            "replacement_candidate_id"
+          ],
+          "title": "PlanActivityReplacementInput",
+          "type": "object"
+        },
         "PlanRevisionDiff": {
           "additionalProperties": false,
           "properties": {
@@ -11229,6 +11368,15 @@
               ],
               "default": null,
               "title": "Replacement Candidate Id"
+            },
+            "activity_replacements": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/PlanActivityReplacementInput"
+              },
+              "maxItems": 4,
+              "title": "Activity Replacements",
+              "type": "array"
             },
             "target_item_ids": {
               "items": {
@@ -11829,6 +11977,15 @@
                 }
               ],
               "default": null
+            },
+            "activity_replacements": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/PlanningActivityReplacement"
+              },
+              "maxItems": 4,
+              "title": "Activity Replacements",
+              "type": "array"
             }
           },
           "required": [
@@ -13300,7 +13457,8 @@
           "default": "deterministic-local-revision-v2",
           "enum": [
             "deterministic-local-revision-v1",
-            "deterministic-local-revision-v2"
+            "deterministic-local-revision-v2",
+            "deterministic-local-revision-v3"
           ],
           "title": "Executor Version",
           "type": "string"

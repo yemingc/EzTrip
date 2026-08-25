@@ -58,6 +58,7 @@ from app.planning.repair_router import (
     run_repair_router,
 )
 from app.planning.revision_contracts import (
+    PlanActivityReplacementInput,
     PlanRevisionDiff,
     PlanRevisionOperation,
     PlanRevisionRequest,
@@ -168,6 +169,7 @@ __all__ = [
     "HumanReviewKind",
     "HumanReviewRequest",
     "HumanReviewResume",
+    "PlanActivityReplacementInput",
     "PlanRevisionDiff",
     "PlanRevisionOperation",
     "PlanRevisionProtocolError",

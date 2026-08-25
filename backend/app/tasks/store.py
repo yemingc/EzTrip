@@ -286,15 +286,7 @@ class InMemoryPlanningTaskStore:
                             "revision-replacement-not-supported",
                             "当前任务结果不支持活动候选替换。",
                         )
-                    target_item = next(
-                        (
-                            item
-                            for day in target_days
-                            for item in day.items
-                            if item.item_id == revision.replaced_item_id
-                        ),
-                        None,
-                    )
+                    target_items = {item.item_id: item for day in target_days for item in day.items}
                     specialists = previous.result.state.specialists
                     explore_branch = (
                         next(
@@ -313,32 +305,34 @@ class InMemoryPlanningTaskStore:
                         if explore_branch is not None and explore_branch.explore_result is not None
                         else ()
                     )
-                    replacement = next(
-                        (
-                            item.candidate
-                            for item in observations
-                            if item.candidate.candidate_id == revision.replacement_candidate_id
-                        ),
-                        None,
-                    )
+                    observed_by_id = {
+                        item.candidate.candidate_id: item.candidate for item in observations
+                    }
                     scheduled_candidate_ids = {
                         item.candidate_id
                         for day in current_version.plan.days
                         for item in day.items
                         if item.candidate_id is not None
                     }
-                    if (
-                        target_item is None
-                        or target_item.kind != ActivityKind.ATTRACTION
-                        or target_item.candidate_id is None
-                        or replacement is None
-                        or is_meal_candidate(replacement)
-                        or replacement.candidate_id in scheduled_candidate_ids
-                        or replacement.city != current_version.plan.destination_city
-                    ):
+                    replacement_is_invalid = False
+                    for pair in revision.replacement_pairs:
+                        target_item = target_items.get(pair.replaced_item_id)
+                        replacement = observed_by_id.get(pair.replacement_candidate_id)
+                        if (
+                            target_item is None
+                            or target_item.kind != ActivityKind.ATTRACTION
+                            or target_item.candidate_id is None
+                            or replacement is None
+                            or is_meal_candidate(replacement)
+                            or replacement.candidate_id in scheduled_candidate_ids
+                            or replacement.city != current_version.plan.destination_city
+                        ):
+                            replacement_is_invalid = True
+                            break
+                    if replacement_is_invalid:
                         raise PlanningTaskReviewConflictError(
                             "revision-replacement-not-eligible",
-                            "替换候选必须来自原 Explore Provider observations, "
+                            "每个替换候选都必须来自原 Explore Provider observations, "
                             "且不能是餐饮或已排入行程的地点。",
                         )
 

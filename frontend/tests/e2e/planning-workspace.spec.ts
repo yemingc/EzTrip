@@ -74,12 +74,18 @@ test("generates a complete sample itinerary with user-facing copy", async ({ pag
   await expect(weather).toContainText("当天怎么安排");
   await expect(weather.getByTestId("weather-affected-plans").first()).toContainText("优先检查");
   const weatherProposal = weather.getByTestId("weather-replacement-proposal").first();
-  await expect(weatherProposal).toContainText("室内替换建议");
-  await expect(weatherProposal).toContainText("将「天坛公园」替换为「首都博物馆」");
-  await expect(weatherProposal.getByRole("button", { name: "采用室内替换" })).toBeVisible();
-  await weatherProposal.getByRole("button", { name: "保留原活动" }).click();
+  await expect(weatherProposal).toContainText("全天室内方案");
+  await expect(weatherProposal).toContainText(/天坛公园\s*→\s*首都博物馆/);
+  await expect(weatherProposal).toContainText(/景山公园\s*→\s*北京天文馆/);
+  await expect(
+    weatherProposal.getByRole("button", { name: "采用全天室内方案" }),
+  ).toBeVisible();
+  await weatherProposal.getByRole("button", { name: "保留原安排" }).click();
   await expect(weatherProposal).not.toBeVisible();
   await expect(results.getByTestId("itinerary-item").filter({ hasText: "天坛公园" })).toBeVisible();
+  await expect(
+    results.getByTestId("itinerary-item").filter({ hasText: "景山公园" }),
+  ).toBeVisible();
   expect(await weather.innerText()).not.toMatch(/\b(?:rain|heat|low|medium|high|extreme)\b/);
   await expect(results.getByTestId("stay-recommendation")).toContainText("住宿推荐");
   await expect(results.getByTestId("stay-recommendation")).toContainText("推荐理由");
@@ -136,7 +142,7 @@ test("generates a complete sample itinerary with user-facing copy", async ({ pag
   });
 });
 
-test("confirms a grounded weather replacement and only revises the affected day", async ({
+test("confirms a grounded full-day indoor plan and only revises the affected day", async ({
   page,
 }) => {
   await page.goto("/");
@@ -149,7 +155,8 @@ test("confirms a grounded weather replacement and only revises the affected day"
     .textContent();
 
   const proposal = results.getByTestId("weather-replacement-proposal").first();
-  await expect(proposal).toContainText("将「天坛公园」替换为「首都博物馆」");
+  await expect(proposal).toContainText(/天坛公园\s*→\s*首都博物馆/);
+  await expect(proposal).toContainText(/景山公园\s*→\s*北京天文馆/);
   await page.screenshot({
     path: "test-results/eztrip-weather-replacement-hitl.png",
     fullPage: true,
@@ -157,12 +164,22 @@ test("confirms a grounded weather replacement and only revises the affected day"
   await proposal.screenshot({
     path: "test-results/eztrip-weather-replacement-card.png",
   });
-  await proposal.getByRole("button", { name: "采用室内替换" }).click();
+  await proposal.getByRole("button", { name: "采用全天室内方案" }).click();
 
   await expect(page.getByTestId("event-trace")).toContainText("更新所选行程");
   await expect(results).toContainText("修改版 · 等待再次确认");
-  await expect(results).toContainText("首都博物馆");
-  await expect(results).not.toContainText("天坛公园");
+  await expect(
+    results.getByTestId("itinerary-item").filter({ hasText: "首都博物馆" }),
+  ).toBeVisible();
+  await expect(
+    results.getByTestId("itinerary-item").filter({ hasText: "北京天文馆" }),
+  ).toBeVisible();
+  await expect(
+    results.getByTestId("itinerary-item").filter({ hasText: "天坛公园" }),
+  ).toHaveCount(0);
+  await expect(
+    results.getByTestId("itinerary-item").filter({ hasText: "景山公园" }),
+  ).toHaveCount(0);
   await expect(results).toContainText("计划已修改 · 1 个受影响日期");
   await expect(
     results.getByTestId("itinerary-item").filter({ hasText: "中国国家博物馆" }),
@@ -565,7 +582,14 @@ test("shows a useful empty state when there is no replacement", async ({
 
   await page.goto("/");
   await understandAndStart(page);
-  await expect(page.getByTestId("planning-results")).toBeVisible({ timeout: 20_000 });
+  const results = page.getByTestId("planning-results");
+  await expect(results).toBeVisible({ timeout: 20_000 });
+  await expect(results.getByTestId("weather-replacement-insufficient").first()).toContainText(
+    "当天有 2 个活动需要调整，但当前只有0 个未使用的室内候选",
+  );
+  await expect(
+    results.getByRole("button", { name: "采用全天室内方案" }),
+  ).toHaveCount(0);
   await page.getByRole("button", { name: "局部修改" }).click();
   await page.getByLabel("修改方式").selectOption("replace_activity");
 

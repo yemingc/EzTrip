@@ -2295,6 +2295,15 @@
             }
           ],
           "default": null
+        },
+        "activity_replacements": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/PlanningActivityReplacement"
+          },
+          "maxItems": 4,
+          "title": "Activity Replacements",
+          "type": "array"
         }
       },
       "required": [

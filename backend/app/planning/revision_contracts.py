@@ -15,6 +15,11 @@ class PlanRevisionOperation(StrEnum):
     REPLACE_ACTIVITY = "replace_activity"
 
 
+class PlanActivityReplacementInput(DomainModel):
+    replaced_item_id: Identifier
+    replacement_candidate_id: Identifier
+
+
 class PlanRevisionRequest(DomainModel):
     schema_version: Literal["1.0"] = "1.0"
     revision_id: Identifier
@@ -28,6 +33,10 @@ class PlanRevisionRequest(DomainModel):
     shift_minutes: int | None = Field(default=None, ge=30, le=180, multiple_of=30)
     replaced_item_id: Identifier | None = None
     replacement_candidate_id: Identifier | None = None
+    activity_replacements: tuple[PlanActivityReplacementInput, ...] = Field(
+        default=(),
+        max_length=4,
+    )
     target_item_ids: tuple[Identifier, ...] = Field(min_length=1)
     protected_item_ids: tuple[Identifier, ...] = ()
     confirmed: Literal[True]
@@ -44,16 +53,47 @@ class PlanRevisionRequest(DomainModel):
                 self.shift_minutes is None
                 or self.replaced_item_id is not None
                 or self.replacement_candidate_id is not None
+                or self.activity_replacements
             ):
                 raise ValueError("shift-day-later requires only shift_minutes")
-        elif (
-            self.shift_minutes is not None
-            or self.replaced_item_id is None
-            or self.replacement_candidate_id is None
-            or self.replaced_item_id not in self.target_item_ids
-        ):
-            raise ValueError("replace-activity requires a target item and replacement candidate")
+        else:
+            has_single_fields = (
+                self.replaced_item_id is not None or self.replacement_candidate_id is not None
+            )
+            has_complete_single = (
+                self.replaced_item_id is not None and self.replacement_candidate_id is not None
+            )
+            if (
+                self.shift_minutes is not None
+                or (has_single_fields and not has_complete_single)
+                or (has_complete_single == bool(self.activity_replacements))
+            ):
+                raise ValueError(
+                    "replace-activity requires either one replacement pair or a replacement batch"
+                )
+            replacements = self.replacement_pairs
+            replaced_ids = tuple(item.replaced_item_id for item in replacements)
+            replacement_ids = tuple(item.replacement_candidate_id for item in replacements)
+            if any(item_id not in self.target_item_ids for item_id in replaced_ids):
+                raise ValueError("replacement targets must belong to the requested target day")
+            if len(replaced_ids) != len(set(replaced_ids)):
+                raise ValueError("replacement batch target ids must be unique")
+            if len(replacement_ids) != len(set(replacement_ids)):
+                raise ValueError("replacement batch candidate ids must be unique")
         return self
+
+    @property
+    def replacement_pairs(self) -> tuple[PlanActivityReplacementInput, ...]:
+        if self.activity_replacements:
+            return self.activity_replacements
+        if self.replaced_item_id is None or self.replacement_candidate_id is None:
+            return ()
+        return (
+            PlanActivityReplacementInput(
+                replaced_item_id=self.replaced_item_id,
+                replacement_candidate_id=self.replacement_candidate_id,
+            ),
+        )
 
 
 class PlanRevisionDiff(DomainModel):
@@ -87,6 +127,7 @@ class PlanRevisionResult(DomainModel):
     executor_version: Literal[
         "deterministic-local-revision-v1",
         "deterministic-local-revision-v2",
+        "deterministic-local-revision-v3",
     ] = "deterministic-local-revision-v2"
     request: PlanRevisionRequest
     revised_plan: TripPlan
@@ -123,15 +164,16 @@ class PlanRevisionResult(DomainModel):
             ):
                 raise ValueError("shift-day revision cannot replace items or call Providers")
         else:
+            replacement_count = len(self.request.replacement_pairs)
             if (
                 self.revised_materials is None
                 or self.revised_materials.request_id != self.revised_plan.request_id
-                or len(self.diff.added_item_ids) != 1
-                or len(self.diff.removed_item_ids) != 1
+                or len(self.diff.added_item_ids) != replacement_count
+                or len(self.diff.removed_item_ids) != replacement_count
                 or self.reused_provider_results
                 or self.provider_call_count < 1
             ):
                 raise ValueError(
-                    "activity replacement requires revised materials and one added/removed item"
+                    "activity replacement requires revised materials and one diff per replacement"
                 )
         return self

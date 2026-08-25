@@ -4,6 +4,7 @@ from datetime import timedelta
 import pytest
 from pydantic import ValidationError
 
+from app.domain.candidates import ActivityEnvironment
 from app.domain.planning import ActivityKind, DayPlan, ItineraryItem, TripPlan
 from app.domain.request import ConstraintSet, TripPace, TripRequest
 from app.domain.sources import DataMode
@@ -215,3 +216,135 @@ def test_activity_replacement_uses_observed_candidate_and_recalculates_only_targ
         assert replacement_item.source == replacement.source
 
     asyncio.run(scenario())
+
+
+def test_activity_replacement_batch_replaces_the_whole_target_day_atomically() -> None:
+    async def scenario() -> None:
+        base = load_vertical_slice_suite().cases[0].request
+        request = TripRequest.model_validate(
+            {
+                **base.model_dump(mode="python"),
+                "request_id": "revision-replace-weather-day-fixture",
+                "destination_adcode": "110000",
+                "end_date": base.start_date + timedelta(days=1),
+                "pace": TripPace.RELAXED,
+                "constraints": ConstraintSet(),
+            }
+        )
+        pipeline = FixtureProductPlanningPipeline(request)
+        specialists = await pipeline.run_specialists(request, data_mode=DataMode.FIXTURE)
+        materials = await pipeline.build_materials(specialists)
+        plan_result = pipeline.run_plan(request, materials)
+        assert plan_result.plan is not None
+        plan = plan_result.plan
+        target_day = plan.days[0]
+        protected_day = plan.days[1]
+        assert len(target_day.items) == 2
+
+        explore = next(
+            branch.explore_result
+            for branch in specialists.branches
+            if branch.specialist == SpecialistName.EXPLORE
+        )
+        assert explore is not None
+        scheduled_ids = {item.candidate_id for item in materials.shortlist.poi_candidates}
+        indoor_candidates = tuple(
+            item.candidate
+            for item in explore.observations
+            if item.candidate.candidate_id not in scheduled_ids
+            and item.candidate.environment == ActivityEnvironment.INDOOR
+            and not is_meal_candidate(item.candidate)
+        )
+        assert len(indoor_candidates) >= len(target_day.items)
+        selected = indoor_candidates[: len(target_day.items)]
+        revision = PlanRevisionRequest(
+            revision_id="revision-replace-weather-day-v1",
+            base_version_id="plan-version-fixture-v1",
+            base_plan_id=plan.plan_id,
+            target_date=target_day.date,
+            operation=PlanRevisionOperation.REPLACE_ACTIVITY,
+            activity_replacements=tuple(
+                {
+                    "replaced_item_id": item.item_id,
+                    "replacement_candidate_id": candidate.candidate_id,
+                }
+                for item, candidate in zip(target_day.items, selected, strict=True)
+            ),
+            target_item_ids=tuple(item.item_id for item in target_day.items),
+            protected_item_ids=tuple(item.item_id for item in protected_day.items),
+            confirmed=True,
+        )
+
+        revised = await apply_activity_replacement(
+            request,
+            plan,
+            materials,
+            revision,
+            pipeline.get_revision_route,
+        )
+
+        assert revised.executor_version == "deterministic-local-revision-v3"
+        assert revised.diff.changed_dates == (target_day.date,)
+        assert revised.diff.removed_item_ids == tuple(item.item_id for item in target_day.items)
+        assert len(revised.diff.added_item_ids) == len(target_day.items)
+        assert revised.provider_call_count == len(target_day.items)
+        assert revised.model_call_count == 0
+        assert revised.revised_plan.days[1] == protected_day
+        assert {item.candidate_id for item in revised.revised_plan.days[0].items} == {
+            item.candidate_id for item in selected
+        }
+        assert revised.revised_materials is not None
+        assert revised.revised_materials.activity_replacement is None
+        assert len(revised.revised_materials.activity_replacements) == len(target_day.items)
+
+    asyncio.run(scenario())
+
+
+def test_activity_replacement_batch_rejects_duplicate_targets_or_candidates() -> None:
+    _, result = _normal_case_result()
+    target_day = result.plan.days[0]
+    scope = {
+        "revision_id": "revision-invalid-weather-day-v1",
+        "base_version_id": "plan-version-fixture-v1",
+        "base_plan_id": result.plan.plan_id,
+        "target_date": target_day.date,
+        "operation": PlanRevisionOperation.REPLACE_ACTIVITY,
+        "target_item_ids": [item.item_id for item in target_day.items],
+        "protected_item_ids": [item.item_id for day in result.plan.days[1:] for item in day.items],
+        "confirmed": True,
+    }
+    first_item_id = target_day.items[0].item_id
+    second_item_id = "plan-item-second-target"
+    scope["target_item_ids"] = [first_item_id, second_item_id]
+    with pytest.raises(ValidationError, match="target ids must be unique"):
+        PlanRevisionRequest.model_validate(
+            {
+                **scope,
+                "activity_replacements": [
+                    {
+                        "replaced_item_id": first_item_id,
+                        "replacement_candidate_id": "candidate-indoor-one",
+                    },
+                    {
+                        "replaced_item_id": first_item_id,
+                        "replacement_candidate_id": "candidate-indoor-two",
+                    },
+                ],
+            }
+        )
+    with pytest.raises(ValidationError, match="candidate ids must be unique"):
+        PlanRevisionRequest.model_validate(
+            {
+                **scope,
+                "activity_replacements": [
+                    {
+                        "replaced_item_id": first_item_id,
+                        "replacement_candidate_id": "candidate-indoor-one",
+                    },
+                    {
+                        "replaced_item_id": second_item_id,
+                        "replacement_candidate_id": "candidate-indoor-one",
+                    },
+                ],
+            }
+        )

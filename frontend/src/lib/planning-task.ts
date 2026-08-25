@@ -338,13 +338,20 @@ export interface PlanRevisionRequest {
   shift_minutes?: number | null;
   replaced_item_id?: string | null;
   replacement_candidate_id?: string | null;
+  activity_replacements?: {
+    replaced_item_id: string;
+    replacement_candidate_id: string;
+  }[];
   target_item_ids: string[];
   protected_item_ids: string[];
   confirmed: true;
 }
 
 export interface PlanRevisionResult {
-  executor_version: "deterministic-local-revision-v1" | "deterministic-local-revision-v2";
+  executor_version:
+    | "deterministic-local-revision-v1"
+    | "deterministic-local-revision-v2"
+    | "deterministic-local-revision-v3";
   request: PlanRevisionRequest;
   revised_plan: TripPlan;
   validation: PlanValidation;
@@ -497,6 +504,14 @@ export type PlanRevisionSelection =
       targetDate: string;
       replacedItemId: string;
       replacementCandidateId: string;
+    }
+  | {
+      kind: "replace_day_activities";
+      targetDate: string;
+      replacements: {
+        replacedItemId: string;
+        replacementCandidateId: string;
+      }[];
     };
 
 export type PlanningDataMode = "fixture" | "live";
@@ -861,6 +876,32 @@ export function buildPlanRevisionRequest(
       operation: "replace_activity",
       replaced_item_id: selection.replacedItemId,
       replacement_candidate_id: selection.replacementCandidateId,
+    };
+  }
+  if (selection.kind === "replace_day_activities") {
+    if (!selection.replacements.length) {
+      throw new Error("全天室内方案没有可替换的活动。");
+    }
+    const replacedItemIds = selection.replacements.map((item) => item.replacedItemId);
+    const replacementCandidateIds = selection.replacements.map(
+      (item) => item.replacementCandidateId,
+    );
+    if (
+      new Set(replacedItemIds).size !== replacedItemIds.length ||
+      new Set(replacementCandidateIds).size !== replacementCandidateIds.length ||
+      replacedItemIds.some(
+        (itemId) => !targetDay.items.some((item) => item.item_id === itemId),
+      )
+    ) {
+      throw new Error("全天室内方案包含重复或不属于当天的活动。");
+    }
+    return {
+      ...scope,
+      operation: "replace_activity",
+      activity_replacements: selection.replacements.map((item) => ({
+        replaced_item_id: item.replacedItemId,
+        replacement_candidate_id: item.replacementCandidateId,
+      })),
     };
   }
   return {

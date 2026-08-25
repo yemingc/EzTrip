@@ -79,7 +79,7 @@ def _fixture_pois(
     city: str,
     rows: tuple[tuple[str, str, str, float, float, str], ...],
 ) -> tuple[CandidatePOI, ...]:
-    indoor_terms = ("博物馆", "博物院", "美术馆", "艺术宫")
+    indoor_terms = ("博物馆", "博物院", "美术馆", "艺术宫", "天文馆")
     outdoor_terms = (
         "公园",
         "动物园",
@@ -126,6 +126,7 @@ def _beijing_pois() -> tuple[CandidatePOI, ...]:
             ("shichahai", "什刹海", "西城区", 39.9402, 116.3852, "activity"),
             ("gongwangfu", "恭王府", "西城区", 39.9371, 116.3863, "activity"),
             ("capital-museum", "首都博物馆", "西城区", 39.9054, 116.3430, "activity"),
+            ("beijing-planetarium", "北京天文馆", "西城区", 39.9383, 116.3360, "activity"),
             ("nanluoguxiang", "南锣鼓巷", "东城区", 39.9372, 116.4034, "activity"),
             ("lama-temple", "雍和宫文化片区", "东城区", 39.9471, 116.4173, "activity"),
             ("summer-palace", "颐和园", "海淀区", 39.9999, 116.2755, "activity"),

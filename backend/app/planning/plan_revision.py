@@ -187,13 +187,10 @@ def _validate_revision_scope(
     return target_day, base_plan.days.index(target_day) + 1
 
 
-def _replacement_candidate(
+def _replacement_candidates(
     materials: PlanningMaterialBundle,
     revision: PlanRevisionRequest,
-) -> CandidatePOI:
-    replacement_id = revision.replacement_candidate_id
-    if replacement_id is None:
-        raise PlanRevisionProtocolError("activity replacement has no replacement candidate")
+) -> dict[str, CandidatePOI]:
     explore_branch = next(
         item
         for item in materials.specialist_result.branches
@@ -204,39 +201,39 @@ def _replacement_candidate(
         if explore_branch.explore_result is not None
         else ()
     )
-    replacement = next(
-        (item.candidate for item in observations if item.candidate.candidate_id == replacement_id),
-        None,
-    )
+    observed_by_id = {item.candidate.candidate_id: item.candidate for item in observations}
     scheduled_ids = {item.candidate_id for item in materials.shortlist.poi_candidates}
-    if (
-        replacement is None
-        or is_meal_candidate(replacement)
-        or replacement.city != materials.planner_context.destination.normalized_name
-        or replacement.candidate_id in scheduled_ids
-    ):
-        raise PlanRevisionProtocolError(
-            "replacement candidate is not an eligible Explore Provider observation"
-        )
-    return replacement
+    replacements: dict[str, CandidatePOI] = {}
+    for pair in revision.replacement_pairs:
+        replacement = observed_by_id.get(pair.replacement_candidate_id)
+        if (
+            replacement is None
+            or is_meal_candidate(replacement)
+            or replacement.city != materials.planner_context.destination.normalized_name
+            or replacement.candidate_id in scheduled_ids
+        ):
+            raise PlanRevisionProtocolError(
+                "replacement candidate is not an eligible Explore Provider observation"
+            )
+        replacements[pair.replaced_item_id] = replacement
+    return replacements
 
 
 def _revised_shortlist(
     materials: PlanningMaterialBundle,
-    revision: PlanRevisionRequest,
     target_day_number: int,
-    removed_candidate_id: str,
-    replacement: CandidatePOI,
+    replacements: dict[str, CandidatePOI],
 ) -> PlanningShortlist:
     revised_pois = tuple(
-        replacement if item.candidate_id == removed_candidate_id else item
-        for item in materials.shortlist.poi_candidates
+        replacements.get(item.candidate_id, item) for item in materials.shortlist.poi_candidates
     )
     revised_clusters = tuple(
         PlanningDayCluster(
             day_number=cluster.day_number,
             poi_candidate_ids=tuple(
-                replacement.candidate_id if candidate_id == removed_candidate_id else candidate_id
+                replacements[candidate_id].candidate_id
+                if candidate_id in replacements
+                else candidate_id
                 for candidate_id in cluster.poi_candidate_ids
             ),
         )
@@ -378,18 +375,8 @@ def _revised_target_day(
     shortlist: PlanningShortlist,
     revision: PlanRevisionRequest,
     route_matrix: RouteMatrix,
-    replacement: CandidatePOI,
-) -> tuple[DayPlan, tuple[str, ...], str, str]:
-    replaced_item = next(
-        (item for item in target_day.items if item.item_id == revision.replaced_item_id),
-        None,
-    )
-    if (
-        replaced_item is None
-        or replaced_item.kind != ActivityKind.ATTRACTION
-        or replaced_item.candidate_id is None
-    ):
-        raise PlanRevisionProtocolError("replacement target is not a grounded itinerary item")
+    replacements: dict[str, CandidatePOI],
+) -> tuple[DayPlan, tuple[str, ...], tuple[str, ...], tuple[str, ...]]:
     candidates = {item.candidate_id: item for item in shortlist.poi_candidates}
     edges = {
         (item.origin_candidate_id, item.destination_candidate_id): item
@@ -400,11 +387,12 @@ def _revised_target_day(
     previous_end = None
     revised_items: list[ItineraryItem] = []
     rescheduled_ids: list[str] = []
+    added_ids: list[str] = []
+    removed_ids: list[str] = []
     for original in target_day.items:
+        replacement = replacements.get(original.item_id)
         candidate_id = (
-            replacement.candidate_id
-            if original.item_id == revision.replaced_item_id
-            else original.candidate_id
+            replacement.candidate_id if replacement is not None else original.candidate_id
         )
         if candidate_id is None or candidate_id not in candidates:
             raise PlanRevisionProtocolError("target day contains an unsupported itinerary item")
@@ -429,7 +417,7 @@ def _revised_target_day(
             )
         duration = (
             candidate.suggested_duration_minutes or 120
-            if original.item_id == revision.replaced_item_id
+            if replacement is not None
             else round((original.end_at - original.start_at).total_seconds() / 60)
         )
         end_at = earliest_start + timedelta(minutes=duration)
@@ -437,7 +425,7 @@ def _revised_target_day(
             raise PlanRevisionProtocolError(
                 "replacement would move an item outside its target date"
             )
-        if original.item_id == revision.replaced_item_id:
+        if replacement is not None:
             revised = ItineraryItem(
                 item_id=_stable_id(
                     "plan-item-revision",
@@ -459,6 +447,8 @@ def _revised_target_day(
                     "实时价格、营业时间和可订状态仍需单独验证。",
                 ),
             )
+            added_ids.append(revised.item_id)
+            removed_ids.append(original.item_id)
         else:
             revised = ItineraryItem.model_validate(
                 original.model_copy(
@@ -496,8 +486,8 @@ def _revised_target_day(
     return (
         revised_day,
         tuple(rescheduled_ids),
-        revised_items[target_day.items.index(replaced_item)].item_id,
-        replaced_item.item_id,
+        tuple(added_ids),
+        tuple(removed_ids),
     )
 
 
@@ -583,23 +573,27 @@ async def apply_activity_replacement(
         base_plan,
         revision,
     )
-    replaced_item = next(
-        (item for item in target_day.items if item.item_id == revision.replaced_item_id),
-        None,
-    )
-    if (
-        replaced_item is None
-        or replaced_item.kind != ActivityKind.ATTRACTION
-        or replaced_item.candidate_id is None
-    ):
-        raise PlanRevisionProtocolError("replacement target is not a grounded itinerary item")
-    replacement = _replacement_candidate(materials, revision)
+    target_items = {item.item_id: item for item in target_day.items}
+    replacement_items = []
+    for pair in revision.replacement_pairs:
+        target_item = target_items.get(pair.replaced_item_id)
+        if (
+            target_item is None
+            or target_item.kind != ActivityKind.ATTRACTION
+            or target_item.candidate_id is None
+        ):
+            raise PlanRevisionProtocolError("replacement target is not a grounded itinerary item")
+        replacement_items.append(target_item)
+    replacements_by_item_id = _replacement_candidates(materials, revision)
+    replacements_by_candidate_id = {
+        target_item.candidate_id: replacements_by_item_id[target_item.item_id]
+        for target_item in replacement_items
+        if target_item.candidate_id is not None
+    }
     shortlist = _revised_shortlist(
         materials,
-        revision,
         target_day_number,
-        replaced_item.candidate_id,
-        replacement,
+        replacements_by_candidate_id,
     )
     route_matrix, provider_call_count = await _revised_route_matrix(
         trip_request,
@@ -615,6 +609,16 @@ async def apply_activity_replacement(
         route_matrix,
         budget_allocation,
     )
+    replacement_records = tuple(
+        PlanningActivityReplacement(
+            revision_id=revision.revision_id,
+            target_day_number=target_day_number,
+            removed_candidate_id=target_item.candidate_id,
+            replacement_candidate_id=replacements_by_item_id[target_item.item_id].candidate_id,
+        )
+        for target_item in replacement_items
+        if target_item.candidate_id is not None
+    )
     revised_materials = PlanningMaterialBundle(
         request_id=materials.request_id,
         context_id=materials.context_id,
@@ -626,20 +630,16 @@ async def apply_activity_replacement(
         shortlist=shortlist,
         route_matrix=route_matrix,
         budget_allocation=budget_allocation,
-        activity_replacement=PlanningActivityReplacement(
-            revision_id=revision.revision_id,
-            target_day_number=target_day_number,
-            removed_candidate_id=replaced_item.candidate_id,
-            replacement_candidate_id=replacement.candidate_id,
-        ),
+        activity_replacement=(replacement_records[0] if len(replacement_records) == 1 else None),
+        activity_replacements=(replacement_records if len(replacement_records) > 1 else ()),
     )
-    revised_day, rescheduled_ids, added_id, removed_id = _revised_target_day(
+    revised_day, rescheduled_ids, added_ids, removed_ids = _revised_target_day(
         revised_materials,
         target_day,
         shortlist,
         revision,
         route_matrix,
-        replacement,
+        replacements_by_item_id,
     )
     days = tuple(revised_day if day.date == revision.target_date else day for day in base_plan.days)
     revised_plan = TripPlan.model_validate(
@@ -662,6 +662,11 @@ async def apply_activity_replacement(
     ):
         raise PlanRevisionProtocolError("replacement changed protected plan facts")
     return PlanRevisionResult(
+        executor_version=(
+            "deterministic-local-revision-v3"
+            if len(revision.replacement_pairs) > 1
+            else "deterministic-local-revision-v2"
+        ),
         request=revision,
         revised_plan=revised_plan,
         validation=validate_trip_plan(trip_request, revised_plan),
@@ -670,8 +675,8 @@ async def apply_activity_replacement(
             to_plan_id=revised_plan.plan_id,
             changed_dates=(revision.target_date,),
             rescheduled_item_ids=rescheduled_ids,
-            added_item_ids=(added_id,),
-            removed_item_ids=(removed_id,),
+            added_item_ids=added_ids,
+            removed_item_ids=removed_ids,
         ),
         revised_materials=revised_materials,
         reused_provider_results=False,
