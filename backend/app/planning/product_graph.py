@@ -51,6 +51,7 @@ PRODUCT_PLANNING_GRAPH_NAME = "eztrip-product-planning-graph-v2"
 LIVE_REVIEW_ONLY_RULE_CODES = frozenset(
     {
         "opening_hours.evidence_missing",
+        "route.excessive_transfer",
         "route.missing_for_grounded_item",
     }
 )
@@ -61,7 +62,12 @@ def should_skip_live_repair(
     data_mode: DataMode,
     validation: PlanValidationReport,
 ) -> bool:
-    """Send current live-provider fact gaps to HITL without replaying paid stages."""
+    """Preserve a usable live draft when another paid pass is unlikely to resolve it.
+
+    These issues already carry enough evidence for human review. Replaying Explore,
+    route construction, and Plan can exhaust the task deadline while discarding an
+    otherwise useful draft. Fixture mode still exercises deterministic repair.
+    """
 
     if data_mode != DataMode.LIVE or validation.can_finalize:
         return False

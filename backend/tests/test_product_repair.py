@@ -160,7 +160,7 @@ def test_product_graph_skips_repair_when_hard_validation_is_finalizable(tmp_path
     asyncio.run(scenario())
 
 
-def test_live_provider_fact_gaps_skip_expensive_automatic_repair() -> None:
+def test_live_reviewable_draft_skips_expensive_automatic_repair() -> None:
     async def scenario() -> None:
         request, _, _, materials, plan, _ = await _product_artifacts()
         missing_opening = OpeningHoursEvidenceBundle(
@@ -176,13 +176,40 @@ def test_live_provider_fact_gaps_skip_expensive_automatic_repair() -> None:
         assert error_codes == {"opening_hours.evidence_missing"}
         assert should_skip_live_repair(DataMode.LIVE, report) is True
         assert should_skip_live_repair(DataMode.FIXTURE, report) is False
-        hard_conflict = report.model_copy(
+        long_transfer = ValidationIssue(
+            issue_id="live-long-transfer-review",
+            rule_code="route.excessive_transfer",
+            severity=IssueSeverity.ERROR,
+            message="单段通勤超过 90 分钟且需要用户决定是否替换活动。",
+            evidence=(
+                ValidationEvidence(
+                    field_path="days[0].items[1].route_from_previous.duration_minutes",
+                    description="已取得实时路线证据",
+                    observed_value=95,
+                ),
+            ),
+            responsible_node=ResponsibleNode.ROUTE,
+            repairable=True,
+            repair_action=RepairAction.RERUN_EXPLORE,
+        )
+        mixed_report = report.model_copy(
+            update={
+                "issues": (*report.issues, long_transfer),
+                "passed_rule_codes": tuple(
+                    code for code in report.passed_rule_codes if code != "route.excessive_transfer"
+                ),
+            }
+        )
+
+        assert should_skip_live_repair(DataMode.LIVE, mixed_report) is True
+        assert should_skip_live_repair(DataMode.FIXTURE, mixed_report) is False
+        hard_conflict = mixed_report.model_copy(
             update={
                 "issues": tuple(
                     issue.model_copy(update={"rule_code": "constraint.hard_avoid_scheduled"})
-                    if issue.severity == IssueSeverity.ERROR
+                    if issue.rule_code == "route.excessive_transfer"
                     else issue
-                    for issue in report.issues
+                    for issue in mixed_report.issues
                 )
             }
         )
