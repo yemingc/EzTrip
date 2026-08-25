@@ -8,61 +8,79 @@ async function understandAndStart(
   const confirmation = page.getByTestId("request-intake-confirmation");
   await expect(confirmation).toBeVisible();
   if (selection === "form") {
-    await confirmation.getByText("保留结构化表单", { exact: true }).click();
+    await confirmation.getByText("使用当前表单", { exact: true }).click();
   }
   await page.getByTestId("confirm-request-intake").click();
 }
 
-test("submits a real fixture planning task and renders its evidence", async ({ page }) => {
+test("generates a complete sample itinerary with user-facing copy", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "一份旅行计划，一条完整证据链。" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "把想去的地方，变成一份好用的行程。" })).toBeVisible();
   await understandAndStart(page);
 
   const trace = page.getByTestId("event-trace");
-  await expect(trace).toContainText("任务已入队");
-  await expect(trace).toContainText("执行有界局部修复");
-  await expect(trace).toContainText("等待人工审核");
+  await expect(trace).toContainText("已收到旅行需求");
+  await expect(trace).toContainText("调整不合理安排");
+  await expect(trace).toContainText("行程等待确认");
 
   const results = page.getByTestId("planning-results");
   await expect(results).toBeVisible({ timeout: 20_000 });
-  await expect(results).toContainText("北京 · 2 日规划草案");
+  await expect(results).toContainText("北京 · 2 天行程");
   await expect(results).toContainText("故宫博物院");
   await expect(results).toContainText("天坛公园");
   await expect(results).toContainText("中国国家博物馆");
   await expect(results).toContainText("景山公园");
   await expect(results.getByTestId("itinerary-item")).toHaveCount(4);
-  await expect(results).toContainText("从住宿锚点出发前往首站");
+  await expect(results).toContainText("从住宿地点出发前往首站");
   await expect(results).toContainText("附近用餐建议");
-  await expect(results).toContainText("推荐 · 不占活动名额");
-  await expect(results).toContainText("Fixture 数据");
-  await expect(results).toContainText("Product Graph V2");
-  await expect(results).toContainText("explore");
-  await expect(results).toContainText("stay");
-  await expect(results).toContainText("weather");
   await expect(results).toContainText("首日优先室内或混合型活动");
   await expect(results.getByTestId("stay-recommendation")).toContainText("住宿推荐");
-  await expect(results.getByTestId("stay-recommendation")).toContainText("Stay Agent 推荐理由");
-  await expect(results.getByTestId("stay-recommendation")).toContainText("房价与房态待验证");
+  await expect(results.getByTestId("stay-recommendation")).toContainText("推荐理由");
+  await expect(results.getByTestId("stay-recommendation")).toContainText("价格和空房情况以预订平台为准");
   await expect(results.getByTestId("activity-description")).toHaveCount(4);
   await expect(results.getByTestId("activity-reason")).toHaveCount(4);
-  await expect(results).toContainText("Fixture 模式不调用真实地图服务");
+  await expect(results).toContainText("示例体验暂不显示地图");
   await expect(results.getByTestId("budget-estimate")).toContainText("预算估算");
   const repair = page.getByTestId("product-repair-summary");
-  await expect(repair).toContainText("有界自动修复");
-  await expect(repair).toContainText("1 次修复 · repaired");
-  await expect(repair).toContainText("replan_day");
-  await expect(repair).toContainText("实际执行：Plan");
-  await expect(repair).toContainText("营业时间冲突已修复");
-  await expect(repair).toContainText("0 次模型调用 · 0 次工具调用");
+  await expect(repair).toContainText("行程已自动调整");
+  await expect(repair).toContainText("已调整 1 次");
+  await expect(repair).toContainText("营业时间冲突已解决");
 
-  const approve = page.getByRole("button", { name: "批准草案" });
+  const visiblePageText = await page.locator("body").innerText();
+  for (const forbiddenTerm of [
+    "Agent",
+    "Provider",
+    "Fixture",
+    "HITL",
+    "SSE",
+    "LangGraph",
+    "Product Graph",
+    "可回放",
+    "不占活动名额",
+    "模型调用",
+    "工具调用",
+    "checkpoint",
+    "API:",
+    "结构化",
+    "确定性",
+    "工作流",
+    "可追溯",
+    "住宿锚点",
+    "evidence",
+    "validator",
+    "schema",
+  ]) {
+    expect(visiblePageText).not.toContain(forbiddenTerm);
+  }
+
+  const approve = page.getByRole("button", { name: "确认行程" });
   await expect(approve).toBeEnabled();
   await approve.click();
-  await expect(trace).toContainText("审核决定已接收");
-  await expect(trace).toContainText("规划已完成");
-  await expect(results).toContainText("审核已完成");
-  await expect(results).toContainText("已批准草案");
+  await expect(trace).toContainText("已收到你的选择");
+  await expect(trace).toContainText("行程已完成");
+  await expect(results).toContainText("本次选择已保存");
+  await expect(results).toContainText("行程已确认");
   await expect(results).toContainText("v1 → v1");
   await expect(results).toContainText("计划未修改 · 0 个受影响日期");
 
@@ -84,24 +102,24 @@ test("restores one task across in-flight, review, and completed refreshes", asyn
   const trace = page.getByTestId("event-trace");
   const results = page.getByTestId("planning-results");
   await expect(results).toBeVisible({ timeout: 20_000 });
-  await expect(trace).toContainText("任务已入队");
-  await expect(trace).toContainText("等待人工审核");
-  await expect(page.getByRole("button", { name: "批准草案" })).toBeEnabled();
+  await expect(trace).toContainText("已收到旅行需求");
+  await expect(trace).toContainText("行程等待确认");
+  await expect(page.getByRole("button", { name: "确认行程" })).toBeEnabled();
 
   await page.reload();
   await expect(page).toHaveURL(taskUrl);
   await expect(results).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByRole("button", { name: "批准草案" })).toBeEnabled();
-  await page.getByRole("button", { name: "批准草案" }).click();
-  await expect(results).toContainText("审核已完成");
-  await expect(trace).toContainText("规划已完成");
+  await expect(page.getByRole("button", { name: "确认行程" })).toBeEnabled();
+  await page.getByRole("button", { name: "确认行程" }).click();
+  await expect(results).toContainText("本次选择已保存");
+  await expect(trace).toContainText("行程已完成");
 
   await page.reload();
   await expect(page).toHaveURL(taskUrl);
-  await expect(results).toContainText("审核已完成", { timeout: 20_000 });
-  await expect(results).toContainText("已批准草案");
-  await expect(trace).toContainText("审核决定已接收");
-  await expect(trace).toContainText("规划已完成");
+  await expect(results).toContainText("本次选择已保存", { timeout: 20_000 });
+  await expect(results).toContainText("行程已确认");
+  await expect(trace).toContainText("已收到你的选择");
+  await expect(trace).toContainText("行程已完成");
 });
 
 test("renders three main activities per day in standard pace without counting meals", async ({ page }) => {
@@ -114,7 +132,7 @@ test("renders three main activities per day in standard pace without counting me
   await expect(results).toBeVisible({ timeout: 20_000 });
   await expect(results.getByTestId("itinerary-item")).toHaveCount(6);
   await expect(results.getByTestId("meal-recommendations")).toHaveCount(2);
-  await expect(results).toContainText("推荐 · 不占活动名额");
+  await expect(results).not.toContainText("不占活动名额");
 });
 
 test("renders a plan when the API omits empty meal recommendations", async ({ page }) => {
@@ -164,7 +182,7 @@ test("renders a plan when the API omits empty meal recommendations", async ({ pa
   const results = page.getByTestId("planning-results");
   await expect(results).toBeVisible({ timeout: 20_000 });
   await expect(
-    results.getByText("当前没有 3 公里内且来源可追溯的餐饮候选，不随机填充全城餐厅。"),
+    results.getByText("附近暂时没有合适的用餐推荐。"),
   ).toHaveCount(2);
 });
 
@@ -180,13 +198,13 @@ test("does not present missing cost facts as a zero-cost trip", async ({ page })
   await expect(estimate).toContainText("¥2,000");
   await expect(estimate).toContainText("交通");
   await expect(estimate).toContainText("餐饮");
-  await expect(estimate).toContainText("规划估算，不代表实时票价");
-  await expect(results).toContainText("方案可用 · 有估算提醒");
-  const approve = page.getByRole("button", { name: "批准草案" });
+  await expect(estimate).toContainText("实际费用以出行时为准");
+  await expect(results).toContainText("行程可用 · 请留意提示");
+  const approve = page.getByRole("button", { name: "确认行程" });
   await expect(approve).toBeEnabled();
   await approve.click();
-  await expect(results).toContainText("审核已完成");
-  await expect(results).toContainText("已批准草案");
+  await expect(results).toContainText("本次选择已保存");
+  await expect(results).toContainText("行程已确认");
 });
 
 test("resolves Shanghai and plans a three-day fixture trip", async ({ page }) => {
@@ -196,10 +214,10 @@ test("resolves Shanghai and plans a three-day fixture trip", async ({ page }) =>
   await page.getByLabel("行程天数").selectOption("3");
   await understandAndStart(page);
 
-  await expect(page.getByTestId("destination-resolution")).toContainText("adcode 310000");
+  await expect(page.getByTestId("destination-resolution")).toContainText("已确认目的地：上海市");
   const results = page.getByTestId("planning-results");
   await expect(results).toBeVisible({ timeout: 20_000 });
-  await expect(results).toContainText("上海 · 3 日规划草案");
+  await expect(results).toContainText("上海 · 3 天行程");
   await expect(results).toContainText("上海博物馆");
   await expect(results).toContainText("豫园");
 });
@@ -214,7 +232,7 @@ test("requires confirmation when a destination name is ambiguous", async ({ page
   await expect(ambiguity).toBeVisible();
   await expect(ambiguity).toContainText("北京市朝阳区");
   await expect(ambiguity).toContainText("辽宁省朝阳市");
-  await expect(page.getByTestId("event-trace")).toContainText("提交后，这里会显示真实 SSE 事件");
+  await expect(page.getByTestId("event-trace")).toContainText("开始后，这里会显示规划进度");
 });
 
 test("does not pretend fixture mode supports an arbitrary city", async ({ page }) => {
@@ -224,18 +242,18 @@ test("does not pretend fixture mode supports an arbitrary city", async ({ page }
   await page.getByTestId("submit-planning-task").click();
 
   await expect(page.getByTestId("planning-error")).toContainText(
-    "Fixture 模式仅覆盖北京、上海和成都",
+    "示例体验仅支持北京、上海和成都",
   );
   await expect(page.getByTestId("planning-results")).not.toBeVisible();
 });
 
-test("treats live Provider selection as the explicit per-request opt-in", async ({ page }) => {
+test("explains real-time planning in user-facing language", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByLabel("旅行数据模式").selectOption("live");
+  await page.getByLabel("规划方式").selectOption("live");
 
-  await expect(page.getByText("当前选择会直接启用实时调用")).toBeVisible();
-  await expect(page.getByText("Key 仍只保存在服务端", { exact: false })).toBeVisible();
+  await expect(page.getByText("将查询实时地点和路线信息", { exact: false })).toBeVisible();
+  await expect(page.getByText("开放时间、票价和房态请在出发前再次确认", { exact: false })).toBeVisible();
 });
 
 test("renders the live itinerary on a proxied AMap basemap", async ({ page }) => {
@@ -324,9 +342,9 @@ test("explains verification gaps without calling every error a hard conflict", a
   await understandAndStart(page);
 
   const results = page.getByTestId("planning-results");
-  await expect(results).toContainText("关键事实待确认");
+  await expect(results).toContainText("出发前需要确认");
   await expect(results.getByTestId("review-issue-summary")).toContainText("一段到达路线未取得");
-  await expect(page.getByRole("button", { name: "保留待验证草案" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "保留当前方案" })).toBeVisible();
   await expect(results).not.toContainText("存在硬冲突");
 });
 
@@ -339,11 +357,11 @@ test("applies a structured day-scoped revision and renders plan version v2", asy
   await page.getByRole("button", { name: "局部修改" }).click();
   await page.getByLabel("活动延后时间").selectOption("120");
   await page.getByLabel("修改说明").fill("第二天想晚一点出发。");
-  await page.getByRole("button", { name: "生成局部修改草案" }).click();
+  await page.getByRole("button", { name: "生成修改版" }).click();
 
-  await expect(page.getByTestId("event-trace")).toContainText("应用局部修改");
-  await expect(results).toContainText("已生成修改草案");
-  await expect(results).toContainText("v2 修改草案 · 尚未再次审核");
+  await expect(page.getByTestId("event-trace")).toContainText("更新所选行程");
+  await expect(results).toContainText("修改版已生成");
+  await expect(results).toContainText("修改版 · 等待再次确认");
   await expect(results).toContainText("v1 → v2");
   await expect(results).toContainText("计划已修改 · 1 个受影响日期");
   await expect(results).toContainText("12:00 — 14:00");
@@ -354,7 +372,7 @@ test("applies a structured day-scoped revision and renders plan version v2", asy
   });
 });
 
-test("replaces one activity from Provider observations and preserves the other day", async ({
+test("replaces one activity from available places and preserves the other day", async ({
   page,
 }) => {
   await page.goto("/");
@@ -369,12 +387,12 @@ test("replaces one activity from Provider observations and preserves the other d
   await page.getByRole("button", { name: "局部修改" }).click();
   await page.getByLabel("修改方式").selectOption("replace_activity");
   await page.getByLabel("被替换活动").selectOption({ label: "景山公园" });
-  await page.getByLabel("Provider 备选活动").selectOption({ label: "北海公园 · 西城区" });
+  await page.getByLabel("可选地点").selectOption({ label: "北海公园 · 西城区" });
   await page.getByLabel("修改说明").fill("把第二天的景山公园换成同一观察池里的北海公园。");
-  await page.getByRole("button", { name: "生成局部修改草案" }).click();
+  await page.getByRole("button", { name: "生成修改版" }).click();
 
-  await expect(page.getByTestId("event-trace")).toContainText("应用局部修改");
-  await expect(results).toContainText("v2 修改草案 · 尚未再次审核");
+  await expect(page.getByTestId("event-trace")).toContainText("更新所选行程");
+  await expect(results).toContainText("修改版 · 等待再次确认");
   await expect(results).toContainText("北海公园");
   await expect(results).not.toContainText("景山公园");
   await expect(results).toContainText("计划已修改 · 1 个受影响日期");
@@ -383,7 +401,7 @@ test("replaces one activity from Provider observations and preserves the other d
   ).toHaveText(protectedDayBefore ?? "");
 });
 
-test("shows an honest empty state when Provider observations have no replacement", async ({
+test("shows a useful empty state when there is no replacement", async ({
   page,
 }) => {
   await page.route(/\/api\/planning-tasks\/planning-task-[^/]+$/, async (route) => {
@@ -427,9 +445,9 @@ test("shows an honest empty state when Provider observations have no replacement
   await page.getByLabel("修改方式").selectOption("replace_activity");
 
   await expect(
-    page.getByText("本次 Provider observations 没有可替换候选；系统不会让模型补造地点。"),
+    page.getByText("暂时没有合适的替换地点，可以保留当前安排或重新生成行程。"),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "生成局部修改草案" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "生成修改版" })).toBeDisabled();
 });
 
 test("requires confirmation and sends the confirmed raw intent instead of old defaults", async ({ page }) => {
@@ -462,7 +480,7 @@ test("requires confirmation and sends the confirmed raw intent instead of old de
   expect(planningPostCount).toBe(0);
 
   await page.getByTestId("confirm-request-intake").click();
-  await expect(page.getByTestId("event-trace")).toContainText("任务已入队");
+  await expect(page.getByTestId("event-trace")).toContainText("已收到旅行需求");
   expect(planningPostCount).toBe(1);
   expect(captured.payload?.intake_confirmation_id).toMatch(/^request-confirmation-/);
   expect(captured.payload?.request?.party).toMatchObject({ adults: 1, children: 1 });

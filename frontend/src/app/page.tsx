@@ -18,54 +18,54 @@ export default function Home() {
           </span>
           <div>
             <p className="text-lg font-semibold tracking-[-0.03em]">EzTrip</p>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.19em] text-slate-400">Multi-Agent Travel Ops</p>
+            <p className="text-[10px] font-semibold tracking-[0.12em] text-slate-400">旅行规划助手</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <span className="hidden rounded-full border border-emerald-900/10 bg-white/60 px-3 py-2 text-[11px] font-medium text-slate-600 backdrop-blur sm:inline-flex">
-            Planning API v1
+            国内城市行程规划
           </span>
           <a
             className="rounded-full bg-slate-950 px-4 py-2 text-[11px] font-semibold text-white transition hover:bg-emerald-950"
             href="#planner"
           >
-            打开工作台
+            开始规划
           </a>
         </div>
       </header>
 
       <section className="relative mx-auto grid max-w-[1480px] gap-8 px-4 pb-10 pt-10 sm:px-6 sm:pt-14 lg:grid-cols-[minmax(0,1.3fr)_minmax(340px,.7fr)] lg:px-8 lg:pb-14 lg:pt-20">
         <div>
-          <p className="eyebrow">Plan · Validate · Review</p>
+          <p className="eyebrow">从旅行想法到每日安排</p>
           <h1 className="mt-5 max-w-4xl text-5xl font-semibold leading-[1.02] tracking-[-0.055em] sm:text-6xl lg:text-[5.25rem]">
-            一份旅行计划，
-            <span className="text-emerald-800">一条完整证据链。</span>
+            把想去的地方，
+            <span className="text-emerald-800">变成一份好用的行程。</span>
           </h1>
           <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
-            面向中国用户的多 Agent 旅行规划助手。把景点事实、行程草案、预算规则与人工审核组织进可观测工作流，并明确区分实时数据、测试数据和未知信息。
+            填写目的地、日期、预算和旅行偏好，获得按天安排的景点、通勤、住宿和附近用餐建议。生成后还可以确认或局部调整。
           </p>
         </div>
 
         <div className="self-end rounded-[1.75rem] border border-white/70 bg-white/62 p-5 shadow-[0_20px_60px_rgba(15,23,42,.07)] backdrop-blur sm:p-6">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold">本阶段真实能力</p>
+            <p className="text-sm font-semibold">你可以这样使用</p>
             <span className="flex items-center gap-2 text-[11px] font-semibold text-emerald-800">
               <span className="size-2 rounded-full bg-emerald-500" />
-              EZ-407A
+              行程可调整
             </span>
           </div>
           <dl className="mt-5 space-y-4 text-xs">
             <div className="flex items-start justify-between gap-6 border-b border-slate-200/70 pb-4">
-              <dt className="text-slate-500">任务恢复</dt>
-              <dd className="text-right font-semibold">URL + SQLite 事件账本</dd>
+              <dt className="text-slate-500">按天规划</dt>
+              <dd className="text-right font-semibold">安排景点与通勤时间</dd>
             </div>
             <div className="flex items-start justify-between gap-6 border-b border-slate-200/70 pb-4">
-              <dt className="text-slate-500">景点来源</dt>
-              <dd className="text-right font-semibold">高德协议 Fixture</dd>
+              <dt className="text-slate-500">住宿与用餐</dt>
+              <dd className="text-right font-semibold">结合每天路线推荐</dd>
             </div>
             <div className="flex items-start justify-between gap-6">
-              <dt className="text-slate-500">审核与修改</dt>
-              <dd className="text-right font-semibold text-emerald-800">HITL + v2 局部 diff</dd>
+              <dt className="text-slate-500">确认与修改</dt>
+              <dd className="text-right font-semibold text-emerald-800">保留其他日期，只改所选行程</dd>
             </div>
           </dl>
         </div>
