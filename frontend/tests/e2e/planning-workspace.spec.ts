@@ -13,6 +13,38 @@ async function understandAndStart(
   await page.getByTestId("confirm-request-intake").click();
 }
 
+function dateInChinaAfter(days: number) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date(Date.now() + days * 24 * 60 * 60 * 1000));
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function addCalendarDays(value: string, days: number) {
+  const result = new Date(`${value}T00:00:00Z`);
+  result.setUTCDate(result.getUTCDate() + days);
+  return result.toISOString().slice(0, 10);
+}
+
+test("allows trips starting today while defaulting to one week later", async ({ page }) => {
+  const todayBeforeNavigation = dateInChinaAfter(0);
+  await page.goto("/");
+
+  const startDate = page.getByLabel("出发日期");
+  const todayAfterNavigation = dateInChinaAfter(0);
+  const earliestStartDate = await startDate.getAttribute("min");
+  expect([todayBeforeNavigation, todayAfterNavigation]).toContain(earliestStartDate);
+  expect(earliestStartDate).not.toBeNull();
+  await expect(startDate).toHaveValue(addCalendarDays(earliestStartDate!, 7));
+
+  await startDate.fill(earliestStartDate!);
+  await expect(startDate).toHaveValue(earliestStartDate!);
+});
+
 test("generates a complete sample itinerary with user-facing copy", async ({ page }) => {
   await page.goto("/");
 
