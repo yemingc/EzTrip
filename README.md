@@ -4,7 +4,7 @@
 
 当前已完成 Gate 0 工程基线、规格级 smoke scenarios、可观测性探针、第一版旅行领域契约、高德官方 MCP / REST 探针、typed provider adapter、脱敏 fixture、`TripRequest → PlannerContext` 确定性编译层、首条三节点 LangGraph 主链、6 standard + 4 hard 的确定性基线、Constraint Agent、受 provider 候选约束的单 Planner 基线、开放式景点/餐饮 Explore Agent、住宿区域筛选 Stay Agent、确定性预算/基础计划 Validator、北京三日 Gate 2 最小纵向切片、基于 SQLite checkpoint 的可恢复主编排与原生 HITL、Explore/Stay/主动天气三分支并行编排、有界路线矩阵和确定性预算材料层、把这些专业信息包合成为同构完整 `TripPlan` 草案的 schema-constrained Plan Agent、阻止不可靠草案定稿的 Hard Validators、消费 typed issue 的有界 Repair Router，以及 Weather Provider 风险主动触发的局部修复协调器。模型路径都有真实 DeepSeek/LangSmith 隔离评测；纵向切片、恢复、fan-out、材料层、Plan Agent、Hard Validators、Repair Router 与 Weather Repair 都有 fixture 可重放证据。公平 30-case system comparison 已完成离线控制路径重放；另已执行 3-case × 2 repeated-live DeepSeek pilot：42/42 模型调用成功，三个 arm 都是 6/6 finalizable，未观察到成功率提升；Product 的 exact-repeat consistency 为 3/3，Single 为 2/3，但 Product 调用和累计模型延迟更高。该结果只属于既有开发案例，不能写成泛化或真实用户成功率。
 
-产品调用层已切换到 Product Graph V2：一次 FastAPI 任务依次提交 `run_specialists → build_materials → run_plan_agent → validate_hard_plan → [run_repair] → HITL`。可修复 hard error 会进入最多两次/动作的 Repair Router；真实 executor 只重跑 Explore、Stay、Route、Budget 或 Plan 责任链，随后重新执行 Hard Validator，并显式记录执行节点、复用节点、调用计数和 issue diff。任务快照、可回放 SSE、四类人工审核决定、PlanVersion 与结构化局部修改继续复用原协议。Next.js 工作台支持自由填写国内单目的地、2–5 天行程和 fixture/live 数据模式；中文 Request Intake 与 Constraint Agent 先提议带原文 evidence 的字段和约束，确定性代码重算日期、人数、预算与节奏，并把歧义、缺失和表单冲突交给用户确认。确认前除有界 City Resolver 预检外不会进入旅行检索或规划；确认后的版本化 `TripRequest` 才提交 Product Graph。选择 live 即为该请求的显式外部调用授权，不需要额外修改环境开关，Key 始终只保存在服务端。北京、上海、成都只承担有界离线 fixture/E2E，不代表通用中文理解或 live 产品白名单。开放式自然语言重规划尚未接入。协议见 [`docs/api/planning-task-api.md`](docs/api/planning-task-api.md)，前端边界见 [`frontend/README.md`](frontend/README.md)。
+产品调用层已切换到 Product Graph V2：一次 FastAPI 任务依次提交 `run_specialists → build_materials → run_plan_agent → validate_hard_plan → [run_repair] → HITL`。可修复 hard error 会进入最多两次/动作的 Repair Router；真实 executor 只重跑 Explore、Stay、Route、Budget 或 Plan 责任链，随后重新执行 Hard Validator，并显式记录执行节点、复用节点、调用计数和 issue diff。任务快照、可回放 SSE、四类人工审核决定、PlanVersion 与结构化局部修改继续复用原协议，并写入本地版本化 SQLite 任务账本；Next.js 把 `task_id` 写入 URL，可在执行、等待审核和审核完成后刷新恢复。Next.js 工作台支持自由填写国内单目的地、2–5 天行程和 fixture/live 数据模式；中文 Request Intake 与 Constraint Agent 先提议带原文 evidence 的字段和约束，确定性代码重算日期、人数、预算与节奏，并把歧义、缺失和表单冲突交给用户确认。确认前除有界 City Resolver 预检外不会进入旅行检索或规划；确认后的版本化 `TripRequest` 才提交 Product Graph。选择 live 即为该请求的显式外部调用授权，不需要额外修改环境开关，Key 始终只保存在服务端。北京、上海、成都只承担有界离线 fixture/E2E，不代表通用中文理解或 live 产品白名单。开放式自然语言重规划尚未接入。协议见 [`docs/api/planning-task-api.md`](docs/api/planning-task-api.md)，前端边界见 [`frontend/README.md`](frontend/README.md)。
 
 ## 技术基线
 
@@ -239,7 +239,7 @@ uv run python -m scripts.run_checkpoint_hitl_eval
 uv run pytest tests/test_stateful_planning.py --no-cov
 ```
 
-原始 checkpoint 报告为 2/2 cases、20/20 checks、2/2 runtime reconstructions，恢复阶段 provider/model 调用均为 0。正常批准和冲突确认仍明确记录 v1→v1 零变更；结构化修改则校验 base version、目标/保护 scope，只改变一个目标日期并生成 v2。该段报告描述旧 Gate 2 checkpoint 基线；Product Graph V2 的 revision 已复用持久化路线/营业证据并重新执行 `hard-trip-plan-validator-v1`。SQLite 仍只是 Graph checkpoint 的本地恢复证据，不是生产级多进程并发、高可用或加密方案；API task/event/decision 元数据尚未持久化。
+原始 checkpoint 报告为 2/2 cases、20/20 checks、2/2 runtime reconstructions，恢复阶段 provider/model 调用均为 0。正常批准和冲突确认仍明确记录 v1→v1 零变更；结构化修改则校验 base version、目标/保护 scope，只改变一个目标日期并生成 v2。该段报告描述旧 Gate 2 checkpoint 基线；Product Graph V2 的 revision 已复用持久化路线/营业证据并重新执行 `hard-trip-plan-validator-v1`。EZ-407A 另用本地 SQLite 任务账本原子保存 API snapshot、连续 SSE 事件和已接受审核决定，使等待审核与完成态可跨后端重启恢复；重启时仍在 queued/running 的任务会转为可重试的 `planning-task-interrupted`，不会自动重放可能计费的模型或 Provider 阶段。两类 SQLite 都只是本地单实例恢复证据，不是生产级多进程并发、高可用、加密或无限期数据保留方案。
 
 ## Specialist 并行 fan-out
 
@@ -398,7 +398,7 @@ uv run python -m scripts.run_live_system_comparison_pilot --live --confirm-max-m
 - 不提供订票、订房、支付或实时房价；
 - 当前健康页不是旅行规划产品完成度；
 - 当前三节点探针只证明观测链路可接入，不证明模型规划质量；
-- Request Intake 与 Constraint Agent 已接入 Web 确认入口，但 fixture 解析只覆盖冻结的中文场景，live 抽取路径尚未执行本轮 canary；确认草案仍保存在单进程内存，刷新或后端重启后的恢复属于后续 EZ-407A；
+- Request Intake 与 Constraint Agent 已接入 Web 确认入口，但 fixture 解析只覆盖冻结的中文场景，live 抽取路径尚未执行本轮 canary；确认前的 Request Intake 草案仍保存在单进程内存，刷新后需要重新理解需求；确认并创建任务后，URL、snapshot、SSE 与审核幂等状态可跨刷新和单实例后端重启恢复；
 - Product Graph V2 已在产品 API 中连通 Explore、Stay、主动 Weather、路线/预算材料、Plan Agent、Hard Validator、真实责任节点 Repair Router、checkpoint HITL 和结构化 revision；Weather Repair Coordinator 仍是独立能力，定时 WeatherWatch 已从计划中取消；
 - 高德 live fixture 是 2026-08-20 的点时样本，不是当前天气、实时酒店价格或生产 SLA；
 - 后续功能必须通过真实 provider contract、固定评测和可回放 trace 验证后再写入项目成果。

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
@@ -16,6 +18,7 @@ def test_settings_have_safe_local_defaults() -> None:
     assert settings.amap_mcp_url == "https://mcp.amap.com/mcp"
     assert settings.amap_mcp_transport == "streamable_http"
     assert settings.amap_rest_static_map_url == "https://restapi.amap.com/v3/staticmap"
+    assert settings.planning_task_store_path == Path("tmp/planning-task-store.sqlite3")
 
 
 @pytest.mark.parametrize(

@@ -72,6 +72,38 @@ test("submits a real fixture planning task and renders its evidence", async ({ p
   });
 });
 
+test("restores one task across in-flight, review, and completed refreshes", async ({ page }) => {
+  await page.goto("/");
+  await understandAndStart(page);
+
+  await expect(page).toHaveURL(/\?task_id=planning-task-[a-f0-9]{32}$/);
+  const taskUrl = page.url();
+  await page.reload();
+  await expect(page).toHaveURL(taskUrl);
+
+  const trace = page.getByTestId("event-trace");
+  const results = page.getByTestId("planning-results");
+  await expect(results).toBeVisible({ timeout: 20_000 });
+  await expect(trace).toContainText("任务已入队");
+  await expect(trace).toContainText("等待人工审核");
+  await expect(page.getByRole("button", { name: "批准草案" })).toBeEnabled();
+
+  await page.reload();
+  await expect(page).toHaveURL(taskUrl);
+  await expect(results).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("button", { name: "批准草案" })).toBeEnabled();
+  await page.getByRole("button", { name: "批准草案" }).click();
+  await expect(results).toContainText("审核已完成");
+  await expect(trace).toContainText("规划已完成");
+
+  await page.reload();
+  await expect(page).toHaveURL(taskUrl);
+  await expect(results).toContainText("审核已完成", { timeout: 20_000 });
+  await expect(results).toContainText("已批准草案");
+  await expect(trace).toContainText("审核决定已接收");
+  await expect(trace).toContainText("规划已完成");
+});
+
 test("renders three main activities per day in standard pace without counting meals", async ({ page }) => {
   await page.goto("/");
 

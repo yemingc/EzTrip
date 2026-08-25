@@ -51,13 +51,13 @@ export default function Home() {
             <p className="text-sm font-semibold">本阶段真实能力</p>
             <span className="flex items-center gap-2 text-[11px] font-semibold text-emerald-800">
               <span className="size-2 rounded-full bg-emerald-500" />
-              EZ-406B
+              EZ-407A
             </span>
           </div>
           <dl className="mt-5 space-y-4 text-xs">
             <div className="flex items-start justify-between gap-6 border-b border-slate-200/70 pb-4">
-              <dt className="text-slate-500">需求入口</dt>
-              <dd className="text-right font-semibold">Evidence + 用户确认</dd>
+              <dt className="text-slate-500">任务恢复</dt>
+              <dd className="text-right font-semibold">URL + SQLite 事件账本</dd>
             </div>
             <div className="flex items-start justify-between gap-6 border-b border-slate-200/70 pb-4">
               <dt className="text-slate-500">景点来源</dt>
