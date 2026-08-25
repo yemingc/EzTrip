@@ -940,7 +940,19 @@ export function PlanningResults({
             </p>
           </article>
 
-          <WeatherOutlook candidates={candidates} plan={plan} />
+          <WeatherOutlook
+            candidates={candidates}
+            canRequestRevision={Boolean(
+              review?.allowed_actions.includes("request_revision"),
+            )}
+            onRequestRevision={(comment, revision) =>
+              onReview("request_revision", comment, revision)
+            }
+            plan={plan}
+            replacementCandidates={eligibleReplacementCandidates}
+            reviewBusy={reviewBusy}
+            reviewError={reviewError}
+          />
         </div>
 
         <AmapPlanOverview
