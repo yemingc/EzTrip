@@ -4,6 +4,7 @@ import type {
   CandidatePoi,
   PlanRevisionSelection,
   TripPlan,
+  WeatherIndoorRecovery,
   WeatherRisk,
 } from "@/lib/planning-task";
 
@@ -82,6 +83,7 @@ type WeatherReplacementProposal =
       targetDate: string;
       affectedCount: number;
       availableCount: number;
+      replacements: WeatherReplacementPair[];
     };
 
 interface RankedIndoorCandidate {
@@ -93,6 +95,11 @@ interface RankedIndoorCandidate {
 interface AffectedWeatherItem {
   item: TripPlan["days"][number]["items"][number];
   candidate: CandidatePoi;
+}
+
+interface WeatherDayRiskScope {
+  targetDate: string;
+  risks: WeatherRisk[];
 }
 
 function rankIndoorCandidates(
@@ -128,28 +135,26 @@ function weatherReasonFor(
   ].join("、");
 }
 
-/*
- * Build one atomic day-scoped proposal. A proposal is only actionable when every
- * affected outdoor or mixed activity has a distinct grounded indoor candidate.
- */
-function buildReplacementProposal({
+function affectedWeatherItems({
   plan,
   targetDate,
   risks,
   candidates,
-  replacementCandidates,
+  minimumSeverityRank,
 }: {
   plan: TripPlan;
   targetDate: string;
   risks: WeatherRisk[];
   candidates: CandidatePoi[];
-  replacementCandidates: CandidatePoi[];
-}): WeatherReplacementProposal | null {
-  const significantRisks = risks.filter((risk) => (severityRank[risk.severity] ?? 0) >= 2);
-  if (!significantRisks.length) return null;
+  minimumSeverityRank: number;
+}) {
+  const relevantRisks = risks.filter(
+    (risk) => (severityRank[risk.severity] ?? 0) >= minimumSeverityRank,
+  );
+  if (!relevantRisks.length) return { affectedItems: [], relevantRisks };
 
   const day = plan.days.find((item) => item.date === targetDate);
-  if (!day) return null;
+  if (!day) return { affectedItems: [], relevantRisks };
 
   const candidateById = new Map(candidates.map((candidate) => [candidate.candidate_id, candidate]));
   const affectedItems = day.items
@@ -159,7 +164,7 @@ function buildReplacementProposal({
       if (
         !candidate ||
         !["outdoor", "mixed"].includes(candidate.environment) ||
-        !significantRisks.some((risk) => riskAffectsCandidate(risk, candidate))
+        !relevantRisks.some((risk) => riskAffectsCandidate(risk, candidate))
       ) {
         return [];
       }
@@ -170,11 +175,13 @@ function buildReplacementProposal({
       const rightRank = right.candidate.environment === "outdoor" ? 0 : 1;
       return leftRank - rightRank || left.item.start_at.localeCompare(right.item.start_at);
     });
-  if (!affectedItems.length) return null;
+  return { affectedItems, relevantRisks };
+}
 
-  const indoorCandidates = [
+function eligibleIndoorCandidates(plan: TripPlan, candidates: CandidatePoi[]) {
+  return [
     ...new Map(
-      replacementCandidates
+      candidates
         .filter(
           (candidate) =>
             candidate.environment === "indoor" &&
@@ -184,16 +191,41 @@ function buildReplacementProposal({
         .map((candidate) => [candidate.candidate_id, candidate]),
     ).values(),
   ];
-  if (indoorCandidates.length < affectedItems.length) {
-    return {
-      status: "insufficient",
-      proposalId: `${plan.plan_id}:${targetDate}:insufficient:${affectedItems.length}:${indoorCandidates.length}`,
-      targetDate,
-      affectedCount: affectedItems.length,
-      availableCount: indoorCandidates.length,
-    };
-  }
+}
 
+/*
+ * Build one atomic day-scoped proposal. A proposal is only actionable when every
+ * affected outdoor or mixed activity has a distinct grounded indoor candidate.
+ */
+function buildReplacementProposal({
+  plan,
+  targetDate,
+  risks,
+  candidates,
+  replacementCandidates,
+  minimumSeverityRank = 2,
+  excludedCandidateIds = new Set<string>(),
+}: {
+  plan: TripPlan;
+  targetDate: string;
+  risks: WeatherRisk[];
+  candidates: CandidatePoi[];
+  replacementCandidates: CandidatePoi[];
+  minimumSeverityRank?: number;
+  excludedCandidateIds?: ReadonlySet<string>;
+}): WeatherReplacementProposal | null {
+  const { affectedItems, relevantRisks } = affectedWeatherItems({
+    plan,
+    targetDate,
+    risks,
+    candidates,
+    minimumSeverityRank,
+  });
+  if (!affectedItems.length) return null;
+
+  const indoorCandidates = eligibleIndoorCandidates(plan, replacementCandidates).filter(
+    (candidate) => !excludedCandidateIds.has(candidate.candidate_id),
+  );
   const availableById = new Map(
     indoorCandidates.map((candidate) => [candidate.candidate_id, candidate]),
   );
@@ -201,15 +233,7 @@ function buildReplacementProposal({
   for (const affected of affectedItems) {
     const ranked = rankIndoorCandidates(affected, [...availableById.values()]);
     const selected = ranked[0];
-    if (!selected) {
-      return {
-        status: "insufficient",
-        proposalId: `${plan.plan_id}:${targetDate}:insufficient:${affectedItems.length}:${replacements.length}`,
-        targetDate,
-        affectedCount: affectedItems.length,
-        availableCount: replacements.length,
-      };
-    }
+    if (!selected) break;
     availableById.delete(selected.candidate.candidate_id);
     replacements.push({
       replacedItemId: affected.item.item_id,
@@ -217,17 +241,122 @@ function buildReplacementProposal({
       replacement: selected.candidate,
       distanceMeters: selected.distance,
       sameDistrict: selected.sameDistrict,
-      weatherReason: weatherReasonFor(affected.candidate, significantRisks),
+      weatherReason: weatherReasonFor(affected.candidate, relevantRisks),
     });
+  }
+  if (replacements.length < affectedItems.length) {
+    return {
+      status: "insufficient",
+      proposalId: `${plan.plan_id}:${targetDate}:${minimumSeverityRank}:insufficient:${affectedItems.length}:${replacements.length}`,
+      targetDate,
+      affectedCount: affectedItems.length,
+      availableCount: replacements.length,
+      replacements,
+    };
   }
   return {
     status: "ready",
-    proposalId: `${plan.plan_id}:${targetDate}:${replacements
+    proposalId: `${plan.plan_id}:${targetDate}:${minimumSeverityRank}:${replacements
       .map((item) => `${item.replacedItemId}:${item.replacement.candidate_id}`)
       .join(",")}`,
     targetDate,
     replacements,
   };
+}
+
+function buildReplacementProposalsByDate({
+  plan,
+  dayScopes,
+  candidates,
+  replacementCandidates,
+}: {
+  plan: TripPlan;
+  dayScopes: WeatherDayRiskScope[];
+  candidates: CandidatePoi[];
+  replacementCandidates: CandidatePoi[];
+}) {
+  const proposals = new Map<string, WeatherReplacementProposal>();
+  const usedCandidateIds = new Set<string>();
+  for (const scope of dayScopes) {
+    const proposal = buildReplacementProposal({
+      plan,
+      targetDate: scope.targetDate,
+      risks: scope.risks,
+      candidates,
+      replacementCandidates,
+      excludedCandidateIds: usedCandidateIds,
+    });
+    if (!proposal) continue;
+    proposals.set(scope.targetDate, proposal);
+    proposal.replacements.forEach((replacement) =>
+      usedCandidateIds.add(replacement.replacement.candidate_id),
+    );
+  }
+  return proposals;
+}
+
+function buildLowRiskBackupsByDate({
+  plan,
+  dayScopes,
+  candidates,
+  replacementCandidates,
+}: {
+  plan: TripPlan;
+  dayScopes: WeatherDayRiskScope[];
+  candidates: CandidatePoi[];
+  replacementCandidates: CandidatePoi[];
+}) {
+  const indoorCandidates = eligibleIndoorCandidates(plan, replacementCandidates);
+  const rankedPairs = dayScopes.flatMap((scope) => {
+    const { affectedItems, relevantRisks } = affectedWeatherItems({
+      plan,
+      targetDate: scope.targetDate,
+      risks: scope.risks,
+      candidates,
+      minimumSeverityRank: 1,
+    });
+    return affectedItems.flatMap((affected) =>
+      rankIndoorCandidates(affected, indoorCandidates).map((ranked) => ({
+        targetDate: scope.targetDate,
+        affected,
+        ranked,
+        weatherReason: weatherReasonFor(affected.candidate, relevantRisks),
+      })),
+    );
+  });
+  rankedPairs.sort(
+    (left, right) =>
+      Number(right.ranked.sameDistrict) - Number(left.ranked.sameDistrict) ||
+      left.ranked.distance - right.ranked.distance ||
+      left.targetDate.localeCompare(right.targetDate) ||
+      left.affected.item.start_at.localeCompare(right.affected.item.start_at) ||
+      left.ranked.candidate.name.localeCompare(right.ranked.candidate.name, "zh-CN"),
+  );
+
+  const backups = new Map<string, WeatherReplacementPair[]>();
+  const usedItemIds = new Set<string>();
+  const usedCandidateIds = new Set<string>();
+  for (const pair of rankedPairs) {
+    if (
+      usedItemIds.has(pair.affected.item.item_id) ||
+      usedCandidateIds.has(pair.ranked.candidate.candidate_id)
+    ) {
+      continue;
+    }
+    usedItemIds.add(pair.affected.item.item_id);
+    usedCandidateIds.add(pair.ranked.candidate.candidate_id);
+    const dayBackups = backups.get(pair.targetDate) ?? [];
+    dayBackups.push({
+      replacedItemId: pair.affected.item.item_id,
+      replacedTitle: pair.affected.item.title,
+      replacement: pair.ranked.candidate,
+      distanceMeters: pair.ranked.distance,
+      sameDistrict: pair.ranked.sameDistrict,
+      weatherReason: pair.weatherReason,
+    });
+    backups.set(pair.targetDate, dayBackups);
+  }
+  return backups;
 }
 
 function formatDate(date: string) {
@@ -322,10 +451,69 @@ function formatDistance(value: number) {
   return `约 ${(value / 1_000).toFixed(1)} 公里`;
 }
 
+function lowRiskAdvice(risks: WeatherRisk[]) {
+  if (risks.some((risk) => risk.risk_type === "rain")) {
+    return "小雨通常不必调整全天行程，建议携带雨具，并在出发前复核最新预报。";
+  }
+  return "当前天气风险较低，通常可以保留原计划，并在出发前复核最新预报。";
+}
+
+function ReplacementPairList({
+  replacements,
+  mode = "proposal",
+  reviewBusy = false,
+  onSelect,
+}: {
+  replacements: WeatherReplacementPair[];
+  mode?: "proposal" | "backup";
+  reviewBusy?: boolean;
+  onSelect?: (replacement: WeatherReplacementPair) => void;
+}) {
+  return (
+    <div className="mt-3 space-y-2" data-testid="weather-replacement-list">
+      {replacements.map((replacement) => (
+        <div
+          className="rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 py-2.5"
+          data-testid="weather-replacement-option"
+          key={replacement.replacedItemId}
+        >
+          <p className="text-xs font-semibold leading-5 text-slate-900">
+            {replacement.replacedTitle}
+            <span className="mx-2 text-emerald-700" aria-hidden="true">
+              →
+            </span>
+            {replacement.replacement.name}
+          </p>
+          <p className="mt-1 text-[11px] leading-5 text-slate-600">
+            室内场馆
+            {replacement.sameDistrict
+              ? ` · 同在${replacement.replacement.district}`
+              : ` · 距原地点直线${formatDistance(replacement.distanceMeters)}`}
+            {mode === "backup"
+              ? ` · 适合${replacement.weatherReason}天气`
+              : ` · 因${replacement.weatherReason}调整`}
+          </p>
+          {onSelect ? (
+            <button
+              className="mt-2 rounded-lg bg-emerald-900 px-3 py-2 text-[11px] font-semibold text-white transition hover:bg-emerald-800 disabled:opacity-50"
+              disabled={reviewBusy}
+              onClick={() => onSelect(replacement)}
+              type="button"
+            >
+              {reviewBusy ? "正在调整…" : "使用这个备选"}
+            </button>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function WeatherOutlook({
   plan,
   candidates,
   replacementCandidates,
+  recovery,
   canRequestRevision,
   reviewBusy,
   reviewError,
@@ -334,6 +522,7 @@ export function WeatherOutlook({
   plan: TripPlan;
   candidates: CandidatePoi[];
   replacementCandidates: CandidatePoi[];
+  recovery: WeatherIndoorRecovery | null;
   canRequestRevision: boolean;
   reviewBusy: boolean;
   reviewError: string | null;
@@ -343,6 +532,9 @@ export function WeatherOutlook({
   ) => void | Promise<void>;
 }) {
   const [dismissedProposalIds, setDismissedProposalIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [expandedLowRiskDates, setExpandedLowRiskDates] = useState<Set<string>>(
     () => new Set(),
   );
   const riskById = new Map(plan.weather_risks.map((risk) => [risk.risk_id, risk]));
@@ -358,23 +550,69 @@ export function WeatherOutlook({
           const candidate = candidateById.get(item.candidate_id);
           return (
             candidate !== undefined &&
-            risks.some(
-              (risk) =>
-                (severityRank[risk.severity] ?? 0) >= 2 &&
-                riskAffectsCandidate(risk, candidate),
-            )
+            risks.some((risk) => riskAffectsCandidate(risk, candidate))
           );
         })
         .map((item) => item.title);
-      return { day, index, risks, affectedPlans };
+      const requiresAdjustment =
+        affectedPlans.length > 0 &&
+        risks.some((risk) => (severityRank[risk.severity] ?? 0) >= 2);
+      return { day, index, risks, affectedPlans, requiresAdjustment };
     })
     .filter(({ risks }) => risks.length > 0);
+  const adjustmentDayCount = daySummaries.filter(
+    ({ requiresAdjustment }) => requiresAdjustment,
+  ).length;
+  const noticeDayCount = daySummaries.length - adjustmentDayCount;
+  const replacementProposalsByDate = buildReplacementProposalsByDate({
+    plan,
+    dayScopes: daySummaries
+      .filter(({ requiresAdjustment }) => requiresAdjustment)
+      .map(({ day, risks }) => ({ targetDate: day.date, risks })),
+    candidates,
+    replacementCandidates,
+  });
+  const lowRiskBackupsByDate = buildLowRiskBackupsByDate({
+    plan,
+    dayScopes: daySummaries
+      .filter(({ requiresAdjustment }) => !requiresAdjustment)
+      .map(({ day, risks }) => ({ targetDate: day.date, risks })),
+    candidates,
+    replacementCandidates,
+  });
   const latestRetrievedAt = plan.weather_risks.reduce<string | null>((latest, risk) => {
     if (!latest || new Date(risk.source.retrieved_at) > new Date(latest)) {
       return risk.source.retrieved_at;
     }
     return latest;
   }, null);
+  const requestWeatherRevision = (proposal: Extract<WeatherReplacementProposal, { status: "ready" }>) =>
+    onRequestRevision(
+      `采用全天室内方案：${proposal.replacements
+        .map((item) => `${item.replacedTitle}改为${item.replacement.name}`)
+        .join("；")}。`,
+      {
+        kind: "replace_day_activities",
+        targetDate: proposal.targetDate,
+        replacements: proposal.replacements.map((item) => ({
+          replacedItemId: item.replacedItemId,
+          replacementCandidateId: item.replacement.candidate_id,
+        })),
+      },
+    );
+  const requestLowRiskRevision = (
+    targetDate: string,
+    replacement: WeatherReplacementPair,
+  ) =>
+    onRequestRevision(
+      `采用雨天备选：${replacement.replacedTitle}改为${replacement.replacement.name}。`,
+      {
+        kind: "replace_activity",
+        targetDate,
+        replacedItemId: replacement.replacedItemId,
+        replacementCandidateId: replacement.replacement.candidate_id,
+      },
+    );
 
   return (
     <article
@@ -388,24 +626,25 @@ export function WeatherOutlook({
         </div>
         {daySummaries.length ? (
           <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold text-amber-900">
-            {daySummaries.length} 天建议调整安排
+            {adjustmentDayCount
+              ? `${adjustmentDayCount} 天建议调整${noticeDayCount ? ` · ${noticeDayCount} 天注意天气` : ""}`
+              : `${noticeDayCount} 天有天气提醒`}
           </span>
         ) : null}
       </div>
 
       {daySummaries.length ? (
         <div className="mt-5 space-y-4">
-          {daySummaries.map(({ day, index, risks, affectedPlans }) => {
+          {daySummaries.map(({ day, index, risks, affectedPlans, requiresAdjustment }) => {
             const severity = strongestSeverity(risks);
             const presentation = severityPresentation[severity] ?? severityPresentation.low;
-            const advice = [...new Set(risks.map((risk) => friendlyWeatherCopy(risk.advisory)))];
-            const proposal = buildReplacementProposal({
-              plan,
-              targetDate: day.date,
-              risks,
-              candidates,
-              replacementCandidates,
-            });
+            const isLowRisk = (severityRank[severity] ?? 0) < 2;
+            const advice = isLowRisk
+              ? [lowRiskAdvice(risks)]
+              : [...new Set(risks.map((risk) => friendlyWeatherCopy(risk.advisory)))];
+            const proposal = replacementProposalsByDate.get(day.date) ?? null;
+            const lowRiskBackups = lowRiskBackupsByDate.get(day.date) ?? [];
+            const lowRiskExpanded = expandedLowRiskDates.has(day.date);
             const showProposal =
               canRequestRevision &&
               proposal?.status === "ready" &&
@@ -468,13 +707,73 @@ export function WeatherOutlook({
                   </ul>
                 </div>
 
-                {affectedPlans.length ? (
+                {requiresAdjustment && affectedPlans.length ? (
                   <p
                     className="mt-3 rounded-xl bg-white/70 px-3 py-2 text-[11px] leading-5 text-slate-600"
                     data-testid="weather-affected-plans"
                   >
                     优先检查：{affectedPlans.join("、")}
                   </p>
+                ) : null}
+
+                {isLowRisk && canRequestRevision && lowRiskBackups.length ? (
+                  <div className="mt-3" data-testid="low-risk-weather-backup">
+                    {!lowRiskExpanded ? (
+                      <button
+                        className="rounded-xl border border-sky-300 bg-white px-3 py-2.5 text-xs font-semibold text-sky-900 transition hover:bg-sky-50"
+                        onClick={() =>
+                          setExpandedLowRiskDates((current) => {
+                            const next = new Set(current);
+                            next.add(day.date);
+                            return next;
+                          })
+                        }
+                        type="button"
+                      >
+                        查看雨天备选
+                      </button>
+                    ) : (
+                      <div
+                        className="rounded-2xl border border-sky-200 bg-white p-4"
+                        data-testid="low-risk-weather-backup-panel"
+                      >
+                        <p className="text-[11px] font-bold tracking-[0.12em] text-sky-800">
+                          雨天可以这样换
+                        </p>
+                        <p className="mt-2 text-xs leading-5 text-slate-700">
+                          如果临近出发时雨势加大，可以按需把下面的活动改到室内。
+                        </p>
+                        <ReplacementPairList
+                          mode="backup"
+                          onSelect={(replacement) =>
+                            void requestLowRiskRevision(day.date, replacement)
+                          }
+                          replacements={lowRiskBackups}
+                          reviewBusy={reviewBusy}
+                        />
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button
+                            className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                            onClick={() =>
+                              setExpandedLowRiskDates((current) => {
+                                const next = new Set(current);
+                                next.delete(day.date);
+                                return next;
+                              })
+                            }
+                            type="button"
+                          >
+                            收起备选
+                          </button>
+                        </div>
+                        {reviewError ? (
+                          <p className="mt-3 text-[11px] leading-5 text-rose-700" role="alert">
+                            {reviewError}
+                          </p>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
                 ) : null}
 
                 {showProposal ? (
@@ -488,29 +787,16 @@ export function WeatherOutlook({
                     <p className="mt-2 text-sm font-semibold leading-6 text-slate-950">
                       当天 {proposal.replacements.length} 个受天气影响的活动将一起调整
                     </p>
-                    <div className="mt-3 space-y-2" data-testid="weather-replacement-list">
-                      {proposal.replacements.map((replacement) => (
-                        <div
-                          className="rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 py-2.5"
-                          key={replacement.replacedItemId}
-                        >
-                          <p className="text-xs font-semibold leading-5 text-slate-900">
-                            {replacement.replacedTitle}
-                            <span className="mx-2 text-emerald-700" aria-hidden="true">
-                              →
-                            </span>
-                            {replacement.replacement.name}
-                          </p>
-                          <p className="mt-1 text-[11px] leading-5 text-slate-600">
-                            室内场馆
-                            {replacement.sameDistrict
-                              ? ` · 同在${replacement.replacement.district}`
-                              : ` · 距原地点直线${formatDistance(replacement.distanceMeters)}`}
-                            {` · 因${replacement.weatherReason}调整`}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
+                    {recovery?.status === "recovered" && recovery.observations.length ? (
+                      <p
+                        className="mt-2 rounded-xl bg-emerald-50 px-3 py-2 text-[11px] leading-5 text-emerald-900"
+                        data-testid="weather-recovery-summary"
+                      >
+                        已根据当天活动区域补充找到 {recovery.observations.length}
+                        个室内地点，再按距离生成这份方案。
+                      </p>
+                    ) : null}
+                    <ReplacementPairList replacements={proposal.replacements} />
                     <p className="mt-2 text-[11px] leading-5 text-slate-600">
                       已是室内的活动会保留；确认一次即可重新安排当天时间、路线和附近用餐建议。
                     </p>
@@ -518,23 +804,7 @@ export function WeatherOutlook({
                       <button
                         className="rounded-xl bg-emerald-900 px-3 py-2.5 text-xs font-semibold text-white transition hover:bg-emerald-800 disabled:opacity-50"
                         disabled={reviewBusy}
-                        onClick={() =>
-                          void onRequestRevision(
-                            `采用全天室内方案：${proposal.replacements
-                              .map(
-                                (item) => `${item.replacedTitle}改为${item.replacement.name}`,
-                              )
-                              .join("；")}。`,
-                            {
-                              kind: "replace_day_activities",
-                              targetDate: proposal.targetDate,
-                              replacements: proposal.replacements.map((item) => ({
-                                replacedItemId: item.replacedItemId,
-                                replacementCandidateId: item.replacement.candidate_id,
-                              })),
-                            },
-                          )
-                        }
+                        onClick={() => void requestWeatherRevision(proposal)}
                         type="button"
                       >
                         {reviewBusy ? "正在生成调整版…" : "采用全天室内方案"}
@@ -565,10 +835,12 @@ export function WeatherOutlook({
                     className="mt-3 rounded-xl border border-amber-200 bg-white/70 px-3 py-2.5 text-[11px] leading-5 text-slate-600"
                     data-testid="weather-replacement-insufficient"
                   >
-                    当天有 {proposal.affectedCount} 个活动需要调整，但当前只有
-                    {proposal.availableCount} 个未使用的室内候选，暂不能生成完整的全天方案。
+                    目前还没有找到足够合适且不重复的室内地点，暂时无法重新安排全天。
+                    {recovery?.status === "insufficient"
+                      ? " 建议先保留当前行程，临近出发时再根据天气调整。"
+                      : " 你也可以在行程修改中单独更换某个活动。"}
                   </p>
-                ) : affectedPlans.length && canRequestRevision && !proposal ? (
+                ) : requiresAdjustment && affectedPlans.length && canRequestRevision && !proposal ? (
                   <p className="mt-3 text-[11px] leading-5 text-slate-500">
                     当前候选中没有可直接替换的室内场馆。
                   </p>

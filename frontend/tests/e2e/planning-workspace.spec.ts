@@ -30,6 +30,15 @@ function addCalendarDays(value: string, days: number) {
   return result.toISOString().slice(0, 10);
 }
 
+function collectPageErrors(page: Page) {
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(`console: ${message.text()}`);
+  });
+  page.on("pageerror", (error) => errors.push(`pageerror: ${error.message}`));
+  return errors;
+}
+
 test("allows trips starting today while defaulting to one week later", async ({ page }) => {
   const todayBeforeNavigation = dateInChinaAfter(0);
   await page.goto("/");
@@ -145,6 +154,7 @@ test("generates a complete sample itinerary with user-facing copy", async ({ pag
 test("confirms a grounded full-day indoor plan and only revises the affected day", async ({
   page,
 }) => {
+  const pageErrors = collectPageErrors(page);
   await page.goto("/");
   await understandAndStart(page);
   const results = page.getByTestId("planning-results");
@@ -184,6 +194,7 @@ test("confirms a grounded full-day indoor plan and only revises the affected day
   await expect(
     results.getByTestId("itinerary-item").filter({ hasText: "中国国家博物馆" }),
   ).toHaveText(protectedDayBefore ?? "");
+  expect(pageErrors).toEqual([]);
 });
 
 test("restores one task across in-flight, review, and completed refreshes", async ({ page }) => {
@@ -262,6 +273,124 @@ test("does not present missing weather coverage as risk-free", async ({ page }) 
   await expect(weather).toContainText("这不代表天气一定适宜");
   await expect(weather).toContainText("可能尚未进入短期预报范围");
   await expect(weather).not.toContainText("暂未发现需要特别提醒的天气风险");
+});
+
+test("keeps low rain as a notice and reveals indoor backups on demand", async ({ page }) => {
+  const pageErrors = collectPageErrors(page);
+  await page.route(/\/api\/planning-tasks\/planning-task-[^/]+$/, async (route) => {
+    const response = await route.fetch();
+    type MutablePlan = {
+      end_date?: string;
+      weather_risks?: Array<{ severity?: string }>;
+      days?: Array<{
+        date: string;
+        items?: Array<{ item_id: string; start_at: string; end_at: string }>;
+      }>;
+    };
+    const payload = (await response.json()) as {
+      result?: {
+        state?: {
+          plan?: MutablePlan;
+          plan_agent?: { plan?: MutablePlan };
+          repair?: { final_plan?: MutablePlan };
+          revision_result?: { revised_plan?: MutablePlan };
+        };
+      };
+      plan_versions?: Array<{ plan?: MutablePlan }>;
+    };
+    const plans = [
+      payload.result?.state?.plan,
+      payload.result?.state?.plan_agent?.plan,
+      payload.result?.state?.repair?.final_plan,
+      payload.result?.state?.revision_result?.revised_plan,
+      ...(payload.plan_versions ?? []).map((version) => version.plan),
+    ];
+    for (const plan of plans) {
+      for (const risk of plan?.weather_risks ?? []) risk.severity = "low";
+      const sourceDay = plan?.days?.at(-1);
+      if (!plan?.days || plan.days.length !== 2 || !sourceDay) continue;
+      const duplicateDate = addCalendarDays(sourceDay.date, 1);
+      plan.days.push({
+        ...structuredClone(sourceDay),
+        date: duplicateDate,
+        items: sourceDay.items?.map((item) => ({
+          ...item,
+          item_id: `${item.item_id}-duplicate-day`,
+          start_at: item.start_at.replace(sourceDay.date, duplicateDate),
+          end_at: item.end_at.replace(sourceDay.date, duplicateDate),
+        })),
+      });
+      plan.end_date = duplicateDate;
+    }
+    await route.fulfill({ response, json: payload });
+  });
+
+  await page.goto("/");
+  await understandAndStart(page);
+
+  const weather = page.getByTestId("weather-outlook");
+  await expect(weather).toContainText("3 天有天气提醒", { timeout: 20_000 });
+  await expect(weather).toContainText("小雨通常不必调整全天行程");
+  await expect(weather).not.toContainText("建议调整安排");
+  await expect(weather.getByTestId("weather-replacement-proposal")).toHaveCount(0);
+
+  const backupButtons = weather.getByRole("button", { name: "查看雨天备选" });
+  await expect(backupButtons).toHaveCount(2);
+  await backupButtons.first().click();
+  await weather.getByRole("button", { name: "查看雨天备选" }).first().click();
+  const backups = weather.getByTestId("low-risk-weather-backup-panel");
+  await expect(backups).toHaveCount(2);
+  await expect(backups).toContainText(["雨天可以这样换", "雨天可以这样换"]);
+  await expect(weather).toContainText("首都博物馆");
+  await expect(weather).toContainText("北京天文馆");
+  await expect(weather.getByTestId("weather-replacement-option")).toHaveCount(2);
+  await expect(weather.getByRole("button", { name: "使用这个备选" })).toHaveCount(2);
+  await expect(weather).not.toContainText("当前找到");
+  await expect(weather).not.toContainText("不足以覆盖");
+  await expect(weather).not.toContainText("原行程保持不变");
+  await weather.screenshot({ path: "test-results/eztrip-low-rain-unique-backups.png" });
+  expect(pageErrors).toEqual([]);
+});
+
+test("uses one low-rain backup as a scoped revision", async ({ page }) => {
+  await page.route(/\/api\/planning-tasks\/planning-task-[^/]+$/, async (route) => {
+    const response = await route.fetch();
+    const payload = (await response.json()) as {
+      result?: {
+        state?: {
+          plan?: { weather_risks?: Array<{ severity?: string }> };
+          plan_agent?: { plan?: { weather_risks?: Array<{ severity?: string }> } };
+          repair?: { final_plan?: { weather_risks?: Array<{ severity?: string }> } };
+          revision_result?: { revised_plan?: { weather_risks?: Array<{ severity?: string }> } };
+        };
+      };
+      plan_versions?: Array<{ plan?: { weather_risks?: Array<{ severity?: string }> } }>;
+    };
+    const plans = [
+      payload.result?.state?.plan,
+      payload.result?.state?.plan_agent?.plan,
+      payload.result?.state?.repair?.final_plan,
+      payload.result?.state?.revision_result?.revised_plan,
+      ...(payload.plan_versions ?? []).map((version) => version.plan),
+    ];
+    for (const plan of plans) {
+      for (const risk of plan?.weather_risks ?? []) risk.severity = "low";
+    }
+    await route.fulfill({ response, json: payload });
+  });
+
+  await page.goto("/");
+  await understandAndStart(page);
+
+  const weather = page.getByTestId("weather-outlook");
+  await weather.getByRole("button", { name: "查看雨天备选" }).click();
+  await weather.getByRole("button", { name: "使用这个备选" }).first().click();
+  await expect(page.getByTestId("event-trace")).toContainText("更新所选行程", {
+    timeout: 20_000,
+  });
+  await expect(page.getByTestId("planning-results")).toContainText(
+    "修改版 · 等待再次确认",
+  );
 });
 
 test("renders three main activities per day in standard pace without counting meals", async ({ page }) => {
@@ -543,6 +672,75 @@ test("replaces one activity from available places and preserves the other day", 
   ).toHaveText(protectedDayBefore ?? "");
 });
 
+test("shows when extra indoor places were found for the weather day", async ({ page }) => {
+  await page.route(/\/api\/planning-tasks\/planning-task-[^/]+$/, async (route) => {
+    const response = await route.fetch();
+    const payload = (await response.json()) as {
+      result?: {
+        state?: {
+          plan?: { days?: Array<{ items?: Array<{ candidate_id?: string | null }> }> };
+          specialists?: {
+            branches?: Array<{
+              specialist?: string;
+              explore_result?: {
+                observations?: Array<{
+                  candidate?: {
+                    candidate_id?: string;
+                    environment?: string;
+                    categories?: string[];
+                  };
+                }>;
+              } | null;
+            }>;
+          };
+          weather_indoor_recovery?: {
+            status?: string;
+            observations?: Array<{ candidate?: unknown; query_id?: string }>;
+          } | null;
+        };
+      };
+    };
+    const state = payload.result?.state;
+    const scheduledIds = new Set(
+      state?.plan?.days?.flatMap((day) =>
+        day.items?.flatMap((item) => (item.candidate_id ? [item.candidate_id] : [])) ?? [],
+      ) ?? [],
+    );
+    const explore = state?.specialists?.branches?.find(
+      (branch) => branch.specialist === "explore",
+    )?.explore_result;
+    const recoveredCandidates = (explore?.observations ?? [])
+      .filter(
+        (item) =>
+          item.candidate?.environment === "indoor" &&
+          !item.candidate.categories?.includes("餐饮服务") &&
+          !scheduledIds.has(item.candidate.candidate_id ?? ""),
+      )
+      .slice(0, 2);
+    if (state && recoveredCandidates.length) {
+      state.weather_indoor_recovery = {
+        status: "recovered",
+        observations: recoveredCandidates.map((item) => ({
+          candidate: item.candidate,
+          query_id: "weather-indoor-query-browser-test",
+        })),
+      };
+    }
+    await route.fulfill({ response, json: payload });
+  });
+
+  await page.goto("/");
+  await understandAndStart(page);
+  const results = page.getByTestId("planning-results");
+  await expect(results).toBeVisible({ timeout: 20_000 });
+  await expect(results.getByTestId("weather-recovery-summary").first()).toContainText(
+    "已根据当天活动区域补充找到",
+  );
+  await expect(results.getByTestId("weather-replacement-proposal").first()).toContainText(
+    "当天 2 个受天气影响的活动将一起调整",
+  );
+});
+
 test("shows a useful empty state when there is no replacement", async ({
   page,
 }) => {
@@ -560,6 +758,11 @@ test("shows a useful empty state when there is no replacement", async ({
               } | null;
             }>;
           };
+          weather_indoor_recovery?: {
+            status?: string;
+            observations?: unknown[];
+            provider_call_count?: number;
+          } | null;
         };
       };
     };
@@ -577,6 +780,13 @@ test("shows a useful empty state when there is no replacement", async ({
         scheduledIds.has(item.candidate?.candidate_id ?? ""),
       );
     }
+    if (state) {
+      state.weather_indoor_recovery = {
+        status: "insufficient",
+        observations: [],
+        provider_call_count: 2,
+      };
+    }
     await route.fulfill({ response, json: payload });
   });
 
@@ -584,9 +794,15 @@ test("shows a useful empty state when there is no replacement", async ({
   await understandAndStart(page);
   const results = page.getByTestId("planning-results");
   await expect(results).toBeVisible({ timeout: 20_000 });
-  await expect(results.getByTestId("weather-replacement-insufficient").first()).toContainText(
-    "当天有 2 个活动需要调整，但当前只有0 个未使用的室内候选",
+  const weatherEmptyState = results.getByTestId("weather-replacement-insufficient").first();
+  await expect(weatherEmptyState).toContainText(
+    "目前还没有找到足够合适且不重复的室内地点，暂时无法重新安排全天",
   );
+  await expect(weatherEmptyState).toContainText(
+    "建议先保留当前行程，临近出发时再根据天气调整",
+  );
+  await expect(weatherEmptyState).not.toContainText("自动补充查找");
+  await expect(weatherEmptyState).not.toContainText("未使用的室内候选");
   await expect(
     results.getByRole("button", { name: "采用全天室内方案" }),
   ).toHaveCount(0);
@@ -643,6 +859,7 @@ test("requires confirmation and sends the confirmed raw intent instead of old de
 });
 
 test("keeps the planning flow usable on a mobile viewport", async ({ page }) => {
+  const pageErrors = collectPageErrors(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
 
@@ -654,4 +871,10 @@ test("keeps the planning flow usable on a mobile viewport", async ({ page }) => 
     path: "test-results/eztrip-planning-workspace-mobile.png",
     fullPage: true,
   });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    ),
+  ).toBe(false);
+  expect(pageErrors).toEqual([]);
 });

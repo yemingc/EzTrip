@@ -43,7 +43,22 @@ T = TypeVar("T")
 RiskSpec = tuple[WeatherRiskType, RiskSeverity, dict[str, float], str, str]
 DEFAULT_RETRY_POLICY = RetryPolicy()
 
-INDOOR_TERMS = ("博物馆", "美术馆", "科技馆", "展览馆", "室内", "剧院", "影院")
+INDOOR_TERMS = (
+    "博物馆",
+    "博物院",
+    "美术馆",
+    "艺术馆",
+    "科技馆",
+    "科学馆",
+    "文化馆",
+    "展览馆",
+    "水族馆",
+    "海洋馆",
+    "天文馆",
+    "室内",
+    "剧院",
+    "影院",
+)
 OUTDOOR_TERMS = ("公园", "风景名胜", "世界遗产", "山", "湖", "古迹", "广场")
 HOTEL_TERMS = ("住宿服务", "宾馆酒店", "酒店", "旅馆", "公寓式酒店")
 

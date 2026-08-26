@@ -20,6 +20,8 @@ from app.planning.product_graph import ProductPlanningProtocolError, open_sqlite
 from app.planning.specialist_contracts import SpecialistFanoutResult
 from app.planning.specialist_fanout import run_live_specialist_fanout
 from app.planning.stateful_contracts import HumanReviewResume
+from app.planning.weather_indoor_recovery import recover_weather_indoor_candidates
+from app.planning.weather_indoor_recovery_contracts import WeatherIndoorRecoveryResult
 from app.providers import open_live_amap_provider
 from app.providers.ports import RouteRequest
 from app.tasks.contracts import PlanningTaskSubmission
@@ -95,6 +97,24 @@ class LiveProductPlanningPipeline:
         async with open_live_amap_provider(self._settings) as provider:
             return await provider.get_route(route_request)
 
+    async def recover_weather_indoor_candidates(
+        self,
+        request: TripRequest,
+        plan: TripPlan,
+        materials: PlanningMaterialBundle,
+        data_mode: DataMode,
+    ) -> WeatherIndoorRecoveryResult:
+        if data_mode != DataMode.LIVE:
+            raise ProductPlanningProtocolError("live weather recovery requires live data mode")
+        async with open_live_amap_provider(self._settings) as provider:
+            return await recover_weather_indoor_candidates(
+                request,
+                plan,
+                materials,
+                provider,
+                data_mode=data_mode,
+            )
+
 
 class ResumeOnlyProductPipeline:
     """Fails if checkpoint resume unexpectedly replays a paid or external stage."""
@@ -164,6 +184,16 @@ class ResumeOnlyProductPipeline:
             )
         async with open_live_amap_provider(self._settings) as provider:
             return await provider.get_route(route_request)
+
+    async def recover_weather_indoor_candidates(
+        self,
+        request: TripRequest,
+        plan: TripPlan,
+        materials: PlanningMaterialBundle,
+        data_mode: DataMode,
+    ) -> WeatherIndoorRecoveryResult:
+        del request, plan, materials, data_mode
+        raise self._unexpected()
 
 
 class ProductGraphPlanningTaskExecutor:

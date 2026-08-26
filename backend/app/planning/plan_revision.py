@@ -43,6 +43,7 @@ from app.planning.revision_contracts import (
 )
 from app.planning.specialist_contracts import SpecialistName
 from app.planning.validator import validate_trip_plan
+from app.planning.weather_indoor_recovery_contracts import WeatherIndoorRecoveryResult
 from app.providers.errors import ProviderRequestError
 from app.providers.ports import RouteRequest
 
@@ -190,6 +191,7 @@ def _validate_revision_scope(
 def _replacement_candidates(
     materials: PlanningMaterialBundle,
     revision: PlanRevisionRequest,
+    weather_indoor_recovery: WeatherIndoorRecoveryResult | None,
 ) -> dict[str, CandidatePOI]:
     explore_branch = next(
         item
@@ -202,6 +204,13 @@ def _replacement_candidates(
         else ()
     )
     observed_by_id = {item.candidate.candidate_id: item.candidate for item in observations}
+    if weather_indoor_recovery is not None:
+        observed_by_id.update(
+            {
+                item.candidate.candidate_id: item.candidate
+                for item in weather_indoor_recovery.observations
+            }
+        )
     scheduled_ids = {item.candidate_id for item in materials.shortlist.poi_candidates}
     replacements: dict[str, CandidatePOI] = {}
     for pair in revision.replacement_pairs:
@@ -565,6 +574,8 @@ async def apply_activity_replacement(
     materials: PlanningMaterialBundle,
     revision: PlanRevisionRequest,
     get_route: RevisionRouteGetter,
+    *,
+    weather_indoor_recovery: WeatherIndoorRecoveryResult | None = None,
 ) -> PlanRevisionResult:
     if revision.operation != PlanRevisionOperation.REPLACE_ACTIVITY:
         raise PlanRevisionProtocolError("activity replacement requires replace_activity")
@@ -584,7 +595,11 @@ async def apply_activity_replacement(
         ):
             raise PlanRevisionProtocolError("replacement target is not a grounded itinerary item")
         replacement_items.append(target_item)
-    replacements_by_item_id = _replacement_candidates(materials, revision)
+    replacements_by_item_id = _replacement_candidates(
+        materials,
+        revision,
+        weather_indoor_recovery,
+    )
     replacements_by_candidate_id = {
         target_item.candidate_id: replacements_by_item_id[target_item.item_id]
         for target_item in replacement_items
@@ -632,6 +647,7 @@ async def apply_activity_replacement(
         budget_allocation=budget_allocation,
         activity_replacement=(replacement_records[0] if len(replacement_records) == 1 else None),
         activity_replacements=(replacement_records if len(replacement_records) > 1 else ()),
+        weather_indoor_recovery=weather_indoor_recovery,
     )
     revised_day, rescheduled_ids, added_ids, removed_ids = _revised_target_day(
         revised_materials,

@@ -45,6 +45,7 @@ from app.planning.stateful_contracts import (
     StatefulPlanningNodeOutcome,
     utc_now,
 )
+from app.planning.weather_indoor_recovery_contracts import WeatherIndoorRecoveryResult
 from app.providers.ports import RouteRequest
 
 PRODUCT_PLANNING_GRAPH_NAME = "eztrip-product-planning-graph-v2"
@@ -127,6 +128,14 @@ class ProductPlanningPipeline(ProductRepairPipeline, Protocol):
         route_request: RouteRequest,
         data_mode: DataMode,
     ) -> RouteLeg: ...
+
+    async def recover_weather_indoor_candidates(
+        self,
+        request: TripRequest,
+        plan: TripPlan,
+        materials: PlanningMaterialBundle,
+        data_mode: DataMode,
+    ) -> WeatherIndoorRecoveryResult: ...
 
 
 class ProductPlanningGraphState(TypedDict):
@@ -367,17 +376,27 @@ def build_product_planning_graph(
             )
         }
 
-    def prepare_human_review_node(
+    async def prepare_human_review_node(
         graph_state: ProductPlanningGraphState,
     ) -> dict[str, Any]:
         state = _require_state(graph_state)
-        if state.status != PlanningThreadStatus.PLAN_READY:
+        if (
+            state.status != PlanningThreadStatus.PLAN_READY
+            or state.plan is None
+            or state.materials is None
+        ):
             raise ProductPlanningProtocolError("product review requires plan_ready status")
+        weather_indoor_recovery = await pipeline.recover_weather_indoor_candidates(
+            state.request,
+            state.plan,
+            state.materials,
+            state.data_mode,
+        )
         review = build_product_human_review_request(state)
         event = ProductPlanningEvent(
             node=ProductPlanningNodeName.PREPARE_HUMAN_REVIEW,
             outcome=StatefulPlanningNodeOutcome.REVIEW_REQUIRED,
-            detail="已按 Hard Validator 结果生成可恢复的人审请求。",
+            detail=("已检查天气影响日的室内候选覆盖, 并生成可恢复的人审请求。"),
         )
         return {
             "state": _state_update(
@@ -385,6 +404,7 @@ def build_product_planning_graph(
                     state,
                     status=PlanningThreadStatus.AWAITING_HUMAN_REVIEW,
                     review_request=review,
+                    weather_indoor_recovery=weather_indoor_recovery,
                     events=(*state.events, event),
                 )
             )
@@ -473,6 +493,7 @@ def build_product_planning_graph(
                 state.materials,
                 revision_request,
                 pipeline.get_revision_route,
+                weather_indoor_recovery=state.weather_indoor_recovery,
             )
         else:
             revision = apply_plan_revision(
@@ -492,7 +513,7 @@ def build_product_planning_graph(
             node=ProductPlanningNodeName.APPLY_PLAN_REVISION,
             outcome=StatefulPlanningNodeOutcome.REVISED,
             detail=(
-                "活动替换只使用原 Provider observations, 重算目标日路线、预算与 Hard Validator。"
+                "活动替换使用已记录的数据来源候选, 重算目标日路线、预算与 Hard Validator。"
                 if revision_request.operation.value == "replace_activity"
                 else "结构化修改复用上游结果, 并重新执行 Hard Validator。"
             ),

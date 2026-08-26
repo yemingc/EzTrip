@@ -18,6 +18,12 @@ from app.planning import (
 )
 from app.planning.plan_revision import apply_activity_replacement
 from app.planning.specialist_contracts import SpecialistName
+from app.planning.weather_indoor_recovery_contracts import (
+    WeatherIndoorCandidateObservation,
+    WeatherIndoorRecoveryResult,
+    WeatherIndoorRecoveryStatus,
+    WeatherIndoorSearchQuery,
+)
 from app.tasks.product_fixture import FixtureProductPlanningPipeline
 
 
@@ -348,3 +354,83 @@ def test_activity_replacement_batch_rejects_duplicate_targets_or_candidates() ->
                 ],
             }
         )
+
+
+def test_activity_replacement_accepts_a_grounded_weather_recovery_candidate() -> None:
+    async def scenario() -> None:
+        base = load_vertical_slice_suite().cases[0].request
+        request = TripRequest.model_validate(
+            {
+                **base.model_dump(mode="python"),
+                "request_id": "revision-weather-recovery-fixture",
+                "destination_adcode": "110000",
+                "end_date": base.start_date + timedelta(days=1),
+                "pace": TripPace.RELAXED,
+                "constraints": ConstraintSet(),
+            }
+        )
+        pipeline = FixtureProductPlanningPipeline(request)
+        specialists = await pipeline.run_specialists(request, data_mode=DataMode.FIXTURE)
+        materials = await pipeline.build_materials(specialists)
+        plan_result = pipeline.run_plan(request, materials)
+        assert plan_result.plan is not None
+        plan = plan_result.plan
+        target_day = plan.days[0]
+        recovered_candidate = materials.shortlist.poi_candidates[0].model_copy(
+            update={
+                "candidate_id": "weather-recovered-indoor-candidate",
+                "name": "雨天补充室内场馆",
+                "environment": ActivityEnvironment.INDOOR,
+            }
+        )
+        query = WeatherIndoorSearchQuery(
+            query_id="weather-recovery-query-test",
+            keywords="博物馆",
+            reason="补充室内场馆",
+            target_district="东城区",
+        )
+        recovery = WeatherIndoorRecoveryResult(
+            request_id=request.request_id,
+            data_mode=DataMode.FIXTURE,
+            status=WeatherIndoorRecoveryStatus.RECOVERED,
+            affected_dates=(target_day.date,),
+            affected_item_ids=(target_day.items[0].item_id,),
+            required_count=1,
+            queries=(query,),
+            observations=(
+                WeatherIndoorCandidateObservation(
+                    candidate=recovered_candidate,
+                    query_id=query.query_id,
+                ),
+            ),
+            provider_call_count=1,
+        )
+        revision = PlanRevisionRequest(
+            revision_id="revision-use-weather-recovery-v1",
+            base_version_id="plan-version-fixture-v1",
+            base_plan_id=plan.plan_id,
+            target_date=target_day.date,
+            operation=PlanRevisionOperation.REPLACE_ACTIVITY,
+            replaced_item_id=target_day.items[0].item_id,
+            replacement_candidate_id=recovered_candidate.candidate_id,
+            target_item_ids=tuple(item.item_id for item in target_day.items),
+            protected_item_ids=tuple(item.item_id for item in plan.days[1].items),
+            confirmed=True,
+        )
+
+        revised = await apply_activity_replacement(
+            request,
+            plan,
+            materials,
+            revision,
+            pipeline.get_revision_route,
+            weather_indoor_recovery=recovery,
+        )
+
+        assert revised.revised_materials is not None
+        assert revised.revised_materials.weather_indoor_recovery == recovery
+        assert recovered_candidate.candidate_id in {
+            item.candidate_id for item in revised.revised_plan.days[0].items
+        }
+
+    asyncio.run(scenario())

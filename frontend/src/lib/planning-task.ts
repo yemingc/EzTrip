@@ -264,6 +264,29 @@ export interface ProductPlanningMaterials {
   };
 }
 
+export interface WeatherIndoorRecovery {
+  schema_version: "1.0";
+  recovery_version: "weather-indoor-recovery-v1";
+  request_id: string;
+  data_mode: "live" | "fixture";
+  status: "not_required" | "sufficient" | "recovered" | "insufficient";
+  affected_dates: string[];
+  affected_item_ids: string[];
+  required_count: number;
+  initial_available_count: number;
+  queries: {
+    query_id: string;
+    keywords: string;
+    reason: string;
+    target_district: string | null;
+  }[];
+  observations: {
+    candidate: CandidatePoi;
+    query_id: string;
+  }[];
+  provider_call_count: number;
+}
+
 export type ProductRepairAction =
   | "rerun_constraint"
   | "rerun_explore"
@@ -405,6 +428,7 @@ export interface PlanningTaskSnapshot {
       repair?: ProductRepairResult | null;
       review_request: HumanReviewRequest | null;
       revision_result: PlanRevisionResult | null;
+      weather_indoor_recovery?: WeatherIndoorRecovery | null;
     };
   } | null;
   failure: {
