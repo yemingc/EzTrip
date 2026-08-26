@@ -8842,6 +8842,31 @@
           "title": "HumanReviewAction",
           "type": "string"
         },
+        "PlanActivityReplacementInput": {
+          "additionalProperties": false,
+          "properties": {
+            "replaced_item_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Replaced Item Id",
+              "type": "string"
+            },
+            "replacement_candidate_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Replacement Candidate Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "replaced_item_id",
+            "replacement_candidate_id"
+          ],
+          "title": "PlanActivityReplacementInput",
+          "type": "object"
+        },
         "PlanRevisionRequest": {
           "additionalProperties": false,
           "properties": {
@@ -8929,6 +8954,15 @@
               ],
               "default": null,
               "title": "Replacement Candidate Id"
+            },
+            "activity_replacements": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/PlanActivityReplacementInput"
+              },
+              "maxItems": 4,
+              "title": "Activity Replacements",
+              "type": "array"
             },
             "target_item_ids": {
               "items": {

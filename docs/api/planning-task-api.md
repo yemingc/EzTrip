@@ -263,14 +263,40 @@ For activity replacement, use the same complete target/protected scope and repla
 }
 ```
 
+For one weather confirmation that replaces every affected activity on the selected day, omit the
+two singular fields and send a batch instead:
+
+```json
+{
+  "operation": "replace_activity",
+  "activity_replacements": [
+    {
+      "replaced_item_id": "plan-item-outdoor-1",
+      "replacement_candidate_id": "provider-observation-indoor-1"
+    },
+    {
+      "replaced_item_id": "plan-item-outdoor-2",
+      "replacement_candidate_id": "provider-observation-indoor-2"
+    }
+  ]
+}
+```
+
+The batch is atomic and date-scoped: every target and replacement candidate must be unique, all
+targets must belong to `target_date`, and the server either rejects the request or applies the whole
+batch in one new plan version. The revised draft still carries the complete validation report, so
+missing opening-hours or route evidence remains visible. The original singular fields remain
+available for the manual one-activity editor.
+
 The replacement candidate must be an unscheduled, non-dining candidate from the persisted Explore
 Provider observations. The server rejects stale bases with `409 revision-base-version-mismatch`,
 scope drift with `409 revision-scope-mismatch`, and ineligible candidates with
 `409 revision-replacement-not-eligible`.
 
 The checkpoint revision node preserves every other day and protected plan fact. `shift_day_later`
-reuses persisted materials and makes zero Provider/model calls. `replace_activity` recalculates only
-the target-day route chain, timing, nearby-meal recommendations, deterministic budget allocation,
+reuses persisted materials and makes zero Provider/model calls. A single or batched
+`replace_activity` recalculates the target-day route chain once, plus timing, nearby-meal
+recommendations, deterministic budget allocation,
 and `hard-trip-plan-validator-v1`; it records the incremental Provider call count and makes zero model
 calls. Missing opening-hours evidence for the replacement remains a blocking validation issue. Both
 operations record `v1 → v2` with an explicit item/date diff.

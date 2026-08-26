@@ -539,7 +539,13 @@ export function TripPlannerWorkspace({
     const revisionKey = revisionSelection
       ? revisionSelection.kind === "replace_activity"
         ? `${revisionSelection.targetDate}:replace:${revisionSelection.replacedItemId}:${revisionSelection.replacementCandidateId}`
-        : `${revisionSelection.targetDate}:shift:${revisionSelection.shiftMinutes}`
+        : revisionSelection.kind === "replace_day_activities"
+          ? `${revisionSelection.targetDate}:replace-day:${revisionSelection.replacements
+              .map(
+                (item) => `${item.replacedItemId}:${item.replacementCandidateId}`,
+              )
+              .join(",")}`
+          : `${revisionSelection.targetDate}:shift:${revisionSelection.shiftMinutes}`
       : undefined;
     if (action === "request_revision" && !revisionSelection) {
       setReviewError("请选择局部修改方式及其目标。");
