@@ -308,6 +308,14 @@ class InMemoryPlanningTaskStore:
                     observed_by_id = {
                         item.candidate.candidate_id: item.candidate for item in observations
                     }
+                    recovery = previous.result.state.weather_indoor_recovery
+                    if recovery is not None:
+                        observed_by_id.update(
+                            {
+                                item.candidate.candidate_id: item.candidate
+                                for item in recovery.observations
+                            }
+                        )
                     scheduled_candidate_ids = {
                         item.candidate_id
                         for day in current_version.plan.days
@@ -332,7 +340,7 @@ class InMemoryPlanningTaskStore:
                     if replacement_is_invalid:
                         raise PlanningTaskReviewConflictError(
                             "revision-replacement-not-eligible",
-                            "每个替换候选都必须来自原 Explore Provider observations, "
+                            "每个替换候选都必须来自已记录的数据来源结果, "
                             "且不能是餐饮或已排入行程的地点。",
                         )
 

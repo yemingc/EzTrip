@@ -302,13 +302,21 @@ export function PlanningResults({
   const exploreObservations =
     specialists?.branches.find((branch) => branch.specialist === "explore")?.explore_result
       ?.observations ?? [];
+  const weatherIndoorRecovery = snapshot.result?.state.weather_indoor_recovery ?? null;
+  const recoveryObservations = weatherIndoorRecovery?.observations ?? [];
   const scheduledCandidateIds = new Set(
     plan.days.flatMap((day) =>
       day.items.flatMap((item) => (item.candidate_id ? [item.candidate_id] : [])),
     ),
   );
-  const eligibleReplacementCandidates = exploreObservations
-    .map((item) => item.candidate)
+  const eligibleReplacementCandidates = [
+    ...new Map(
+      [...exploreObservations, ...recoveryObservations].map((item) => [
+        item.candidate.candidate_id,
+        item.candidate,
+      ]),
+    ).values(),
+  ]
     .filter(
       (candidate) =>
         !scheduledCandidateIds.has(candidate.candidate_id) &&
@@ -950,6 +958,7 @@ export function PlanningResults({
             }
             plan={plan}
             replacementCandidates={eligibleReplacementCandidates}
+            recovery={weatherIndoorRecovery}
             reviewBusy={reviewBusy}
             reviewError={reviewError}
           />

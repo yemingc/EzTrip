@@ -50,6 +50,8 @@ from app.planning.material_builder import build_planning_material_bundle
 from app.planning.material_contracts import PlanningMaterialBundle
 from app.planning.specialist_contracts import SpecialistFanoutResult
 from app.planning.specialist_fanout import run_specialist_fanout
+from app.planning.weather_indoor_recovery import recover_weather_indoor_candidates
+from app.planning.weather_indoor_recovery_contracts import WeatherIndoorRecoveryResult
 from app.providers.ports import (
     POISearchRequest,
     RouteRequest,
@@ -265,6 +267,16 @@ class ProductFixtureProvider:
         catalog = POI_CATALOGS[self._request.destination_city]
         if "餐饮" in request.keywords:
             return catalog[-5:][: request.limit]
+        if any(
+            term in request.keywords
+            for term in ("博物馆", "美术馆", "科技馆", "水族馆", "剧院", "室内景点")
+        ):
+            return tuple(
+                item
+                for item in catalog
+                if item.environment == ActivityEnvironment.INDOOR
+                and "餐饮服务" not in item.categories
+            )[: request.limit]
         page = next(
             (
                 index
@@ -549,3 +561,18 @@ class FixtureProductPlanningPipeline:
         if data_mode != DataMode.FIXTURE:
             raise ValueError("fixture revision route requires fixture data mode")
         return await self._provider.get_route(route_request)
+
+    async def recover_weather_indoor_candidates(
+        self,
+        request: TripRequest,
+        plan: TripPlan,
+        materials: PlanningMaterialBundle,
+        data_mode: DataMode,
+    ) -> WeatherIndoorRecoveryResult:
+        return await recover_weather_indoor_candidates(
+            request,
+            plan,
+            materials,
+            self._provider,
+            data_mode=data_mode,
+        )

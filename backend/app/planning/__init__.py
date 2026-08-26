@@ -122,6 +122,13 @@ from app.planning.vertical_slice import (
     assemble_trip_plan,
     run_trip_planning_vertical_slice,
 )
+from app.planning.weather_indoor_recovery import recover_weather_indoor_candidates
+from app.planning.weather_indoor_recovery_contracts import (
+    WeatherIndoorCandidateObservation,
+    WeatherIndoorRecoveryResult,
+    WeatherIndoorRecoveryStatus,
+    WeatherIndoorSearchQuery,
+)
 from app.planning.weather_repair import (
     MAX_WEATHER_REPLAN_ATTEMPTS,
     WEATHER_REPAIR_VERSION,
@@ -226,6 +233,10 @@ __all__ = [
     "VerticalSliceResult",
     "WeatherChangeGrade",
     "WeatherImpact",
+    "WeatherIndoorCandidateObservation",
+    "WeatherIndoorRecoveryResult",
+    "WeatherIndoorRecoveryStatus",
+    "WeatherIndoorSearchQuery",
     "WeatherPlanChange",
     "WeatherRepairAttemptTrace",
     "WeatherRepairOutcome",
@@ -254,6 +265,7 @@ __all__ = [
     "grade_weather_change",
     "open_sqlite_planning_runtime",
     "open_sqlite_specialist_runtime",
+    "recover_weather_indoor_candidates",
     "run_live_specialist_fanout",
     "run_minimal_planning_graph",
     "run_repair_router",

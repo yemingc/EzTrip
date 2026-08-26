@@ -21,6 +21,7 @@ from app.planning.stateful_contracts import (
     PlanningThreadStatus,
     StatefulPlanningNodeOutcome,
 )
+from app.planning.weather_indoor_recovery_contracts import WeatherIndoorRecoveryResult
 
 
 class ProductPlanningNodeName(StrEnum):
@@ -72,6 +73,7 @@ class ProductPlanningData(DomainModel):
     review_request: HumanReviewRequest | None = None
     review_decision: HumanReviewDecision | None = None
     revision_result: PlanRevisionResult | None = None
+    weather_indoor_recovery: WeatherIndoorRecoveryResult | None = None
     events: tuple[ProductPlanningEvent, ...] = ()
 
     @model_validator(mode="after")
@@ -99,6 +101,11 @@ class ProductPlanningData(DomainModel):
             or self.specialists.data_mode != self.data_mode
         ):
             raise ValueError("specialist result must match the product request")
+        if self.weather_indoor_recovery is not None and (
+            self.weather_indoor_recovery.request_id != self.request.request_id
+            or self.weather_indoor_recovery.data_mode != self.data_mode
+        ):
+            raise ValueError("weather indoor recovery must match the product request")
         if self.materials is not None and (
             self.materials.request_id != self.request.request_id
             or self.materials.data_mode != self.data_mode
@@ -132,7 +139,13 @@ class ProductPlanningData(DomainModel):
 
         if self.status == PlanningThreadStatus.PLANNING:
             if completed_stages >= 4 or any(
-                (self.repair, self.review_request, self.review_decision, self.revision_result)
+                (
+                    self.repair,
+                    self.review_request,
+                    self.review_decision,
+                    self.revision_result,
+                    self.weather_indoor_recovery,
+                )
             ):
                 raise ValueError("planning status may only contain incomplete product stages")
             return self
@@ -155,7 +168,14 @@ class ProductPlanningData(DomainModel):
         if self.repair is None and ProductPlanningNodeName.RUN_REPAIR in event_nodes:
             raise ValueError("product repair events require a repair result")
         if self.status == PlanningThreadStatus.PLAN_READY:
-            if any((self.review_request, self.review_decision, self.revision_result)):
+            if any(
+                (
+                    self.review_request,
+                    self.review_decision,
+                    self.revision_result,
+                    self.weather_indoor_recovery,
+                )
+            ):
                 raise ValueError("plan_ready state cannot contain review data")
             return self
         if self.review_request is None:

@@ -25,6 +25,7 @@ from app.planning.specialist_contracts import (
     SpecialistFanoutStatus,
     SpecialistName,
 )
+from app.planning.weather_indoor_recovery_contracts import WeatherIndoorRecoveryResult
 
 
 class PlanningCandidateKind(StrEnum):
@@ -365,6 +366,7 @@ class PlanningMaterialBundle(DomainModel):
         default=(),
         max_length=4,
     )
+    weather_indoor_recovery: WeatherIndoorRecoveryResult | None = None
 
     @model_validator(mode="after")
     def validate_bundle(self) -> "PlanningMaterialBundle":
@@ -382,6 +384,11 @@ class PlanningMaterialBundle(DomainModel):
             or self.data_mode != self.route_matrix.data_mode
         ):
             raise ValueError("planning material components must preserve data mode")
+        if self.weather_indoor_recovery is not None and (
+            self.weather_indoor_recovery.request_id != self.request_id
+            or self.weather_indoor_recovery.data_mode != self.data_mode
+        ):
+            raise ValueError("weather recovery must match planning material identity")
         explore_branch = next(
             item
             for item in self.specialist_result.branches
@@ -457,6 +464,13 @@ class PlanningMaterialBundle(DomainModel):
                 else ()
             )
             observed_by_id = {item.candidate.candidate_id: item.candidate for item in observations}
+            if self.weather_indoor_recovery is not None:
+                observed_by_id.update(
+                    {
+                        item.candidate.candidate_id: item.candidate
+                        for item in self.weather_indoor_recovery.observations
+                    }
+                )
             for replacement in replacements:
                 replacement_candidate = observed_by_id.get(replacement.replacement_candidate_id)
                 expected_ids = tuple(item.candidate_id for item in expected_pois)

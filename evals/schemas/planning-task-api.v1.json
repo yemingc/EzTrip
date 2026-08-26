@@ -5647,6 +5647,17 @@
               "maxItems": 4,
               "title": "Activity Replacements",
               "type": "array"
+            },
+            "weather_indoor_recovery": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/WeatherIndoorRecoveryResult"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
             }
           },
           "required": [
@@ -6200,6 +6211,17 @@
               "anyOf": [
                 {
                   "$ref": "#/$defs/PlanRevisionResult"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "weather_indoor_recovery": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/WeatherIndoorRecoveryResult"
                 },
                 {
                   "type": "null"
@@ -8472,6 +8494,183 @@
             "validation"
           ],
           "title": "VerticalSliceResult",
+          "type": "object"
+        },
+        "WeatherIndoorCandidateObservation": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate": {
+              "$ref": "#/$defs/CandidatePOI"
+            },
+            "query_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Query Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "candidate",
+            "query_id"
+          ],
+          "title": "WeatherIndoorCandidateObservation",
+          "type": "object"
+        },
+        "WeatherIndoorRecoveryResult": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "recovery_version": {
+              "const": "weather-indoor-recovery-v1",
+              "default": "weather-indoor-recovery-v1",
+              "title": "Recovery Version",
+              "type": "string"
+            },
+            "request_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Request Id",
+              "type": "string"
+            },
+            "data_mode": {
+              "enum": [
+                "live",
+                "fixture"
+              ],
+              "title": "Data Mode",
+              "type": "string"
+            },
+            "status": {
+              "$ref": "#/$defs/WeatherIndoorRecoveryStatus"
+            },
+            "affected_dates": {
+              "default": [],
+              "items": {
+                "format": "date",
+                "type": "string"
+              },
+              "maxItems": 5,
+              "title": "Affected Dates",
+              "type": "array"
+            },
+            "affected_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Affected Item Ids",
+              "type": "array"
+            },
+            "required_count": {
+              "default": 0,
+              "maximum": 20,
+              "minimum": 0,
+              "title": "Required Count",
+              "type": "integer"
+            },
+            "initial_available_count": {
+              "default": 0,
+              "maximum": 25,
+              "minimum": 0,
+              "title": "Initial Available Count",
+              "type": "integer"
+            },
+            "queries": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/WeatherIndoorSearchQuery"
+              },
+              "maxItems": 2,
+              "title": "Queries",
+              "type": "array"
+            },
+            "observations": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/WeatherIndoorCandidateObservation"
+              },
+              "maxItems": 10,
+              "title": "Observations",
+              "type": "array"
+            },
+            "provider_call_count": {
+              "default": 0,
+              "maximum": 2,
+              "minimum": 0,
+              "title": "Provider Call Count",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "request_id",
+            "data_mode",
+            "status"
+          ],
+          "title": "WeatherIndoorRecoveryResult",
+          "type": "object"
+        },
+        "WeatherIndoorRecoveryStatus": {
+          "enum": [
+            "not_required",
+            "sufficient",
+            "recovered",
+            "insufficient"
+          ],
+          "title": "WeatherIndoorRecoveryStatus",
+          "type": "string"
+        },
+        "WeatherIndoorSearchQuery": {
+          "additionalProperties": false,
+          "properties": {
+            "query_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Query Id",
+              "type": "string"
+            },
+            "keywords": {
+              "maxLength": 40,
+              "minLength": 1,
+              "title": "Keywords",
+              "type": "string"
+            },
+            "reason": {
+              "minLength": 1,
+              "title": "Reason",
+              "type": "string"
+            },
+            "target_district": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Target District"
+            }
+          },
+          "required": [
+            "query_id",
+            "keywords",
+            "reason"
+          ],
+          "title": "WeatherIndoorSearchQuery",
           "type": "object"
         },
         "WeatherRisk": {
@@ -11986,6 +12185,17 @@
               "maxItems": 4,
               "title": "Activity Replacements",
               "type": "array"
+            },
+            "weather_indoor_recovery": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/WeatherIndoorRecoveryResult"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
             }
           },
           "required": [
@@ -13351,6 +13561,183 @@
             "repair_action"
           ],
           "title": "ValidationIssue",
+          "type": "object"
+        },
+        "WeatherIndoorCandidateObservation": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate": {
+              "$ref": "#/$defs/CandidatePOI"
+            },
+            "query_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Query Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "candidate",
+            "query_id"
+          ],
+          "title": "WeatherIndoorCandidateObservation",
+          "type": "object"
+        },
+        "WeatherIndoorRecoveryResult": {
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "1.0",
+              "default": "1.0",
+              "title": "Schema Version",
+              "type": "string"
+            },
+            "recovery_version": {
+              "const": "weather-indoor-recovery-v1",
+              "default": "weather-indoor-recovery-v1",
+              "title": "Recovery Version",
+              "type": "string"
+            },
+            "request_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Request Id",
+              "type": "string"
+            },
+            "data_mode": {
+              "enum": [
+                "live",
+                "fixture"
+              ],
+              "title": "Data Mode",
+              "type": "string"
+            },
+            "status": {
+              "$ref": "#/$defs/WeatherIndoorRecoveryStatus"
+            },
+            "affected_dates": {
+              "default": [],
+              "items": {
+                "format": "date",
+                "type": "string"
+              },
+              "maxItems": 5,
+              "title": "Affected Dates",
+              "type": "array"
+            },
+            "affected_item_ids": {
+              "default": [],
+              "items": {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Affected Item Ids",
+              "type": "array"
+            },
+            "required_count": {
+              "default": 0,
+              "maximum": 20,
+              "minimum": 0,
+              "title": "Required Count",
+              "type": "integer"
+            },
+            "initial_available_count": {
+              "default": 0,
+              "maximum": 25,
+              "minimum": 0,
+              "title": "Initial Available Count",
+              "type": "integer"
+            },
+            "queries": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/WeatherIndoorSearchQuery"
+              },
+              "maxItems": 2,
+              "title": "Queries",
+              "type": "array"
+            },
+            "observations": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/WeatherIndoorCandidateObservation"
+              },
+              "maxItems": 10,
+              "title": "Observations",
+              "type": "array"
+            },
+            "provider_call_count": {
+              "default": 0,
+              "maximum": 2,
+              "minimum": 0,
+              "title": "Provider Call Count",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "request_id",
+            "data_mode",
+            "status"
+          ],
+          "title": "WeatherIndoorRecoveryResult",
+          "type": "object"
+        },
+        "WeatherIndoorRecoveryStatus": {
+          "enum": [
+            "not_required",
+            "sufficient",
+            "recovered",
+            "insufficient"
+          ],
+          "title": "WeatherIndoorRecoveryStatus",
+          "type": "string"
+        },
+        "WeatherIndoorSearchQuery": {
+          "additionalProperties": false,
+          "properties": {
+            "query_id": {
+              "maxLength": 100,
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+              "title": "Query Id",
+              "type": "string"
+            },
+            "keywords": {
+              "maxLength": 40,
+              "minLength": 1,
+              "title": "Keywords",
+              "type": "string"
+            },
+            "reason": {
+              "minLength": 1,
+              "title": "Reason",
+              "type": "string"
+            },
+            "target_district": {
+              "anyOf": [
+                {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Target District"
+            }
+          },
+          "required": [
+            "query_id",
+            "keywords",
+            "reason"
+          ],
+          "title": "WeatherIndoorSearchQuery",
           "type": "object"
         },
         "WeatherRisk": {

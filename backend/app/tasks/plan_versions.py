@@ -49,6 +49,11 @@ def build_initial_plan_version(
                 "opening_hours": product_state.opening_hours.model_dump(mode="json")
                 if product_state.opening_hours is not None
                 else None,
+                "weather_indoor_recovery": (
+                    product_state.weather_indoor_recovery.model_dump(mode="json")
+                    if product_state.weather_indoor_recovery is not None
+                    else None
+                ),
             }
         )
         model_versions: dict[str, str] = {}
@@ -133,6 +138,17 @@ def build_revised_plan_version(
         raise ValueError("revision base version does not match the current task version")
     plan = revision.revised_plan
     plan_digest = _sha256(plan.model_dump(mode="json"))
+    if revision.request.operation.value == "replace_activity":
+        change_summary = (
+            f"按用户确认的室内方案重新安排 {revision.request.target_date.isoformat()}。",
+            f"重新计算当天路线、时间与用餐建议, 并执行 {revision.validation.validator_version}。",
+        )
+    else:
+        change_summary = (
+            f"按用户确认的结构化请求将 {revision.request.target_date.isoformat()} "
+            f"全部活动延后 {revision.request.shift_minutes} 分钟。",
+            f"复用原数据与排程结果并重新执行 {revision.validation.validator_version}。",
+        )
     return PlanVersion(
         version_id=f"plan-version-{plan_digest[:16]}",
         plan=plan,
@@ -143,11 +159,7 @@ def build_revised_plan_version(
         tool_snapshot_ids=previous.tool_snapshot_ids,
         model_versions=previous.model_versions,
         prompt_versions=previous.prompt_versions,
-        change_summary=(
-            f"按用户确认的结构化请求将 {revision.request.target_date.isoformat()} "
-            f"全部活动延后 {revision.request.shift_minutes} 分钟。",
-            f"复用原 Provider/Planner 产物并重新执行 {revision.validation.validator_version}。",
-        ),
+        change_summary=change_summary,
         changed_dates=revision.diff.changed_dates,
     )
 
