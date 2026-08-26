@@ -2572,14 +2572,20 @@
               "type": "string"
             },
             "estimator_version": {
-              "const": "budget-estimator-v1",
-              "default": "budget-estimator-v1",
+              "default": "budget-estimator-v2",
+              "enum": [
+                "budget-estimator-v1",
+                "budget-estimator-v2"
+              ],
               "title": "Estimator Version",
               "type": "string"
             },
             "assumption_version": {
-              "const": "cn-independent-trip-reference-v1",
-              "default": "cn-independent-trip-reference-v1",
+              "default": "cn-itinerary-linked-reference-v2",
+              "enum": [
+                "cn-independent-trip-reference-v1",
+                "cn-itinerary-linked-reference-v2"
+              ],
               "title": "Assumption Version",
               "type": "string"
             },
@@ -2726,6 +2732,7 @@
         },
         "BudgetEstimateConfidence": {
           "enum": [
+            "high",
             "medium",
             "low"
           ],
@@ -2803,6 +2810,8 @@
         "BudgetEstimateMethod": {
           "enum": [
             "candidate_price_range",
+            "itinerary_price_range",
+            "route_reference",
             "planning_reference"
           ],
           "title": "BudgetEstimateMethod",
@@ -2813,6 +2822,9 @@
             "room_night",
             "traveler_day",
             "traveler_activity",
+            "traveler_trip",
+            "traveler_meal",
+            "traveler_route_leg",
             "party_trip"
           ],
           "title": "BudgetEstimateQuantityBasis",
@@ -10345,14 +10357,20 @@
               "type": "string"
             },
             "estimator_version": {
-              "const": "budget-estimator-v1",
-              "default": "budget-estimator-v1",
+              "default": "budget-estimator-v2",
+              "enum": [
+                "budget-estimator-v1",
+                "budget-estimator-v2"
+              ],
               "title": "Estimator Version",
               "type": "string"
             },
             "assumption_version": {
-              "const": "cn-independent-trip-reference-v1",
-              "default": "cn-independent-trip-reference-v1",
+              "default": "cn-itinerary-linked-reference-v2",
+              "enum": [
+                "cn-independent-trip-reference-v1",
+                "cn-itinerary-linked-reference-v2"
+              ],
               "title": "Assumption Version",
               "type": "string"
             },
@@ -10499,6 +10517,7 @@
         },
         "BudgetEstimateConfidence": {
           "enum": [
+            "high",
             "medium",
             "low"
           ],
@@ -10576,6 +10595,8 @@
         "BudgetEstimateMethod": {
           "enum": [
             "candidate_price_range",
+            "itinerary_price_range",
+            "route_reference",
             "planning_reference"
           ],
           "title": "BudgetEstimateMethod",
@@ -10586,6 +10607,9 @@
             "room_night",
             "traveler_day",
             "traveler_activity",
+            "traveler_trip",
+            "traveler_meal",
+            "traveler_route_leg",
             "party_trip"
           ],
           "title": "BudgetEstimateQuantityBasis",

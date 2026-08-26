@@ -622,6 +622,7 @@ async def apply_activity_replacement(
     budget_estimate = estimate_trip_budget(
         materials.planner_context,
         shortlist,
+        route_matrix,
     )
     issues = planning_material_issues(
         materials.specialist_result,

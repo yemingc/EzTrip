@@ -14,12 +14,15 @@ class BudgetEstimateStatus(StrEnum):
 
 
 class BudgetEstimateConfidence(StrEnum):
+    HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
 
 
 class BudgetEstimateMethod(StrEnum):
     CANDIDATE_PRICE_RANGE = "candidate_price_range"
+    ITINERARY_PRICE_RANGE = "itinerary_price_range"
+    ROUTE_REFERENCE = "route_reference"
     PLANNING_REFERENCE = "planning_reference"
 
 
@@ -27,6 +30,9 @@ class BudgetEstimateQuantityBasis(StrEnum):
     ROOM_NIGHT = "room_night"
     TRAVELER_DAY = "traveler_day"
     TRAVELER_ACTIVITY = "traveler_activity"
+    TRAVELER_TRIP = "traveler_trip"
+    TRAVELER_MEAL = "traveler_meal"
+    TRAVELER_ROUTE_LEG = "traveler_route_leg"
     PARTY_TRIP = "party_trip"
 
 
@@ -74,10 +80,11 @@ class BudgetEstimateItem(DomainModel):
 
 class BudgetEstimate(DomainModel):
     schema_version: Literal["1.0"] = "1.0"
-    estimator_version: Literal["budget-estimator-v1"] = "budget-estimator-v1"
-    assumption_version: Literal["cn-independent-trip-reference-v1"] = (
-        "cn-independent-trip-reference-v1"
-    )
+    estimator_version: Literal["budget-estimator-v1", "budget-estimator-v2"] = "budget-estimator-v2"
+    assumption_version: Literal[
+        "cn-independent-trip-reference-v1",
+        "cn-itinerary-linked-reference-v2",
+    ] = "cn-itinerary-linked-reference-v2"
     request_id: Identifier
     context_id: Identifier
     input_request_sha256: Sha256Digest

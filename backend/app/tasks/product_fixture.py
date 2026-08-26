@@ -33,8 +33,15 @@ from app.agents.explore_agent import run_explore_agent
 from app.agents.plan_agent import run_plan_agent
 from app.agents.plan_agent_contracts import PlanAgentRunResult
 from app.agents.stay_agent import run_stay_agent
-from app.domain.candidates import ActivityEnvironment, CandidatePOI, CandidateStay, GeoPoint
+from app.domain.candidates import (
+    ActivityEnvironment,
+    CandidatePOI,
+    CandidateStay,
+    GeoPoint,
+    StayPriceBasis,
+)
 from app.domain.context import PlannerContext
+from app.domain.money import MoneyRange
 from app.domain.opening_hours import OpeningHoursEvidence, OpeningHoursEvidenceBundle
 from app.domain.planning import ActivityKind, TripPlan
 from app.domain.request import TripRequest
@@ -61,6 +68,12 @@ from app.providers.ports import (
 
 CHINA_TIMEZONE = timezone(timedelta(hours=8), name="Asia/Shanghai")
 FIXTURE_RETRIEVED_AT = datetime(2026, 8, 21, tzinfo=UTC)
+
+FIXTURE_STAY_PRICE_ESTIMATES: dict[str, tuple[str, str]] = {
+    "北京市": ("350", "550"),
+    "上海市": ("380", "600"),
+    "成都市": ("260", "450"),
+}
 
 
 def _digest(*values: object) -> str:
@@ -242,6 +255,7 @@ def _stay_catalog(city: str) -> tuple[CandidateStay, ...]:
         ),
     }[city]
     candidate_id, name, district, address, latitude, longitude, area_name, provider_id = fixture
+    price = FIXTURE_STAY_PRICE_ESTIMATES[city]
     return (
         CandidateStay(
             candidate_id=candidate_id,
@@ -252,6 +266,9 @@ def _stay_catalog(city: str) -> tuple[CandidateStay, ...]:
             location=GeoPoint(latitude=latitude, longitude=longitude),
             area_name=area_name,
             tags=("中心城区", "仅为位置锚点"),
+            nightly_price_estimate=MoneyRange(minimum=price[0], maximum=price[1]),
+            price_basis=StayPriceBasis.FIXTURE_ESTIMATE,
+            price_source=_source("eztrip-product-fixture", f"{provider_id}-PRICE"),
             source=_source("eztrip-product-fixture", provider_id),
         ),
     )

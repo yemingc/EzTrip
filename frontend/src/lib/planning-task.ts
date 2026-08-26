@@ -276,7 +276,14 @@ export interface ProductPlanningMaterials {
     items: {
       category: BudgetCategory;
       description: string;
-      quantity_basis: "room_night" | "traveler_day" | "traveler_activity" | "party_trip";
+      quantity_basis:
+        | "room_night"
+        | "traveler_day"
+        | "traveler_activity"
+        | "traveler_trip"
+        | "traveler_meal"
+        | "traveler_route_leg"
+        | "party_trip";
       quantity: string | number;
       unit_price: {
         minimum: string | number;
@@ -288,8 +295,12 @@ export interface ProductPlanningMaterials {
         maximum: string | number;
         currency: "CNY";
       };
-      method: "candidate_price_range" | "planning_reference";
-      confidence: "medium" | "low";
+      method:
+        | "candidate_price_range"
+        | "itinerary_price_range"
+        | "route_reference"
+        | "planning_reference";
+      confidence: "high" | "medium" | "low";
       basis_description: string;
     }[];
     unknown_categories: BudgetCategory[];

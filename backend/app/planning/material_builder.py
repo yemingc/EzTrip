@@ -482,6 +482,7 @@ async def build_planning_material_bundle(
     budget_estimate = estimate_trip_budget(
         specialist_result.planner_context,
         shortlist,
+        route_matrix,
     )
     issues = planning_material_issues(
         specialist_result,

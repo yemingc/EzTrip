@@ -283,9 +283,9 @@ def test_complete_material_bundle_builds_directed_matrix_with_bounded_concurrenc
 
         estimate = bundle.budget_estimate
         assert estimate is not None
-        assert estimate.total == MoneyRange(minimum="720.00", maximum="2880.00")
-        assert estimate.per_traveler == MoneyRange(minimum="360.00", maximum="1440.00")
-        assert estimate.per_day == MoneyRange(minimum="240.00", maximum="960.00")
+        assert estimate.total == MoneyRange(minimum="960.00", maximum="2970.00")
+        assert estimate.per_traveler == MoneyRange(minimum="480.00", maximum="1485.00")
+        assert estimate.per_day == MoneyRange(minimum="320.00", maximum="990.00")
         assert estimate.comparison_status == BudgetComparisonStatus.WITHIN_BUDGET
         assert [item.category for item in estimate.items] == [
             BudgetCategory.TRANSPORT,
@@ -293,9 +293,14 @@ def test_complete_material_bundle_builds_directed_matrix_with_bounded_concurrenc
             BudgetCategory.ADMISSION,
             BudgetCategory.ACTIVITY,
         ]
-        assert all(
-            item.method == BudgetEstimateMethod.PLANNING_REFERENCE for item in estimate.items
-        )
+        assert [item.method for item in estimate.items] == [
+            BudgetEstimateMethod.ROUTE_REFERENCE,
+            BudgetEstimateMethod.PLANNING_REFERENCE,
+            BudgetEstimateMethod.ITINERARY_PRICE_RANGE,
+            BudgetEstimateMethod.PLANNING_REFERENCE,
+        ]
+        assert estimate.items[0].basis_description.endswith("(含每日返程)")
+        assert "3 个活动" in estimate.items[2].basis_description
 
     asyncio.run(exercise())
 
@@ -438,6 +443,41 @@ def test_budget_estimate_uses_candidate_stay_range_without_claiming_live_price()
     asyncio.run(exercise())
 
 
+def test_budget_estimate_sums_selected_attraction_references_per_traveler() -> None:
+    async def exercise() -> None:
+        specialist_result = await build_fanout(
+            budget=BudgetConstraint(
+                total_limit=Decimal("1000.00"),
+                included_categories=(BudgetCategory.ADMISSION,),
+                hard_limit=False,
+            )
+        )
+        bundle = await build_planning_material_bundle(
+            specialist_result,
+            ScenarioRouteProvider(),
+        )
+        named_candidates = tuple(
+            candidate.model_copy(update={"name": name})
+            for candidate, name in zip(
+                bundle.shortlist.poi_candidates,
+                ("故宫博物院", "天坛公园", "中国国家博物馆"),
+                strict=True,
+            )
+        )
+        shortlist = bundle.shortlist.model_copy(update={"poi_candidates": named_candidates})
+
+        estimate = estimate_trip_budget(specialist_result.planner_context, shortlist)
+
+        assert estimate.total == MoneyRange(minimum="150", maximum="188")
+        admission = estimate.items[0]
+        assert admission.method == BudgetEstimateMethod.ITINERARY_PRICE_RANGE
+        assert admission.unit_price == MoneyRange(minimum="75", maximum="94")
+        assert admission.quantity == Decimal("2")
+        assert "3 个活动" in admission.basis_description
+
+    asyncio.run(exercise())
+
+
 def test_budget_estimate_flags_when_even_the_lower_range_exceeds_budget() -> None:
     async def exercise() -> None:
         specialist_result = await build_fanout(
@@ -459,7 +499,7 @@ def test_budget_estimate_flags_when_even_the_lower_range_exceeds_budget() -> Non
 
         estimate = bundle.budget_estimate
         assert estimate is not None
-        assert estimate.total == MoneyRange(minimum="720.00", maximum="2880.00")
+        assert estimate.total == MoneyRange(minimum="960.00", maximum="2970.00")
         assert estimate.comparison_status == BudgetComparisonStatus.OVER_BUDGET
         assert {item.value for item in estimate.advice_codes} == {
             "prioritize_free_activities",

@@ -1,4 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
+import path from "node:path";
+
+const testArtifactsDirectory = path.resolve("test-results");
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -21,6 +24,16 @@ export default defineConfig({
     {
       command: "uv run uvicorn app.main:app --host 127.0.0.1 --port 8000",
       cwd: "../backend",
+      env: {
+        EZTRIP_PLANNING_CHECKPOINT_DIR: path.join(
+          testArtifactsDirectory,
+          "planning-task-checkpoints",
+        ),
+        EZTRIP_PLANNING_TASK_STORE_PATH: path.join(
+          testArtifactsDirectory,
+          "planning-task-store.sqlite3",
+        ),
+      },
       url: "http://127.0.0.1:8000/api/health",
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
@@ -35,4 +48,3 @@ export default defineConfig({
     },
   ],
 });
-

@@ -124,6 +124,14 @@ function formatMoneyRange(range: {
   return `${formatMoney(minimum)}–${formatMoney(maximum)}`;
 }
 
+function formatMoneyMidpoint(range: {
+  minimum: string | number;
+  maximum: string | number;
+}) {
+  const midpoint = (Number(range.minimum) + Number(range.maximum)) / 2;
+  return formatMoney(Math.round(midpoint / 10) * 10);
+}
+
 function candidateTag(candidate: CandidatePoi, prefix: string) {
   return candidate.tags.find((tag) => tag.startsWith(prefix))?.slice(prefix.length) ?? null;
 }
@@ -957,14 +965,19 @@ export function PlanningResults({
             <p className="eyebrow">费用参考</p>
             <div className="mt-3 flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold text-slate-800">预计整趟费用</p>
+                <p className="text-sm font-semibold text-slate-800">基于当前行程估算</p>
                 <p className="mt-1 text-2xl font-semibold tracking-tight" data-testid="budget-estimate-total">
                   {budgetEstimate
                     ? budgetEstimate.total
-                      ? formatMoneyRange(budgetEstimate.total)
+                      ? `约 ${formatMoneyMidpoint(budgetEstimate.total)}`
                       : "部分费用待确认"
                     : "重新规划后显示"}
                 </p>
+                {budgetEstimate?.total ? (
+                  <p className="mt-1 text-xs text-slate-500" data-testid="budget-estimate-range">
+                    参考范围 {formatMoneyRange(budgetEstimate.total)}
+                  </p>
+                ) : null}
                 {hasBudget && budget.total_limit !== null ? (
                   <p className="mt-2 text-xs text-slate-500">
                     你的预算：{formatMoney(budget.total_limit)}
@@ -1050,7 +1063,7 @@ export function PlanningResults({
 
             {budgetEstimate ? (
               <p className="mt-4 text-[10px] leading-5 text-slate-400">
-                费用按当前人数、天数和活动数量计算，采用规划参考区间，不代表实时成交价。
+                费用根据当前住宿、行程地点、路线段数、人数和餐次计算；参考区间不代表实时成交价。
                 {budgetEstimate.exclusions.length
                   ? ` 不含${budgetEstimate.exclusions
                       .map((item) => budgetExclusionLabels[item])
