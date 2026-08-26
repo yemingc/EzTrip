@@ -1,5 +1,17 @@
 # Load Agent contracts before planning modules cross-reference them during a cold app import.
 from app import agents as _agents  # noqa: F401
+from app.planning.budget_estimate_contracts import (
+    BudgetAdviceCode,
+    BudgetComparisonStatus,
+    BudgetEstimate,
+    BudgetEstimateConfidence,
+    BudgetEstimateExclusion,
+    BudgetEstimateItem,
+    BudgetEstimateMethod,
+    BudgetEstimateQuantityBasis,
+    BudgetEstimateStatus,
+)
+from app.planning.budget_estimator import estimate_trip_budget
 from app.planning.context_compiler import compile_planner_context
 from app.planning.hard_validator import HARD_VALIDATOR_VERSION, validate_hard_trip_plan
 from app.planning.material_builder import (
@@ -163,10 +175,19 @@ __all__ = [
     "VALIDATOR_VERSION",
     "VERTICAL_SLICE_VERSION",
     "WEATHER_REPAIR_VERSION",
+    "BudgetAdviceCode",
     "BudgetAllocation",
     "BudgetAllocationItem",
     "BudgetAllocationReason",
     "BudgetAllocationStatus",
+    "BudgetComparisonStatus",
+    "BudgetEstimate",
+    "BudgetEstimateConfidence",
+    "BudgetEstimateExclusion",
+    "BudgetEstimateItem",
+    "BudgetEstimateMethod",
+    "BudgetEstimateQuantityBasis",
+    "BudgetEstimateStatus",
     "BudgetQuantityBasis",
     "CheckpointHistoryEntry",
     "DuplicatePlanningThreadError",
@@ -262,6 +283,7 @@ __all__ = [
     "compile_planner_context",
     "derive_candidate_search_queries",
     "detect_weather_impacts",
+    "estimate_trip_budget",
     "grade_weather_change",
     "open_sqlite_planning_runtime",
     "open_sqlite_specialist_runtime",

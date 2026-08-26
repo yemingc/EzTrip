@@ -21,6 +21,16 @@
       "title": "ActivityKind",
       "type": "string"
     },
+    "BudgetAdviceCode": {
+      "enum": [
+        "keep_buffer",
+        "lower_lodging_tier",
+        "prioritize_free_activities",
+        "use_public_transport"
+      ],
+      "title": "BudgetAdviceCode",
+      "type": "string"
+    },
     "BudgetAllocation": {
       "additionalProperties": false,
       "properties": {
@@ -257,6 +267,281 @@
         "other"
       ],
       "title": "BudgetCategory",
+      "type": "string"
+    },
+    "BudgetComparisonStatus": {
+      "enum": [
+        "not_requested",
+        "within_budget",
+        "possible_overrun",
+        "over_budget",
+        "incomplete"
+      ],
+      "title": "BudgetComparisonStatus",
+      "type": "string"
+    },
+    "BudgetEstimate": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "estimator_version": {
+          "const": "budget-estimator-v1",
+          "default": "budget-estimator-v1",
+          "title": "Estimator Version",
+          "type": "string"
+        },
+        "assumption_version": {
+          "const": "cn-independent-trip-reference-v1",
+          "default": "cn-independent-trip-reference-v1",
+          "title": "Assumption Version",
+          "type": "string"
+        },
+        "request_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "context_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*$",
+          "title": "Context Id",
+          "type": "string"
+        },
+        "input_request_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Input Request Sha256",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/BudgetEstimateStatus"
+        },
+        "currency": {
+          "const": "CNY",
+          "default": "CNY",
+          "title": "Currency",
+          "type": "string"
+        },
+        "scope_categories": {
+          "items": {
+            "$ref": "#/$defs/BudgetCategory"
+          },
+          "maxItems": 6,
+          "minItems": 1,
+          "title": "Scope Categories",
+          "type": "array"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/BudgetEstimateItem"
+          },
+          "maxItems": 6,
+          "title": "Items",
+          "type": "array"
+        },
+        "unknown_categories": {
+          "items": {
+            "$ref": "#/$defs/BudgetCategory"
+          },
+          "maxItems": 6,
+          "title": "Unknown Categories",
+          "type": "array"
+        },
+        "total": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MoneyRange"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "per_traveler": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MoneyRange"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "per_day": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MoneyRange"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "budget_limit": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Budget Limit"
+        },
+        "comparison_status": {
+          "$ref": "#/$defs/BudgetComparisonStatus"
+        },
+        "advice_codes": {
+          "items": {
+            "$ref": "#/$defs/BudgetAdviceCode"
+          },
+          "maxItems": 4,
+          "title": "Advice Codes",
+          "type": "array"
+        },
+        "exclusions": {
+          "default": [
+            "intercity_transport",
+            "shopping",
+            "booking_fees"
+          ],
+          "items": {
+            "$ref": "#/$defs/BudgetEstimateExclusion"
+          },
+          "title": "Exclusions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "request_id",
+        "context_id",
+        "input_request_sha256",
+        "status",
+        "scope_categories",
+        "items",
+        "unknown_categories",
+        "comparison_status",
+        "advice_codes"
+      ],
+      "title": "BudgetEstimate",
+      "type": "object"
+    },
+    "BudgetEstimateConfidence": {
+      "enum": [
+        "medium",
+        "low"
+      ],
+      "title": "BudgetEstimateConfidence",
+      "type": "string"
+    },
+    "BudgetEstimateExclusion": {
+      "enum": [
+        "intercity_transport",
+        "shopping",
+        "booking_fees"
+      ],
+      "title": "BudgetEstimateExclusion",
+      "type": "string"
+    },
+    "BudgetEstimateItem": {
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "$ref": "#/$defs/BudgetCategory"
+        },
+        "description": {
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "quantity_basis": {
+          "$ref": "#/$defs/BudgetEstimateQuantityBasis"
+        },
+        "quantity": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)",
+              "type": "string"
+            }
+          ],
+          "title": "Quantity"
+        },
+        "unit_price": {
+          "$ref": "#/$defs/MoneyRange"
+        },
+        "total": {
+          "$ref": "#/$defs/MoneyRange"
+        },
+        "method": {
+          "$ref": "#/$defs/BudgetEstimateMethod"
+        },
+        "confidence": {
+          "$ref": "#/$defs/BudgetEstimateConfidence"
+        },
+        "basis_description": {
+          "minLength": 1,
+          "title": "Basis Description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "category",
+        "description",
+        "quantity_basis",
+        "quantity",
+        "unit_price",
+        "total",
+        "method",
+        "confidence",
+        "basis_description"
+      ],
+      "title": "BudgetEstimateItem",
+      "type": "object"
+    },
+    "BudgetEstimateMethod": {
+      "enum": [
+        "candidate_price_range",
+        "planning_reference"
+      ],
+      "title": "BudgetEstimateMethod",
+      "type": "string"
+    },
+    "BudgetEstimateQuantityBasis": {
+      "enum": [
+        "room_night",
+        "traveler_day",
+        "traveler_activity",
+        "party_trip"
+      ],
+      "title": "BudgetEstimateQuantityBasis",
+      "type": "string"
+    },
+    "BudgetEstimateStatus": {
+      "enum": [
+        "complete",
+        "partial"
+      ],
+      "title": "BudgetEstimateStatus",
       "type": "string"
     },
     "BudgetPlanningContext": {
@@ -2284,6 +2569,17 @@
         },
         "budget_allocation": {
           "$ref": "#/$defs/BudgetAllocation"
+        },
+        "budget_estimate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BudgetEstimate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "activity_replacement": {
           "anyOf": [

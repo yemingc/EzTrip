@@ -20,6 +20,7 @@ from app.itinerary_quality import (
     is_meal_candidate,
     straight_line_distance_meters,
 )
+from app.planning.budget_estimator import estimate_trip_budget
 from app.planning.material_builder import allocate_budget, planning_material_issues
 from app.planning.material_contracts import (
     PlanningActivityReplacement,
@@ -618,6 +619,10 @@ async def apply_activity_replacement(
         get_route,
     )
     budget_allocation = allocate_budget(materials.planner_context)
+    budget_estimate = estimate_trip_budget(
+        materials.planner_context,
+        shortlist,
+    )
     issues = planning_material_issues(
         materials.specialist_result,
         shortlist,
@@ -645,6 +650,7 @@ async def apply_activity_replacement(
         shortlist=shortlist,
         route_matrix=route_matrix,
         budget_allocation=budget_allocation,
+        budget_estimate=budget_estimate,
         activity_replacement=(replacement_records[0] if len(replacement_records) == 1 else None),
         activity_replacements=(replacement_records if len(replacement_records) > 1 else ()),
         weather_indoor_recovery=weather_indoor_recovery,

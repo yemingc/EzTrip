@@ -8,6 +8,7 @@ import pytest
 from pydantic import SecretStr
 
 from app.core.config import Settings
+from app.domain.money import BudgetCategory
 from app.request_intake import agent as agent_module
 from app.request_intake.agent import (
     REQUEST_FIELD_TOOL_NAME,
@@ -95,6 +96,7 @@ def test_confirmation_applies_proposal_and_promotes_constraints() -> None:
         assert request.party.adults == 1
         assert request.party.children == 1
         assert request.budget is not None and request.budget.total_limit == 5000
+        assert BudgetCategory.LODGING in request.budget.included_categories
         assert request.travel_styles == ("科技",)
         assert {item.kind.value for item in request.constraints.items} == {"avoid", "interest"}
         assert all(item.confirmed for item in request.constraints.items)

@@ -18,7 +18,8 @@ from app.agents.contracts import (
     StaySelectionModelResponse,
     StaySelectionProposalBatch,
 )
-from app.domain.money import BudgetCategory
+from app.domain.candidates import StayPriceBasis
+from app.domain.money import BudgetCategory, MoneyRange
 from app.domain.provider import ProviderErrorCategory, ProviderFailure
 from app.domain.request import BudgetConstraint, TripRequest
 from app.domain.sources import DataMode, SourceReference
@@ -29,6 +30,8 @@ from app.evaluation.specialist_fanout import (
     build_specialist_scenario_provider,
     load_specialist_fanout_suite,
 )
+from app.planning.budget_estimate_contracts import BudgetComparisonStatus, BudgetEstimateMethod
+from app.planning.budget_estimator import estimate_trip_budget
 from app.planning.context_compiler import compile_planner_context
 from app.planning.material_builder import (
     PlanningMaterialProtocolError,
@@ -278,6 +281,22 @@ def test_complete_material_bundle_builds_directed_matrix_with_bounded_concurrenc
             start=Decimal("0"),
         ) == Decimal("3000.00")
 
+        estimate = bundle.budget_estimate
+        assert estimate is not None
+        assert estimate.total == MoneyRange(minimum="720.00", maximum="2880.00")
+        assert estimate.per_traveler == MoneyRange(minimum="360.00", maximum="1440.00")
+        assert estimate.per_day == MoneyRange(minimum="240.00", maximum="960.00")
+        assert estimate.comparison_status == BudgetComparisonStatus.WITHIN_BUDGET
+        assert [item.category for item in estimate.items] == [
+            BudgetCategory.TRANSPORT,
+            BudgetCategory.FOOD,
+            BudgetCategory.ADMISSION,
+            BudgetCategory.ACTIVITY,
+        ]
+        assert all(
+            item.method == BudgetEstimateMethod.PLANNING_REFERENCE for item in estimate.items
+        )
+
     asyncio.run(exercise())
 
 
@@ -365,6 +384,89 @@ def test_lodging_budget_without_rooms_blocks_before_arithmetic() -> None:
     assert allocation.status == BudgetAllocationStatus.BLOCKED
     assert allocation.reason == BudgetAllocationReason.MISSING_ROOMS
     assert allocation.allocations == ()
+
+
+def test_budget_estimate_keeps_lodging_unknown_when_room_count_is_missing() -> None:
+    async def exercise() -> None:
+        specialist_result = await build_fanout("specialist-fanout-missing-rooms-v1")
+        bundle = await build_planning_material_bundle(specialist_result, ScenarioRouteProvider())
+
+        estimate = bundle.budget_estimate
+        assert estimate is not None
+        assert estimate.status.value == "partial"
+        assert estimate.total is None
+        assert estimate.unknown_categories == (BudgetCategory.LODGING,)
+        assert estimate.comparison_status == BudgetComparisonStatus.INCOMPLETE
+
+    asyncio.run(exercise())
+
+
+def test_budget_estimate_uses_candidate_stay_range_without_claiming_live_price() -> None:
+    async def exercise() -> None:
+        specialist_result = await build_fanout(
+            budget=BudgetConstraint(
+                total_limit=Decimal("3000.00"),
+                included_categories=tuple(BudgetCategory),
+            )
+        )
+        bundle = await build_planning_material_bundle(
+            specialist_result,
+            ScenarioRouteProvider(),
+        )
+        stay = bundle.shortlist.primary_stay
+        assert stay is not None
+        priced_stay = stay.model_copy(
+            update={
+                "nightly_price_estimate": MoneyRange(minimum="400", maximum="600"),
+                "price_basis": StayPriceBasis.FIXTURE_ESTIMATE,
+                "price_source": stay.source,
+            }
+        )
+        shortlist = bundle.shortlist.model_copy(update={"primary_stay": priced_stay})
+
+        estimate = estimate_trip_budget(
+            specialist_result.planner_context,
+            shortlist,
+        )
+
+        lodging = estimate.items[0]
+        assert lodging.category == BudgetCategory.LODGING
+        assert lodging.method == BudgetEstimateMethod.CANDIDATE_PRICE_RANGE
+        assert lodging.unit_price == MoneyRange(minimum="400", maximum="600")
+        assert lodging.total == MoneyRange(minimum="800", maximum="1200")
+
+    asyncio.run(exercise())
+
+
+def test_budget_estimate_flags_when_even_the_lower_range_exceeds_budget() -> None:
+    async def exercise() -> None:
+        specialist_result = await build_fanout(
+            budget=BudgetConstraint(
+                total_limit=Decimal("500.00"),
+                included_categories=(
+                    BudgetCategory.TRANSPORT,
+                    BudgetCategory.FOOD,
+                    BudgetCategory.ADMISSION,
+                    BudgetCategory.ACTIVITY,
+                ),
+                hard_limit=False,
+            )
+        )
+        bundle = await build_planning_material_bundle(
+            specialist_result,
+            ScenarioRouteProvider(),
+        )
+
+        estimate = bundle.budget_estimate
+        assert estimate is not None
+        assert estimate.total == MoneyRange(minimum="720.00", maximum="2880.00")
+        assert estimate.comparison_status == BudgetComparisonStatus.OVER_BUDGET
+        assert {item.value for item in estimate.advice_codes} == {
+            "prioritize_free_activities",
+            "use_public_transport",
+        }
+
+    asyncio.run(exercise())
 
 
 def test_one_route_timeout_preserves_other_edges_and_returns_partial_bundle() -> None:

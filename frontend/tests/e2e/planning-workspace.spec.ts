@@ -102,7 +102,9 @@ test("generates a complete sample itinerary with user-facing copy", async ({ pag
   await expect(results.getByTestId("activity-description")).toHaveCount(4);
   await expect(results.getByTestId("activity-reason")).toHaveCount(4);
   await expect(results).toContainText("示例体验暂不显示地图");
-  await expect(results.getByTestId("budget-estimate")).toContainText("预算估算");
+  await expect(results.getByTestId("budget-estimate")).toContainText("预计整趟费用");
+  await expect(results.getByTestId("budget-estimate")).toContainText("住宿");
+  await expect(results.getByTestId("budget-estimate")).toContainText("不代表实时成交价");
   const repair = page.getByTestId("product-repair-summary");
   await expect(repair).toContainText("行程已自动调整");
   await expect(repair).toContainText("已调整 1 次");
@@ -458,6 +460,7 @@ test("renders a plan when the API omits empty meal recommendations", async ({ pa
 });
 
 test("does not present missing cost facts as a zero-cost trip", async ({ page }) => {
+  const pageErrors = collectPageErrors(page);
   await page.goto("/");
 
   await page.getByLabel("整趟预算目标").fill("2000");
@@ -466,16 +469,22 @@ test("does not present missing cost facts as a zero-cost trip", async ({ page })
   const results = page.getByTestId("planning-results");
   await expect(results).toBeVisible({ timeout: 20_000 });
   const estimate = results.getByTestId("budget-estimate");
-  await expect(estimate).toContainText("¥2,000");
+  await expect(estimate).toContainText("你的预算：¥2,000");
+  await expect(estimate.getByTestId("budget-estimate-total")).toContainText(/¥780.*¥3,050/);
+  await expect(estimate.getByTestId("budget-estimate-breakdown")).toBeVisible();
+  await expect(estimate).toContainText("住宿");
   await expect(estimate).toContainText("交通");
   await expect(estimate).toContainText("餐饮");
-  await expect(estimate).toContainText("实际费用以出行时为准");
+  await expect(estimate).toContainText("不代表实时成交价");
+  await expect(estimate).toContainText("最多可能超出约 ¥1,050");
+  await expect(estimate.getByTestId("budget-advice")).toContainText("调整建议");
   await expect(results).toContainText("行程可用 · 请留意提示");
   const approve = page.getByRole("button", { name: "确认行程" });
   await expect(approve).toBeEnabled();
   await approve.click();
   await expect(results).toContainText("本次选择已保存");
   await expect(results).toContainText("行程已确认");
+  expect(pageErrors).toEqual([]);
 });
 
 test("resolves Shanghai and plans a three-day fixture trip", async ({ page }) => {
