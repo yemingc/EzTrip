@@ -22,6 +22,7 @@ import {
   type PlanningTaskEventKind,
   type PlanningTaskSnapshot,
   type RequestConfirmationDraft,
+  type RequestFieldDecision,
   type RequestFieldDecisionStatus,
   type RequestIntakeSelection,
 } from "@/lib/planning-task";
@@ -75,13 +76,17 @@ const requestFieldLabels: Record<string, string> = {
   travel_style: "旅行主题",
 };
 
-const requestStatusLabels: Record<RequestFieldDecisionStatus, string> = {
-  matched: "已确认",
-  conflict: "需要选择",
-  proposed: "来自旅行需求",
-  unmentioned: "沿用当前填写",
-  needs_confirmation: "需要补充",
-};
+function friendlyClarification(value: string) {
+  const withFieldLabels = Object.entries(requestFieldLabels).reduce(
+    (current, [field, label]) => current.replaceAll(field, label),
+    value,
+  );
+  return withFieldLabels
+    .replaceAll("原文", "旅行需求")
+    .replaceAll("结构化表单", "当前填写")
+    .replaceAll("V1 请求契约", "当前规划条件")
+    .replaceAll(",", "，");
+}
 
 const constraintKindLabels: Record<string, string> = {
   avoid: "不想去",
@@ -96,6 +101,24 @@ function requestValueLabel(field: string, value: unknown) {
     return value === "relaxed" ? "轻松" : value === "standard" ? "标准" : String(value);
   }
   return Array.isArray(value) ? value.join("、") : String(value);
+}
+
+function requestFieldValueFromPreview(
+  values: PlannerFormValues,
+  field: RequestFieldDecision["field"],
+) {
+  const fieldValues: Partial<Record<RequestFieldDecision["field"], unknown>> = {
+    origin_city: values.originCity.trim() || "未填写",
+    destination_city: values.destinationCity.trim() || "未填写",
+    start_date: values.startDate,
+    trip_days: values.tripDays,
+    adults: values.adults,
+    children: values.children,
+    seniors: values.seniors,
+    budget_limit: values.budgetLimit.trim() || "未填写",
+    pace: values.pace,
+  };
+  return fieldValues[field];
 }
 
 const requestStatusClasses: Record<RequestFieldDecisionStatus, string> = {
@@ -115,10 +138,15 @@ function writeTaskIdToUrl(taskId: string | null) {
   } else {
     url.searchParams.delete("task_id");
   }
+  const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+  const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (nextUrl === currentUrl) {
+    return;
+  }
   window.history.replaceState(
     window.history.state,
     "",
-    `${url.pathname}${url.search}${url.hash}`,
+    nextUrl,
   );
 }
 
@@ -248,6 +276,8 @@ export function TripPlannerWorkspace({
   const sourceRef = useRef<EventSource | null>(null);
   const terminalRef = useRef(false);
   const recoveryRef = useRef(false);
+  const resultsRef = useRef<HTMLElement | null>(null);
+  const lastRevealedResultRef = useRef<string | null>(null);
   const pendingReviewRef = useRef<{
     decisionId: string;
     reviewId: string;
@@ -257,6 +287,13 @@ export function TripPlannerWorkspace({
     revisionKey?: string;
     revisionRequest?: PlanRevisionRequest;
   } | null>(null);
+
+  const revealResults = useCallback(() => {
+    window.requestAnimationFrame(() => {
+      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      resultsRef.current?.focus({ preventScroll: true });
+    });
+  }, []);
 
   const updateValue = <Key extends keyof PlannerFormValues>(
     key: Key,
@@ -462,6 +499,19 @@ export function TripPlannerWorkspace({
     };
   }, [connectToEvents]);
 
+  useEffect(() => {
+    if (phase !== "complete" || !snapshot || !taskId) {
+      return;
+    }
+    const resultKey = `${taskId}:${snapshot.plan_versions.at(-1)?.version_id ?? snapshot.updated_at}`;
+    if (lastRevealedResultRef.current === resultKey) {
+      return;
+    }
+    lastRevealedResultRef.current = resultKey;
+    const timer = window.setTimeout(revealResults, 0);
+    return () => window.clearTimeout(timer);
+  }, [phase, revealResults, snapshot, taskId]);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     sourceRef.current?.close();
@@ -470,6 +520,7 @@ export function TripPlannerWorkspace({
     setEvents([]);
     setSnapshot(null);
     setTaskId(null);
+    lastRevealedResultRef.current = null;
     writeTaskIdToUrl(null);
     setError(null);
     setReviewError(null);
@@ -611,6 +662,7 @@ export function TripPlannerWorkspace({
     setConnection("idle");
     setEvents([]);
     setTaskId(null);
+    lastRevealedResultRef.current = null;
     writeTaskIdToUrl(null);
     setSnapshot(null);
     setError(null);
@@ -629,9 +681,115 @@ export function TripPlannerWorkspace({
   const previewValues = intakeDraft
     ? previewRequestIntakeValues(values, intakeDraft, intakeSelection)
     : values;
+  const conflictDecisions =
+    intakeDraft?.field_decisions.filter((decision) => decision.status === "conflict") ?? [];
+  const travelStyles = intakeDraft?.proposed_fields.travel_styles ?? [];
+  const preferenceLabels = intakeDraft
+    ? [
+        ...travelStyles.map((style) => `旅行主题 · ${style}`),
+        ...intakeDraft.constraint_decisions
+          .filter((decision) => !travelStyles.includes(String(decision.constraint.value)))
+          .map(
+            (decision) =>
+              `${constraintKindLabels[decision.constraint.kind] ?? "旅行偏好"} · ${String(decision.constraint.value)}`,
+          ),
+      ]
+    : [];
+  const visibleClarifications =
+    intakeDraft?.clarifications.filter(
+      (item) => !conflictDecisions.some((decision) => item.startsWith(`${decision.field} `)),
+    ) ?? [];
+  const planningIsComplete = phase === "complete" && Boolean(snapshot);
 
   return (
     <>
+      {taskId && phase !== "error" ? (
+        <section
+          className={`mx-auto grid max-w-[1480px] gap-5 px-4 pb-8 sm:px-6 lg:px-8 ${
+            planningIsComplete
+              ? ""
+              : "lg:grid-cols-[minmax(0,.8fr)_minmax(380px,1.2fr)]"
+          }`}
+          data-testid="planning-task-summary"
+        >
+          <article
+            aria-live="polite"
+            className="rounded-[1.75rem] border border-emerald-900/10 bg-white/90 p-6 shadow-[0_20px_55px_rgba(15,23,42,.08)] sm:p-7"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="eyebrow">{planningIsComplete ? "行程已生成" : "正在生成行程"}</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">
+                  {previewValues.destinationCity} · {previewValues.tripDays} 天
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  {planningIsComplete
+                    ? "结果已经准备好，可以查看、确认或局部调整。"
+                    : "已收起填写内容，景点、路线、住宿和预算正在整理。"}
+                </p>
+              </div>
+              <span
+                className={`rounded-full px-3 py-1.5 text-[11px] font-semibold ${
+                  planningIsComplete
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "bg-cyan-100 text-cyan-900"
+                }`}
+              >
+                {planningIsComplete ? "可以查看" : connectionLabel(connection)}
+              </span>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="constraint-chip">
+                {previewValues.adults} 成人 / {previewValues.children} 儿童 / {previewValues.seniors} 老人
+              </span>
+              <span className="constraint-chip constraint-chip-soft">
+                预算 · {previewValues.budgetLimit || "未填写"}
+              </span>
+              <span className="constraint-chip constraint-chip-soft">
+                节奏 · {previewValues.pace === "relaxed" ? "轻松" : "标准"}
+              </span>
+            </div>
+            {planningIsComplete ? (
+              <div className="mt-5 flex flex-wrap gap-3">
+                <button
+                  className="primary-button"
+                  data-testid="view-planning-results"
+                  onClick={revealResults}
+                  type="button"
+                >
+                  查看行程 <span aria-hidden="true">↓</span>
+                </button>
+                <button className="secondary-button" onClick={reset} type="button">
+                  规划新行程
+                </button>
+              </div>
+            ) : null}
+          </article>
+
+          {planningIsComplete ? (
+            <details className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm">
+              <summary className="cursor-pointer text-sm font-semibold text-slate-700">
+                查看生成过程
+              </summary>
+              <div className="mt-4">
+                <PlanningTrace
+                  connection={connection}
+                  events={events}
+                  phase={phase}
+                  taskId={taskId}
+                />
+              </div>
+            </details>
+          ) : (
+            <PlanningTrace
+              connection={connection}
+              events={events}
+              phase={phase}
+              taskId={taskId}
+            />
+          )}
+        </section>
+      ) : (
       <section className="mx-auto grid max-w-[1480px] gap-5 px-4 pb-8 sm:px-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(380px,.8fr)] lg:px-8">
         <form
           className="rounded-[1.75rem] border border-white/80 bg-white/88 p-6 shadow-[0_24px_70px_rgba(15,23,42,.08)] backdrop-blur sm:p-8"
@@ -866,9 +1024,37 @@ export function TripPlannerWorkspace({
             </p>
           ) : null}
 
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <button
+              className="primary-button"
+              data-testid="submit-planning-task"
+              disabled={isBusy}
+              type="submit"
+            >
+              {phase === "submitting"
+                ? intakeDraft ? "正在确认信息…" : "正在整理需求…"
+                : phase === "streaming" || phase === "loading_result"
+                  ? "正在生成行程…"
+                  : intakeDraft ? "重新检查需求" : "检查旅行需求"}
+              <span aria-hidden="true">→</span>
+            </button>
+            {phase === "complete" || phase === "error" ? (
+              <button className="secondary-button" onClick={reset} type="button">重新开始</button>
+            ) : null}
+            <p className="text-[11px] text-slate-400">
+              {values.destinationCity || "目的地待填写"} · {values.tripDays} 天
+            </p>
+          </div>
+
+          {intakeDraft ? (
+            <p className="mt-3 text-xs font-medium text-cyan-800" role="status">
+              需求已整理，请在下方核对后生成行程。
+            </p>
+          ) : null}
+
           {intakeDraft ? (
             <section
-              className="mt-5 rounded-2xl border border-cyan-200 bg-cyan-50/70 p-4"
+              className="mt-3 rounded-2xl border border-cyan-200 bg-cyan-50/70 p-4"
               data-testid="request-intake-confirmation"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -881,77 +1067,126 @@ export function TripPlannerWorkspace({
               </div>
 
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                {intakeDraft.field_decisions.map((decision, index) => (
-                  <div
-                    className="rounded-xl border border-cyan-100 bg-white/85 p-3"
-                    data-testid="request-field-decision"
-                    key={`${decision.field}-${decision.evidence ?? "form"}-${index}`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs font-semibold text-slate-900">
-                        {requestFieldLabels[decision.field] ?? decision.field}
-                      </p>
-                      <span className={`rounded-full px-2 py-1 text-[9px] font-semibold ${requestStatusClasses[decision.status]}`}>
-                        {requestStatusLabels[decision.status]}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-[11px] leading-5 text-slate-600">
-                      {decision.proposed_value ?? decision.raw_proposed_value
-                        ? `旅行需求：${requestValueLabel(decision.field, decision.proposed_value ?? decision.raw_proposed_value)}`
-                        : "旅行需求中未提及"}
-                      {decision.form_value !== null ? ` · 当前填写：${requestValueLabel(decision.field, decision.form_value)}` : ""}
-                    </p>
-                    {decision.evidence ? (
-                      <p className="mt-1 text-[10px] leading-4 text-cyan-800">
-                        来自需求：“{decision.evidence}”{decision.evidence_mode === "inferred" ? " · 根据语义理解" : ""}
-                      </p>
-                    ) : null}
-                  </div>
-                ))}
+                {intakeDraft.field_decisions
+                  .filter((decision) => decision.field !== "travel_style")
+                  .map((decision, index) => {
+                    const finalValue = requestFieldValueFromPreview(previewValues, decision.field);
+                    const sourceText =
+                      decision.status === "conflict"
+                        ? intakeSelection === "proposal"
+                          ? "采用需求值"
+                          : "保留表单值"
+                        : decision.status === "matched"
+                          ? "需求与表单一致"
+                          : decision.status === "proposed"
+                            ? "来自旅行需求"
+                            : decision.status === "needs_confirmation"
+                              ? "请重点核对"
+                              : "来自当前填写";
+                    return (
+                      <div
+                        className="flex items-center justify-between gap-3 rounded-xl border border-cyan-100 bg-white/85 px-3 py-2.5"
+                        data-testid="request-field-decision"
+                        key={`${decision.field}-${decision.evidence ?? "form"}-${index}`}
+                      >
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-semibold text-slate-500">
+                            {requestFieldLabels[decision.field] ?? decision.field}
+                          </p>
+                          <p className="mt-0.5 truncate text-sm font-semibold text-slate-950">
+                            {requestValueLabel(decision.field, finalValue)}
+                          </p>
+                        </div>
+                        <span
+                          className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-semibold ${requestStatusClasses[decision.status]}`}
+                        >
+                          {sourceText}
+                        </span>
+                      </div>
+                    );
+                  })}
               </div>
 
-              {intakeDraft.constraint_decisions.length ? (
+              {preferenceLabels.length ? (
                 <div className="mt-4">
                   <p className="text-[11px] font-semibold text-cyan-950">偏好和要求</p>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {intakeDraft.constraint_decisions.map((decision) => (
-                      <span className="constraint-chip" key={decision.constraint.constraint_id}>
-                        {constraintKindLabels[decision.constraint.kind] ?? "旅行偏好"} · {String(decision.constraint.value)} · “{decision.evidence}”
+                    {preferenceLabels.map((label) => (
+                      <span className="constraint-chip" key={label}>
+                        {label}
                       </span>
                     ))}
                   </div>
+                  <p className="mt-2 text-[10px] leading-4 text-cyan-800/70">
+                    无论下面选择哪组差异值，这些偏好和要求都会保留。
+                  </p>
                 </div>
               ) : null}
 
-              {intakeDraft.clarifications.length ? (
+              {visibleClarifications.length ? (
                 <ul className="mt-4 space-y-1 rounded-xl bg-amber-50 p-3 text-[11px] leading-5 text-amber-900">
-                  {intakeDraft.clarifications.map((item) => <li key={item}>· {item}</li>)}
+                  {visibleClarifications.map((item) => (
+                    <li key={item}>· {friendlyClarification(item)}</li>
+                  ))}
                 </ul>
               ) : null}
 
-              <fieldset className="mt-4 grid gap-2 sm:grid-cols-2">
-                <legend className="mb-2 text-[11px] font-semibold text-cyan-950">选择用于规划的信息</legend>
-                <label className="flex items-start gap-2 rounded-xl border border-cyan-200 bg-white p-3 text-xs text-slate-700">
-                  <input
-                    checked={intakeSelection === "proposal"}
-                    disabled={isBusy || !intakeDraft.proposal_can_confirm}
-                    name="intake-selection"
-                    onChange={() => void changeIntakeSelection("proposal")}
-                    type="radio"
-                  />
-                  <span><strong>采用旅行需求</strong><br />优先使用需求中的信息，未提及的内容沿用当前表单。</span>
-                </label>
-                <label className="flex items-start gap-2 rounded-xl border border-cyan-200 bg-white p-3 text-xs text-slate-700">
-                  <input
-                    checked={intakeSelection === "form"}
-                    disabled={isBusy}
-                    name="intake-selection"
-                    onChange={() => void changeIntakeSelection("form")}
-                    type="radio"
-                  />
-                  <span><strong>使用当前表单</strong><br />按当前填写的目的地、日期、人数和预算生成行程。</span>
-                </label>
-              </fieldset>
+              {conflictDecisions.length ? (
+                <fieldset
+                  className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3"
+                  data-testid="request-conflict-selection"
+                >
+                  <legend className="px-1 text-[11px] font-semibold text-amber-950">
+                    {conflictDecisions.length} 项信息与当前填写不同
+                  </legend>
+                  <div className="mt-2 space-y-2">
+                    {conflictDecisions.map((decision) => (
+                      <p className="text-[11px] leading-5 text-amber-900" key={decision.field}>
+                        <strong>{requestFieldLabels[decision.field] ?? decision.field}</strong>：需求中为
+                        “{requestValueLabel(decision.field, decision.proposed_value ?? decision.raw_proposed_value)}”，
+                        当前填写为“{requestValueLabel(decision.field, decision.form_value)}”
+                      </p>
+                    ))}
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <label className="flex items-start gap-2 rounded-xl border border-amber-200 bg-white p-3 text-xs text-slate-700">
+                      <input
+                        checked={intakeSelection === "proposal"}
+                        disabled={isBusy || !intakeDraft.proposal_can_confirm}
+                        name="intake-selection"
+                        onChange={() => void changeIntakeSelection("proposal")}
+                        type="radio"
+                      />
+                      <span>
+                        <strong>采用需求中的差异值</strong>
+                        <br />
+                        其余未提及内容继续使用当前填写。
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-2 rounded-xl border border-amber-200 bg-white p-3 text-xs text-slate-700">
+                      <input
+                        checked={intakeSelection === "form"}
+                        disabled={isBusy}
+                        name="intake-selection"
+                        onChange={() => void changeIntakeSelection("form")}
+                        type="radio"
+                      />
+                      <span>
+                        <strong>保留表单中的差异值</strong>
+                        <br />
+                        仍会保留旅行需求中的主题和偏好。
+                      </span>
+                    </label>
+                  </div>
+                </fieldset>
+              ) : (
+                <p
+                  className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs leading-5 text-emerald-900"
+                  data-testid="merged-intake-notice"
+                >
+                  已合并旅行需求与当前填写，未发现冲突。
+                </p>
+              )}
 
               <button
                 className="primary-button mt-4 w-full"
@@ -975,28 +1210,6 @@ export function TripPlannerWorkspace({
               <p className="mt-1 text-xs leading-5 text-rose-700">{error}</p>
             </div>
           ) : null}
-
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <button
-              className="primary-button"
-              data-testid="submit-planning-task"
-              disabled={isBusy}
-              type="submit"
-            >
-              {phase === "submitting"
-                ? intakeDraft ? "正在确认信息…" : "正在整理需求…"
-                : phase === "streaming" || phase === "loading_result"
-                  ? "正在生成行程…"
-                  : intakeDraft ? "重新检查需求" : "检查旅行需求"}
-              <span aria-hidden="true">→</span>
-            </button>
-            {phase === "complete" || phase === "error" ? (
-              <button className="secondary-button" onClick={reset} type="button">重新开始</button>
-            ) : null}
-            <p className="text-[11px] text-slate-400">
-              {values.destinationCity || "目的地待填写"} · {values.tripDays} 天
-            </p>
-          </div>
         </form>
 
         <PlanningTrace
@@ -1006,12 +1219,14 @@ export function TripPlannerWorkspace({
           taskId={taskId}
         />
       </section>
+      )}
 
       {snapshot ? (
         <PlanningResults
           onReview={submitReview}
           reviewBusy={phase === "streaming" || phase === "loading_result"}
           reviewError={reviewError}
+          sectionRef={resultsRef}
           snapshot={snapshot}
         />
       ) : null}

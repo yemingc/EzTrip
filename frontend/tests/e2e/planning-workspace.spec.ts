@@ -8,7 +8,7 @@ async function understandAndStart(
   const confirmation = page.getByTestId("request-intake-confirmation");
   await expect(confirmation).toBeVisible({ timeout: 20_000 });
   if (selection === "form") {
-    await confirmation.getByText("使用当前表单", { exact: true }).click();
+    await confirmation.getByText("保留表单中的差异值", { exact: true }).click();
   }
   await page.getByTestId("confirm-request-intake").click();
 }
@@ -54,6 +54,58 @@ test("allows trips starting today while defaulting to one week later", async ({ 
   await expect(startDate).toHaveValue(earliestStartDate!);
 });
 
+test("merges matching request details without showing a redundant source chooser", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByTestId("submit-planning-task").click();
+
+  const confirmation = page.getByTestId("request-intake-confirmation");
+  await expect(confirmation).toBeVisible({ timeout: 20_000 });
+  await expect(confirmation.getByTestId("merged-intake-notice")).toContainText(
+    "未发现冲突",
+  );
+  await expect(confirmation.getByTestId("request-conflict-selection")).toHaveCount(0);
+  await expect(confirmation).not.toContainText("采用旅行需求");
+  await expect(confirmation).not.toContainText("使用当前表单");
+});
+
+test("keeps the current page position when checking a travel request", async ({ page }) => {
+  await page.goto("/");
+  const submitButton = page.getByTestId("submit-planning-task");
+  await submitButton.scrollIntoViewIfNeeded();
+  await page.evaluate(() => {
+    const browserWindow = window as Window & {
+      __eztripReloadProbe?: string;
+      __eztripReplaceStateCalls?: number;
+    };
+    browserWindow.__eztripReloadProbe = "present";
+    browserWindow.__eztripReplaceStateCalls = 0;
+    const originalReplaceState = window.history.replaceState.bind(window.history);
+    window.history.replaceState = (data, unused, url) => {
+      browserWindow.__eztripReplaceStateCalls =
+        (browserWindow.__eztripReplaceStateCalls ?? 0) + 1;
+      originalReplaceState(data, unused, url);
+    };
+  });
+  const scrollBefore = await page.evaluate(() => window.scrollY);
+
+  await submitButton.click();
+  await expect(page.getByTestId("request-intake-confirmation")).toBeVisible({ timeout: 20_000 });
+
+  const pageState = await page.evaluate(() => ({
+    marker: (window as Window & { __eztripReloadProbe?: string }).__eztripReloadProbe,
+    replaceStateCalls: (
+      window as Window & { __eztripReplaceStateCalls?: number }
+    ).__eztripReplaceStateCalls,
+    scrollY: window.scrollY,
+  }));
+  expect(pageState.marker).toBe("present");
+  expect(pageState.replaceStateCalls).toBe(0);
+  expect(Math.abs(pageState.scrollY - scrollBefore)).toBeLessThan(40);
+  await expect(page.getByRole("status")).toContainText("需求已整理");
+});
+
 test("generates a complete sample itinerary with user-facing copy", async ({ page }) => {
   await page.goto("/");
 
@@ -62,6 +114,9 @@ test("generates a complete sample itinerary with user-facing copy", async ({ pag
 
   const results = page.getByTestId("planning-results");
   await expect(results).toBeVisible({ timeout: 20_000 });
+  await expect(results).toBeInViewport();
+  await expect(page.getByTestId("planning-task-summary")).toContainText("行程已生成");
+  await expect(page.getByTestId("request-intake-confirmation")).toHaveCount(0);
   const trace = page.getByTestId("event-trace");
   await expect(trace).toContainText("已收到旅行需求");
   await expect(trace).toContainText("调整不合理安排");
@@ -101,6 +156,10 @@ test("generates a complete sample itinerary with user-facing copy", async ({ pag
   await expect(results.getByTestId("stay-recommendation")).toContainText("价格和空房情况以预订平台为准");
   await expect(results.getByTestId("activity-description")).toHaveCount(4);
   await expect(results.getByTestId("activity-reason")).toHaveCount(4);
+  await expect(results.getByTestId("activity-source")).toHaveCount(4);
+  await expect(results.getByTestId("validation-summary")).toBeVisible();
+  await expect(results.getByTestId("data-disclosure")).toBeVisible();
+  await expect(results).not.toContainText("信息来源");
   await expect(results).toContainText("示例体验暂不显示地图");
   await expect(results.getByTestId("budget-estimate")).toContainText("基于当前行程估算");
   await expect(results.getByTestId("budget-estimate")).toContainText("住宿");
@@ -630,8 +689,8 @@ test("explains verification gaps without calling every error a hard conflict", a
 
   const results = page.getByTestId("planning-results");
   await expect(results).toContainText("出发前需要确认");
-  await expect(results.getByTestId("review-issue-summary")).toContainText("一段到达路线未取得");
-  await expect(page.getByRole("button", { name: "保留当前方案" })).toBeVisible();
+  await expect(results.getByTestId("validation-summary")).toContainText("一段到达路线未取得");
+  await expect(page.getByRole("button", { name: "已了解，保留行程" })).toBeVisible();
   await expect(results).not.toContainText("存在硬冲突");
 });
 
@@ -873,8 +932,13 @@ test("requires confirmation and sends the confirmed raw intent instead of old de
 
   const confirmation = page.getByTestId("request-intake-confirmation");
   await expect(confirmation).toBeVisible();
-  await expect(confirmation).toContainText("带一个孩子");
-  await expect(confirmation).toContainText("不要寺庙");
+  await expect(confirmation.getByTestId("request-conflict-selection")).toBeVisible();
+  await expect(confirmation).toContainText("采用需求中的差异值");
+  await expect(confirmation).toContainText("保留表单中的差异值");
+  await expect(confirmation).toContainText("成人：需求中为 “1”");
+  await expect(confirmation).toContainText("儿童：需求中为 “1”");
+  await expect(confirmation).toContainText("不想去 · 寺庙");
+  await expect(confirmation).toContainText("感兴趣 · 科技馆");
   expect(planningPostCount).toBe(0);
 
   await page.getByTestId("confirm-request-intake").click();
@@ -891,6 +955,42 @@ test("requires confirmation and sends the confirmed raw intent instead of old de
   );
 });
 
+test("keeps text preferences when form values win a structured conflict", async ({ page }) => {
+  type PlanningPayload = {
+    request?: {
+      pace?: string;
+      travel_styles?: string[];
+      constraints?: { items?: Array<{ kind?: string; value?: string }> };
+    };
+  };
+  const captured: { payload?: PlanningPayload } = {};
+  await page.route(/\/api\/planning-tasks$/, async (route) => {
+    if (route.request().method() === "POST") {
+      captured.payload = route.request().postDataJSON() as PlanningPayload;
+    }
+    await route.continue();
+  });
+  await page.goto("/");
+  await page.getByLabel("行程节奏").selectOption("standard");
+  await page.getByTestId("submit-planning-task").click();
+
+  const confirmation = page.getByTestId("request-intake-confirmation");
+  await expect(confirmation.getByTestId("request-conflict-selection")).toContainText(
+    "行程节奏",
+  );
+  await confirmation.getByText("保留表单中的差异值", { exact: true }).click();
+  await page.getByTestId("confirm-request-intake").click();
+  await expect.poll(() => captured.payload).toBeDefined();
+
+  expect(captured.payload?.request?.pace).toBe("standard");
+  expect(captured.payload?.request?.travel_styles).toEqual(["历史文化"]);
+  expect(captured.payload?.request?.constraints?.items).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ kind: "interest", value: "历史文化" }),
+    ]),
+  );
+});
+
 test("keeps the planning flow usable on a mobile viewport", async ({ page }) => {
   const pageErrors = collectPageErrors(page);
   await page.setViewportSize({ width: 390, height: 844 });
@@ -898,7 +998,9 @@ test("keeps the planning flow usable on a mobile viewport", async ({ page }) => 
 
   await expect(page.getByTestId("submit-planning-task")).toBeVisible();
   await understandAndStart(page);
-  await expect(page.getByTestId("planning-results")).toBeVisible({ timeout: 20_000 });
+  const results = page.getByTestId("planning-results");
+  await expect(results).toBeVisible({ timeout: 20_000 });
+  await expect(results).toBeInViewport();
 
   await page.screenshot({
     path: "test-results/eztrip-planning-workspace-mobile.png",

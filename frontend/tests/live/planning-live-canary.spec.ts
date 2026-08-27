@@ -30,7 +30,7 @@ test("runs one explicit non-fixture browser planning loop to a restorable termin
   await page.getByTestId("submit-planning-task").click();
   const confirmation = page.getByTestId("request-intake-confirmation");
   await expect(confirmation).toBeVisible({ timeout: 60_000 });
-  await expect(confirmation).toContainText("采用原文提议");
+  await expect(confirmation).toContainText("已合并旅行需求与当前填写，未发现冲突");
   await expect(confirmation).toContainText("泉州");
   await expect(page.getByTestId("destination-resolution")).toContainText("adcode");
   const confirm = page.getByTestId("confirm-request-intake");
@@ -55,7 +55,7 @@ test("runs one explicit non-fixture browser planning loop to a restorable termin
   await expect(results).toContainText("高德地图");
   await expect(page.getByTestId("event-trace")).toContainText("行程等待确认");
 
-  const acknowledge = page.getByRole("button", { name: "保留当前方案" });
+  const acknowledge = page.getByRole("button", { name: /保留当前方案|已了解，保留行程/ });
   const approve = page.getByRole("button", { name: "确认行程" });
     if (await acknowledge.isVisible()) {
       await acknowledge.click();

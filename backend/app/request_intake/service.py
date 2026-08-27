@@ -136,12 +136,14 @@ class RequestIntakeService:
                     "当前提议无法组成有效请求, 请选择保留结构化表单。"
                 )
             fields = record.draft.proposed_fields
-            constraints = self._confirm_constraints(record.draft.proposed_constraints)
-            styles = fields.travel_styles
         else:
             fields = ProposedRequestFields()
-            constraints = ConstraintSet()
-            styles = ()
+        # The structured-field choice must not discard preferences that only exist
+        # in the user's natural-language request. Both paths preserve confirmed
+        # themes and constraints; the selection only decides which structured
+        # values (destination, date, party, budget and pace) win.
+        constraints = self._confirm_constraints(record.draft.proposed_constraints)
+        styles = record.draft.proposed_fields.travel_styles
         request = self._build_trip_request(
             record.payload,
             fields,

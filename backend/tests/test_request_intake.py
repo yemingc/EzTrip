@@ -106,7 +106,7 @@ def test_confirmation_applies_proposal_and_promotes_constraints() -> None:
     asyncio.run(exercise())
 
 
-def test_confirmation_can_keep_form_without_silently_applying_proposals() -> None:
+def test_confirmation_can_keep_form_fields_and_preserve_text_preferences() -> None:
     async def exercise() -> None:
         service = RequestIntakeService(Settings(_env_file=None, environment="test"))
         draft = await service.propose(make_payload("去北京看科技馆, 不要寺庙"))
@@ -121,8 +121,12 @@ def test_confirmation_can_keep_form_without_silently_applying_proposals() -> Non
         request = confirmed.request
         assert request.destination_city == "北京"
         assert request.party.adults == 2
-        assert request.travel_styles == ()
-        assert request.constraints.items == ()
+        assert request.travel_styles == ("科技",)
+        assert {item.kind.value for item in request.constraints.items} == {
+            "avoid",
+            "interest",
+        }
+        assert all(item.confirmed for item in request.constraints.items)
 
     asyncio.run(exercise())
 

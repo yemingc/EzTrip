@@ -48,19 +48,19 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="relative mx-auto grid max-w-[1480px] gap-8 px-4 pb-10 pt-10 sm:px-6 sm:pt-14 lg:grid-cols-[minmax(0,1.3fr)_minmax(340px,.7fr)] lg:px-8 lg:pb-14 lg:pt-20">
+      <section className="relative mx-auto grid max-w-[1480px] gap-8 px-4 pb-8 pt-6 sm:px-6 sm:pb-10 sm:pt-14 lg:grid-cols-[minmax(0,1.3fr)_minmax(340px,.7fr)] lg:px-8 lg:pb-14 lg:pt-20">
         <div>
           <p className="eyebrow">从旅行想法到每日安排</p>
-          <h1 className="mt-5 max-w-4xl text-5xl font-semibold leading-[1.02] tracking-[-0.055em] sm:text-6xl lg:text-[5.25rem]">
+          <h1 className="mt-3 max-w-4xl text-[2.65rem] font-semibold leading-[1.02] tracking-[-0.055em] sm:mt-5 sm:text-6xl lg:text-[5.25rem]">
             把想去的地方，
             <span className="text-emerald-800">变成一份好用的行程。</span>
           </h1>
-          <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600 sm:mt-6 sm:text-lg sm:leading-8">
             填写目的地、日期、预算和旅行偏好，获得按天安排的景点、通勤、住宿和附近用餐建议。生成后还可以确认或局部调整。
           </p>
         </div>
 
-        <div className="self-end rounded-[1.75rem] border border-white/70 bg-white/62 p-5 shadow-[0_20px_60px_rgba(15,23,42,.07)] backdrop-blur sm:p-6">
+        <div className="hidden self-end rounded-[1.75rem] border border-white/70 bg-white/62 p-5 shadow-[0_20px_60px_rgba(15,23,42,.07)] backdrop-blur sm:block sm:p-6">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold">你可以这样使用</p>
             <span className="flex items-center gap-2 text-[11px] font-semibold text-emerald-800">

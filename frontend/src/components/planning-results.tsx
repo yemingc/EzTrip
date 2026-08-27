@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type Ref } from "react";
 
 import { apiBaseUrl } from "@/lib/planning-task";
 import { WeatherOutlook } from "@/components/weather-outlook";
@@ -247,6 +247,7 @@ export function PlanningResults({
   onReview,
   reviewBusy,
   reviewError,
+  sectionRef,
 }: {
   snapshot: PlanningTaskSnapshot;
   onReview: (
@@ -256,6 +257,7 @@ export function PlanningResults({
   ) => void | Promise<void>;
   reviewBusy: boolean;
   reviewError: string | null;
+  sectionRef?: Ref<HTMLElement>;
 }) {
   const [showRevisionForm, setShowRevisionForm] = useState(false);
   const [revisionComment, setRevisionComment] = useState("");
@@ -317,6 +319,14 @@ export function PlanningResults({
     .slice(0, 2);
   const blockingIssues = validation.issues.filter((issue) => issue.severity === "error");
   const warningIssues = validation.issues.filter((issue) => issue.severity === "warning");
+  const verificationIssues = validation.issues.filter((issue) =>
+    verificationGapCodes.has(issue.rule_code),
+  );
+  const mustFixIssues = blockingIssues.filter(
+    (issue) => !verificationGapCodes.has(issue.rule_code),
+  );
+  const hasOnlyVerificationBlockers =
+    blockingIssues.length > 0 && mustFixIssues.length === 0;
   const budgetEstimate = materials?.budget_estimate ?? null;
   const budgetComparisonDetail = (() => {
     if (!budgetEstimate?.total || budgetEstimate.budget_limit === null) return null;
@@ -334,10 +344,12 @@ export function PlanningResults({
     }
     return null;
   })();
-  const reviewSummary = blockingIssues.length
-    ? `当前方案有 ${blockingIssues.length} 项重要问题尚未解决：${blockingIssues
-        .map(issueTitle)
-        .join("、")}。${warningIssues.length ? `另有 ${warningIssues.length} 项估算提醒。` : ""}`
+  const reviewSummary = hasOnlyVerificationBlockers
+    ? `当前方案可以保留，但有 ${verificationIssues.length} 项信息需要在出发前核实。${warningIssues.length ? `另有 ${warningIssues.length} 项提醒。` : ""}`
+    : blockingIssues.length
+      ? `当前方案有 ${blockingIssues.length} 项安排需要处理：${blockingIssues
+          .map(issueTitle)
+          .join("、")}。${warningIssues.length ? `另有 ${warningIssues.length} 项提醒。` : ""}`
     : "这份行程已准备好，请确认或调整。";
   const displayCity = plan.destination_city.replace(/市$/, "");
   const materialIssueLabels: Record<string, string> = {
@@ -400,11 +412,20 @@ export function PlanningResults({
     : undefined;
 
   return (
-    <section className="mx-auto mt-8 max-w-[1480px] px-4 pb-12 sm:px-6 lg:px-8" data-testid="planning-results">
+    <section
+      aria-labelledby="planning-results-heading"
+      className="mx-auto mt-8 max-w-[1480px] scroll-mt-5 px-4 pb-12 focus:outline-none sm:px-6 lg:px-8"
+      data-testid="planning-results"
+      ref={sectionRef}
+      tabIndex={-1}
+    >
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow">行程方案</p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-[-0.035em] text-slate-950">
+          <h2
+            className="mt-2 text-3xl font-semibold tracking-[-0.035em] text-slate-950"
+            id="planning-results-heading"
+          >
             {displayCity} · {plan.days.length} 天行程
           </h2>
           <p className="mt-2 text-sm text-slate-500">
@@ -440,6 +461,70 @@ export function PlanningResults({
           </div>
         </article>
       ) : null}
+
+      {validation.issues.length ? (
+        <article
+          className={`mb-5 rounded-[1.75rem] border p-5 shadow-sm sm:p-6 ${
+            mustFixIssues.length
+              ? "border-rose-200 bg-rose-50"
+              : "border-amber-200 bg-amber-50"
+          }`}
+          data-testid="validation-summary"
+        >
+          <p className={`eyebrow ${mustFixIssues.length ? "text-rose-700" : "text-amber-700"}`}>
+            {mustFixIssues.length ? "生成后检查" : "出发前提示"}
+          </p>
+          <h3 className="mt-2 text-lg font-semibold text-slate-950">
+            {mustFixIssues.length
+              ? `${mustFixIssues.length} 项安排需要调整`
+              : verificationIssues.length
+                ? `${verificationIssues.length} 项信息请在出发前核实`
+                : `${warningIssues.length} 项行程提醒`}
+          </h3>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {validation.issues.map((issue) => {
+              const isVerificationGap = verificationGapCodes.has(issue.rule_code);
+              const requiresChange = issue.severity === "error" && !isVerificationGap;
+              return (
+                <div
+                  className={`rounded-2xl border bg-white/80 p-4 ${
+                    requiresChange ? "border-rose-200" : "border-amber-200"
+                  }`}
+                  key={issue.issue_id}
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <p className="text-sm font-semibold text-slate-950">{issueTitle(issue)}</p>
+                    <span
+                      className={`rounded-full px-2 py-1 text-[10px] font-bold ${
+                        requiresChange
+                          ? "bg-rose-100 text-rose-700"
+                          : isVerificationGap
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-slate-100 text-slate-600"
+                      }`}
+                    >
+                      {requiresChange ? "需要调整" : isVerificationGap ? "出发前核实" : "提醒"}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-slate-600">
+                    {validationIssueDescriptions[issue.rule_code] ?? issue.message}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </article>
+      ) : (
+        <article
+          className="mb-5 rounded-[1.75rem] border border-emerald-200 bg-emerald-50 p-5 text-emerald-950 shadow-sm"
+          data-testid="validation-summary"
+        >
+          <p className="text-sm font-semibold">行程检查通过</p>
+          <p className="mt-1 text-xs leading-5 text-emerald-800">
+            未发现时间、通勤或预算方面的明显冲突。
+          </p>
+        </article>
+      )}
 
       <article
         className="mb-5 overflow-hidden rounded-[1.75rem] border border-emerald-900/10 bg-white shadow-sm"
@@ -604,7 +689,7 @@ export function PlanningResults({
                             {candidate.categories.slice(0, 3).join("、") || "景点候选"}
                             {candidate.address ? `；位于${candidate.address}` : "；详细地址暂缺"}。
                           </p>
-                          <div className="mt-2 flex flex-wrap gap-2">
+                           <div className="mt-2 flex flex-wrap gap-2">
                             {level ? (
                               <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-semibold text-emerald-800">
                                 {level} 级景区
@@ -623,10 +708,17 @@ export function PlanningResults({
                                   : candidate.environment === "mixed"
                                     ? "室内外混合"
                                     : "室内外信息暂缺"}
-                            </span>
-                          </div>
-                        </div>
-                      ) : null}
+                             </span>
+                           </div>
+                           <p
+                             className="mt-2 text-[10px] leading-4 text-slate-400"
+                             data-testid="activity-source"
+                           >
+                             地点数据：{sourceLabel(candidate.source.data_mode)} ·
+                             {" "}{new Date(candidate.source.retrieved_at).toLocaleString("zh-CN")}
+                           </p>
+                         </div>
+                       ) : null}
                       {recommendation ? (
                         <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3" data-testid="activity-reason">
                           <p className="text-[10px] font-bold tracking-[0.1em] text-emerald-700">
@@ -637,12 +729,15 @@ export function PlanningResults({
                           </p>
                         </div>
                       ) : null}
-                      {item.route_from_previous ? (
-                        <p className="mt-2 text-xs text-slate-500">
-                          {itemIndex === 0 ? "从住宿地点出发" : "从上一站出发"}：
-                          {item.route_from_previous.duration_minutes} 分钟 · {item.route_from_previous.distance_meters} 米
-                        </p>
-                      ) : null}
+                       {item.route_from_previous ? (
+                         <p className="mt-2 text-xs text-slate-500">
+                           {itemIndex === 0 ? "从住宿地点出发" : "从上一站出发"}：
+                           {item.route_from_previous.duration_minutes} 分钟 · {item.route_from_previous.distance_meters} 米
+                           <span className="ml-2 text-[10px] text-slate-400">
+                             路线数据：{sourceLabel(item.route_from_previous.source.data_mode)}
+                           </span>
+                         </p>
+                       ) : null}
                       </div>
                     );
                   })}
@@ -730,21 +825,9 @@ export function PlanningResults({
                 : reviewSummary}
             </p>
             {isAwaitingReview && review && validation.issues.length ? (
-              <div className="mt-4 space-y-2" data-testid="review-issue-summary">
-                {validation.issues.map((issue) => (
-                  <div
-                    className={
-                      issue.severity === "error"
-                        ? "rounded-xl border border-rose-300/20 bg-rose-300/10 p-3"
-                        : "rounded-xl border border-amber-300/20 bg-amber-300/10 p-3"
-                    }
-                    key={issue.issue_id}
-                  >
-                    <p className="text-xs font-semibold text-white">{issueTitle(issue)}</p>
-                    <p className="mt-1 text-[11px] leading-5 text-slate-300">{issue.message}</p>
-                  </div>
-                ))}
-              </div>
+              <p className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-[11px] leading-5 text-slate-300">
+                检查结果已汇总在行程顶部，可先查看提示，再确认或局部修改。
+              </p>
             ) : null}
             {reviewOutcome ? (
               <div className="mt-5 rounded-2xl border border-emerald-300/15 bg-emerald-300/10 p-4">
@@ -776,7 +859,7 @@ export function PlanningResults({
                       onClick={() => void onReview("acknowledge_conflict")}
                       type="button"
                     >
-                      保留当前方案
+                      {hasOnlyVerificationBlockers ? "已了解，保留行程" : "保留当前方案"}
                     </button>
                   ) : null}
                   <button
@@ -1120,69 +1203,27 @@ export function PlanningResults({
           stay={stay}
         />
 
-        <article className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="eyebrow">地点信息</p>
-          <h3 className="mt-2 text-lg font-semibold">信息来源</h3>
-          <div className="mt-5 space-y-3">
-            {candidates.map((candidate) => (
-              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4" key={candidate.candidate_id}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold">{candidate.name}</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-500">
-                      {candidate.district ?? "行政区未知"} · {candidate.address ?? "地址未知"}
-                    </p>
-                  </div>
-                  <span className="text-[10px] font-medium text-slate-400">
-                    {sourceLabel(candidate.source.data_mode)}
-                  </span>
-                </div>
-              </div>
-            ))}
+        <details
+          className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2 sm:p-6"
+          data-testid="data-disclosure"
+        >
+          <summary className="cursor-pointer list-none text-sm font-semibold text-slate-900 marker:hidden">
+            数据说明与限制
+            <span className="ml-2 text-xs font-normal text-slate-400">按需查看</span>
+          </summary>
+          <div className="mt-4 grid gap-3 text-xs leading-5 text-slate-600 sm:grid-cols-2">
+            <p className="rounded-2xl bg-slate-50 p-4">
+              地点与路线数据会直接标注在对应行程旁。本次地点数据来自
+              {candidates.length
+                ? ` ${[...new Set(candidates.map((candidate) => sourceLabel(candidate.source.data_mode)))].join("、")}`
+                : " 暂无可用来源"}
+              。
+            </p>
+            <p className="rounded-2xl bg-slate-50 p-4">
+              来源标记只说明地点或路线数据，不代表实时票价、开放时间、排队情况或房态；这些信息请在出发前再次确认。
+            </p>
           </div>
-          <p className="mt-4 text-[11px] leading-5 text-slate-400">
-            最近一次数据检索：{candidates[0] ? new Date(candidates[0].source.retrieved_at).toLocaleString("zh-CN") : "无"}
-          </p>
-        </article>
-
-        <article className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="eyebrow">出发前检查</p>
-              <h3 className="mt-2 text-lg font-semibold">行程检查</h3>
-            </div>
-          </div>
-          {validation.issues.length ? (
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              {validation.issues.map((issue) => (
-                <div
-                  className={
-                    issue.severity === "error"
-                      ? "rounded-2xl border border-rose-100 bg-rose-50 p-4"
-                      : "rounded-2xl border border-amber-100 bg-amber-50 p-4"
-                  }
-                  key={issue.issue_id}
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className={issue.severity === "error" ? "text-sm font-semibold text-rose-950" : "text-sm font-semibold text-amber-950"}>
-                      {issueTitle(issue)}
-                    </p>
-                    <span className={issue.severity === "error" ? "text-[10px] font-bold text-rose-700" : "text-[10px] font-bold text-amber-700"}>
-                      {issue.severity === "error" ? "阻止最终确认" : "信息提醒"}
-                    </span>
-                  </div>
-                  <p className={issue.severity === "error" ? "mt-2 text-xs leading-5 text-rose-900" : "mt-2 text-xs leading-5 text-amber-900"}>
-                    {validationIssueDescriptions[issue.rule_code] ?? issue.message}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="mt-5 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-emerald-950">
-              未发现时间、通勤或预算方面的明显冲突。开放时间、票价和房态可能变化，出发前请再次确认。
-            </div>
-          )}
-        </article>
+        </details>
       </div>
     </section>
   );
