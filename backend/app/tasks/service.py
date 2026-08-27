@@ -258,11 +258,24 @@ class PlanningTaskService:
         try:
             async with asyncio.timeout(self._timeout_seconds):
                 result = await self._executor.resume(task_id, resume, emit)
-            await self._store.succeed(
-                task_id,
-                result=result,
-                review_decision=decision,
-            )
+            if result.state.status == PlanningThreadStatus.AWAITING_HUMAN_REVIEW:
+                review = result.state.review_request
+                if review is None:
+                    raise ProductPlanningProtocolError(
+                        "revised awaiting snapshot contains no review request"
+                    )
+                await self._store.await_input_after_revision(
+                    task_id,
+                    result=result,
+                    review_id=review.review_id,
+                    review_decision=decision,
+                )
+            else:
+                await self._store.succeed(
+                    task_id,
+                    result=result,
+                    review_decision=decision,
+                )
         except Exception as error:
             await self._store.fail(
                 task_id,

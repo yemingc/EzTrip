@@ -285,6 +285,7 @@ export function PlanningResults({
   const validation = revisionResult?.validation ?? baseValidation;
   const review = state.review_request;
   const reviewOutcome = snapshot.review_outcome;
+  const isAwaitingReview = Boolean(review && snapshot.status === "awaiting_input");
   const materials = revisionResult?.revised_materials ?? state.materials;
   const candidates =
     materials?.shortlist.poi_candidates ?? verticalSlice?.upstream.candidates ?? [];
@@ -353,7 +354,11 @@ export function PlanningResults({
     selectedRevisionDay?.items.filter(
       (item) => item.kind === "attraction" && item.candidate_id !== null,
     ) ?? [];
-  const selectedReplacementItemId = replacementItemId || replacementTargets[0]?.item_id || "";
+  const selectedReplacementItemId = replacementTargets.some(
+    (item) => item.item_id === replacementItemId,
+  )
+    ? replacementItemId
+    : replacementTargets[0]?.item_id || "";
   const exploreObservations =
     specialists?.branches.find((branch) => branch.specialist === "explore")?.explore_result
       ?.observations ?? [];
@@ -378,8 +383,11 @@ export function PlanningResults({
         !candidate.categories.includes("餐饮服务") &&
         candidate.city === plan.destination_city,
     );
-  const selectedReplacementCandidateId =
-    replacementCandidateId || eligibleReplacementCandidates[0]?.candidate_id || "";
+  const selectedReplacementCandidateId = eligibleReplacementCandidates.some(
+    (candidate) => candidate.candidate_id === replacementCandidateId,
+  )
+    ? replacementCandidateId
+    : eligibleReplacementCandidates[0]?.candidate_id || "";
   const fromVersionNumber = reviewOutcome
     ? snapshot.plan_versions.find(
         (item) => item.version_id === reviewOutcome.plan_diff.from_version_id,
@@ -689,7 +697,15 @@ export function PlanningResults({
               <div>
                 <p className="text-[11px] font-bold tracking-[0.14em] text-emerald-300">确认与调整</p>
                 <h3 className="mt-2 text-lg font-semibold">
-                  {reviewOutcome
+                  {isAwaitingReview
+                    ? reviewOutcome
+                      ? "修改版等待确认"
+                      : review
+                        ? blockingIssues.length
+                          ? validationHeading(validation)
+                          : "等待你的确认"
+                        : "行程状态"
+                    : reviewOutcome
                     ? "本次选择已保存"
                     : review
                       ? blockingIssues.length
@@ -701,7 +717,9 @@ export function PlanningResults({
               <span className="flex size-10 items-center justify-center rounded-full bg-amber-300 text-lg text-slate-950">!</span>
             </div>
             <p className="mt-5 text-sm leading-6 text-slate-300">
-              {reviewOutcome
+              {isAwaitingReview && reviewOutcome?.action === "request_revision"
+                ? "修改版已经生成，你可以继续调整其他日期，或确认当前行程。"
+                : reviewOutcome
                 ? reviewOutcome.action === "request_revision"
                   ? "修改版已经生成，请再次确认新的行程安排。"
                   : reviewOutcome.action === "approve_draft"
@@ -711,7 +729,7 @@ export function PlanningResults({
                       : "本次规划已取消。"
                 : reviewSummary}
             </p>
-            {!reviewOutcome && review && validation.issues.length ? (
+            {isAwaitingReview && review && validation.issues.length ? (
               <div className="mt-4 space-y-2" data-testid="review-issue-summary">
                 {validation.issues.map((issue) => (
                   <div
@@ -737,7 +755,8 @@ export function PlanningResults({
                   {new Date(reviewOutcome.decided_at).toLocaleString("zh-CN")} · {reviewOutcome.reviewer_id.slice(0, 20)}…
                 </p>
               </div>
-            ) : review && snapshot.status === "awaiting_input" ? (
+            ) : null}
+            {isAwaitingReview && review ? (
               <div className="mt-5 space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   {review.allowed_actions.includes("approve_draft") ? (

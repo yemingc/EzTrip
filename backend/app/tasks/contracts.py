@@ -191,8 +191,11 @@ class PlanningTaskSnapshot(DomainModel):
         ):
             raise ValueError("latest plan version must preserve the revision result")
         if self.review_outcome is not None:
-            if self.status != PlanningTaskStatus.SUCCEEDED or self.result is None:
-                raise ValueError("review outcome requires a succeeded task result")
+            if self.status not in {
+                PlanningTaskStatus.AWAITING_INPUT,
+                PlanningTaskStatus.SUCCEEDED,
+            } or self.result is None:
+                raise ValueError("review outcome requires a reviewable task result")
             if self.result.state.review_decision is None:
                 raise ValueError("review outcome requires a persisted graph decision")
             known_versions = {item.version_id for item in self.plan_versions}

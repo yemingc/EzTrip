@@ -16,6 +16,7 @@ from app.planning.repair_contracts import RepairRouterResult
 from app.planning.revision_contracts import PlanRevisionResult
 from app.planning.specialist_contracts import SpecialistFanoutResult
 from app.planning.stateful_contracts import (
+    HumanReviewAction,
     HumanReviewDecision,
     HumanReviewRequest,
     PlanningThreadStatus,
@@ -178,24 +179,84 @@ class ProductPlanningData(DomainModel):
             ):
                 raise ValueError("plan_ready state cannot contain review data")
             return self
+
+        effective_validation = (
+            self.revision_result.validation
+            if self.revision_result is not None
+            else self.validation
+        )
         if self.review_request is None:
             raise ValueError("review state requires a human review request")
-        if (
-            self.review_request.request_id != self.request.request_id
-            or self.review_request.plan_id != self.validation.plan_id
-            or self.review_request.validation_status != self.validation.status
-            or self.review_request.can_finalize != self.validation.can_finalize
-            or self.review_request.issue_rule_codes
-            != tuple(item.rule_code for item in self.validation.issues)
-        ):
+        review_evidence_mismatch = self.review_request.request_id != self.request.request_id
+        if self.status != PlanningThreadStatus.REVISION_APPLIED:
+            review_evidence_mismatch = review_evidence_mismatch or (
+                self.review_request.plan_id != effective_validation.plan_id
+                or self.review_request.validation_status != effective_validation.status
+                or self.review_request.can_finalize != effective_validation.can_finalize
+                or self.review_request.issue_rule_codes
+                != tuple(item.rule_code for item in effective_validation.issues)
+            )
+        if review_evidence_mismatch:
             raise ValueError("human review must preserve hard validation evidence")
 
-        review_prefix = (*pipeline_prefix, ProductPlanningNodeName.PREPARE_HUMAN_REVIEW)
-        if event_nodes[: len(review_prefix)] != review_prefix:
-            raise ValueError("product review events must preserve stage lineage")
+        review_cycle = (
+            ProductPlanningNodeName.PREPARE_HUMAN_REVIEW,
+            ProductPlanningNodeName.HUMAN_REVIEW,
+            ProductPlanningNodeName.APPLY_REVIEW_DECISION,
+            ProductPlanningNodeName.APPLY_PLAN_REVISION,
+        )
+        status_tail = {
+            PlanningThreadStatus.AWAITING_HUMAN_REVIEW: (
+                ProductPlanningNodeName.PREPARE_HUMAN_REVIEW,
+            ),
+            PlanningThreadStatus.REVIEW_DECIDED: (
+                ProductPlanningNodeName.PREPARE_HUMAN_REVIEW,
+                ProductPlanningNodeName.HUMAN_REVIEW,
+            ),
+            PlanningThreadStatus.REVISION_REQUESTED: (
+                ProductPlanningNodeName.PREPARE_HUMAN_REVIEW,
+                ProductPlanningNodeName.HUMAN_REVIEW,
+                ProductPlanningNodeName.APPLY_REVIEW_DECISION,
+            ),
+            PlanningThreadStatus.REVISION_APPLIED: review_cycle,
+            PlanningThreadStatus.APPROVED_DRAFT: (
+                ProductPlanningNodeName.PREPARE_HUMAN_REVIEW,
+                ProductPlanningNodeName.HUMAN_REVIEW,
+                ProductPlanningNodeName.APPLY_REVIEW_DECISION,
+            ),
+            PlanningThreadStatus.CONFLICT_ACKNOWLEDGED: (
+                ProductPlanningNodeName.PREPARE_HUMAN_REVIEW,
+                ProductPlanningNodeName.HUMAN_REVIEW,
+                ProductPlanningNodeName.APPLY_REVIEW_DECISION,
+            ),
+            PlanningThreadStatus.CANCELLED: (
+                ProductPlanningNodeName.PREPARE_HUMAN_REVIEW,
+                ProductPlanningNodeName.HUMAN_REVIEW,
+                ProductPlanningNodeName.APPLY_REVIEW_DECISION,
+            ),
+        }.get(self.status)
+        if status_tail is None:
+            raise ValueError("unsupported product review status")
+        review_nodes = event_nodes[len(pipeline_prefix) :]
+        if len(review_nodes) < len(status_tail) or review_nodes[-len(status_tail) :] != status_tail:
+            raise ValueError("product review events must preserve the current review stage")
+        completed_nodes = review_nodes[: len(review_nodes) - len(status_tail)]
+        if len(completed_nodes) % len(review_cycle) != 0 or any(
+            completed_nodes[index : index + len(review_cycle)] != review_cycle
+            for index in range(0, len(completed_nodes), len(review_cycle))
+        ):
+            raise ValueError("product review events must preserve repeated revision cycles")
+
         if self.status == PlanningThreadStatus.AWAITING_HUMAN_REVIEW:
-            if self.review_decision is not None or self.revision_result is not None:
-                raise ValueError("awaiting review cannot contain a decision")
+            if self.revision_result is None:
+                if self.review_decision is not None:
+                    raise ValueError("initial awaiting review cannot contain a decision")
+            elif (
+                self.review_decision is None
+                or self.review_decision.action != HumanReviewAction.REQUEST_REVISION
+                or self.review_decision.revision_request != self.revision_result.request
+            ):
+                raise ValueError("revised awaiting review must preserve the completed revision")
             return self
         if self.review_decision is None:
             raise ValueError("terminal product state requires a human decision")
@@ -204,29 +265,27 @@ class ProductPlanningData(DomainModel):
             or self.review_decision.action not in self.review_request.allowed_actions
         ):
             raise ValueError("human decision must match the pending product review")
-        decided_prefix = (*review_prefix, ProductPlanningNodeName.HUMAN_REVIEW)
         if self.status == PlanningThreadStatus.REVIEW_DECIDED:
-            if event_nodes != decided_prefix or self.revision_result is not None:
-                raise ValueError("review_decided must follow the product review node")
             return self
-        decision_prefix = (*decided_prefix, ProductPlanningNodeName.APPLY_REVIEW_DECISION)
         if self.status == PlanningThreadStatus.REVISION_REQUESTED:
-            if event_nodes != decision_prefix or self.revision_result is not None:
+            if (
+                self.review_decision.action != HumanReviewAction.REQUEST_REVISION
+                or self.review_decision.revision_request is None
+            ):
                 raise ValueError("revision_requested must preserve its structured decision")
             return self
         if self.status == PlanningThreadStatus.REVISION_APPLIED:
             if (
-                event_nodes != (*decision_prefix, ProductPlanningNodeName.APPLY_PLAN_REVISION)
-                or self.revision_result is None
+                self.revision_result is None
+                or self.review_decision.action != HumanReviewAction.REQUEST_REVISION
                 or self.review_decision.revision_request != self.revision_result.request
-                or self.revision_result.diff.from_plan_id != self.plan.plan_id
+                or self.revision_result.diff.from_plan_id
+                != self.revision_result.request.base_plan_id
                 or self.revision_result.validation.validator_version
                 != "hard-trip-plan-validator-v1"
             ):
                 raise ValueError("revision_applied must preserve hard-validated revision lineage")
             return self
-        if event_nodes != decision_prefix or self.revision_result is not None:
-            raise ValueError("terminal product events must preserve decision order")
         expected_status = {
             "approve_draft": PlanningThreadStatus.APPROVED_DRAFT,
             "acknowledge_conflict": PlanningThreadStatus.CONFLICT_ACKNOWLEDGED,

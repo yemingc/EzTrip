@@ -460,8 +460,6 @@ class PlanningMaterialBundle(DomainModel):
                 raise ValueError("activity replacement targets must be unique")
             if len(replacement_ids) != len(set(replacement_ids)):
                 raise ValueError("activity replacement candidates must be unique")
-            if len({item.revision_id for item in replacements}) != 1:
-                raise ValueError("activity replacement batch must share one revision id")
             observations = (
                 explore_branch.explore_result.observations
                 if explore_branch.explore_result is not None

@@ -659,7 +659,7 @@ test("applies a structured day-scoped revision and renders plan version v2", asy
   });
 });
 
-test("replaces one activity from available places and preserves the other day", async ({
+test("replaces activities on two different days without ending review after the first", async ({
   page,
 }) => {
   await page.goto("/");
@@ -681,11 +681,28 @@ test("replaces one activity from available places and preserves the other day", 
   await expect(page.getByTestId("event-trace")).toContainText("更新所选行程");
   await expect(results).toContainText("修改版 · 等待再次确认");
   await expect(results).toContainText("北海公园");
-  await expect(results).not.toContainText("景山公园");
+  await expect(
+    results.getByTestId("itinerary-item").filter({ hasText: "景山公园" }),
+  ).toHaveCount(0);
   await expect(results).toContainText("计划已修改 · 1 个受影响日期");
   await expect(
     results.getByTestId("itinerary-item").filter({ hasText: "中国国家博物馆" }),
   ).toHaveText(protectedDayBefore ?? "");
+
+  await expect(page.getByLabel("修改方式")).toBeVisible();
+  await page.getByLabel("修改目标日期").selectOption({ index: 0 });
+  await page.getByLabel("被替换活动").selectOption({ label: "中国国家博物馆" });
+  await page.getByLabel("可选地点").selectOption({ label: "南锣鼓巷 · 东城区" });
+  await page.getByLabel("修改说明").fill("继续把第一天的中国国家博物馆换成南锣鼓巷。");
+  await page.getByRole("button", { name: "生成修改版" }).click();
+
+  await expect(results).toContainText("v2 → v3", { timeout: 20_000 });
+  await expect(results).toContainText("南锣鼓巷");
+  await expect(results).toContainText("北海公园");
+  await expect(
+    results.getByTestId("itinerary-item").filter({ hasText: "中国国家博物馆" }),
+  ).toHaveCount(0);
+  await expect(results).toContainText("修改版等待确认");
 });
 
 test("shows when extra indoor places were found for the weather day", async ({ page }) => {

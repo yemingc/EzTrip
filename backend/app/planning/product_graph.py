@@ -163,18 +163,27 @@ def _evolve_state(current: ProductPlanningData, **updates: object) -> ProductPla
 
 
 def _review_id(state: ProductPlanningData) -> str:
-    if state.validation is None:
+    validation = (
+        state.revision_result.validation
+        if state.revision_result is not None
+        else state.validation
+    )
+    if validation is None:
         raise ProductPlanningProtocolError("product review requires hard validation")
     material = (
-        f"{state.thread_id}|{state.request.request_id}|{state.validation.plan_id}|"
-        f"{state.validation.status.value}|{state.validation.can_finalize}"
+        f"{state.thread_id}|{state.request.request_id}|{validation.plan_id}|"
+        f"{validation.status.value}|{validation.can_finalize}"
     )
     digest = hashlib.sha256(material.encode("utf-8")).hexdigest()[:16]
     return f"human-review-{digest}"
 
 
 def build_product_human_review_request(state: ProductPlanningData) -> HumanReviewRequest:
-    validation = state.validation
+    validation = (
+        state.revision_result.validation
+        if state.revision_result is not None
+        else state.validation
+    )
     if validation is None:
         raise ProductPlanningProtocolError("product review requires hard validation")
     kind = HumanReviewKind.PLAN_APPROVAL
@@ -380,18 +389,32 @@ def build_product_planning_graph(
         graph_state: ProductPlanningGraphState,
     ) -> dict[str, Any]:
         state = _require_state(graph_state)
-        if (
-            state.status != PlanningThreadStatus.PLAN_READY
-            or state.plan is None
-            or state.materials is None
-        ):
-            raise ProductPlanningProtocolError("product review requires plan_ready status")
-        weather_indoor_recovery = await pipeline.recover_weather_indoor_candidates(
-            state.request,
-            state.plan,
-            state.materials,
-            state.data_mode,
+        effective_plan = (
+            state.revision_result.revised_plan
+            if state.revision_result is not None
+            else state.plan
         )
+        effective_materials = (
+            state.revision_result.revised_materials
+            if state.revision_result is not None
+            and state.revision_result.revised_materials is not None
+            else state.materials
+        )
+        if (
+            state.status
+            not in {PlanningThreadStatus.PLAN_READY, PlanningThreadStatus.REVISION_APPLIED}
+            or effective_plan is None
+            or effective_materials is None
+        ):
+            raise ProductPlanningProtocolError("product review requires a reviewable plan")
+        weather_indoor_recovery = state.weather_indoor_recovery
+        if weather_indoor_recovery is None:
+            weather_indoor_recovery = await pipeline.recover_weather_indoor_candidates(
+                state.request,
+                effective_plan,
+                effective_materials,
+                state.data_mode,
+            )
         review = build_product_human_review_request(state)
         event = ProductPlanningEvent(
             node=ProductPlanningNodeName.PREPARE_HUMAN_REVIEW,
@@ -476,12 +499,23 @@ def build_product_planning_graph(
         graph_state: ProductPlanningGraphState,
     ) -> dict[str, Any]:
         state = _require_state(graph_state)
+        effective_plan = (
+            state.revision_result.revised_plan
+            if state.revision_result is not None
+            else state.plan
+        )
+        effective_materials = (
+            state.revision_result.revised_materials
+            if state.revision_result is not None
+            and state.revision_result.revised_materials is not None
+            else state.materials
+        )
         if (
             state.status != PlanningThreadStatus.REVISION_REQUESTED
             or state.review_decision is None
             or state.review_decision.revision_request is None
-            or state.plan is None
-            or state.materials is None
+            or effective_plan is None
+            or effective_materials is None
             or state.opening_hours is None
         ):
             raise ProductPlanningProtocolError("revision node requires persisted product inputs")
@@ -489,8 +523,8 @@ def build_product_planning_graph(
         if revision_request.operation.value == "replace_activity":
             revision = await apply_activity_replacement(
                 state.request,
-                state.plan,
-                state.materials,
+                effective_plan,
+                effective_materials,
                 revision_request,
                 pipeline.get_revision_route,
                 weather_indoor_recovery=state.weather_indoor_recovery,
@@ -498,10 +532,10 @@ def build_product_planning_graph(
         else:
             revision = apply_plan_revision(
                 state.request,
-                state.plan,
+                effective_plan,
                 revision_request,
             )
-        validation_materials = revision.revised_materials or state.materials
+        validation_materials = revision.revised_materials or effective_materials
         hard_validation = validate_hard_trip_plan(
             state.request,
             revision.revised_plan,
@@ -605,7 +639,10 @@ def build_product_planning_graph(
             END: END,
         },
     )
-    workflow.add_edge(ProductPlanningNodeName.APPLY_PLAN_REVISION.value, END)
+    workflow.add_edge(
+        ProductPlanningNodeName.APPLY_PLAN_REVISION.value,
+        ProductPlanningNodeName.PREPARE_HUMAN_REVIEW.value,
+    )
     return workflow.compile(checkpointer=checkpointer, name=PRODUCT_PLANNING_GRAPH_NAME)
 
 

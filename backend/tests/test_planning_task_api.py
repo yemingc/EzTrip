@@ -399,7 +399,7 @@ def test_review_resume_is_idempotent_and_streams_checkpoint_progress(tmp_path: P
     asyncio.run(request_review_until_completed(tmp_path))
 
 
-async def request_structured_revision_until_v2(tmp_path: Path) -> None:
+async def request_structured_revisions_until_v3(tmp_path: Path) -> None:
     settings = Settings(
         environment="test",
         planning_checkpoint_dir=tmp_path,
@@ -414,9 +414,15 @@ async def request_structured_revision_until_v2(tmp_path: Path) -> None:
     app = create_app(settings=settings, planning_task_service=service)
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
+        payload = build_fixture_payload()
+        request_payload = payload.request.model_dump(mode="python")
+        request_payload["pace"] = "standard"
+        payload = payload.model_copy(
+            update={"request": TripRequest.model_validate(request_payload)}
+        )
         create_response = await client.post(
             "/api/planning-tasks",
-            json=build_fixture_payload().model_dump(mode="json"),
+            json=payload.model_dump(mode="json"),
         )
         accepted = create_response.json()
         _ = await client.get(accepted["events_url"])
@@ -492,46 +498,173 @@ async def request_structured_revision_until_v2(tmp_path: Path) -> None:
 
         resumed_response = await client.get(f"{accepted['events_url']}?after=9")
         resumed = parse_sse_events(resumed_response.text)
-        assert [event["sequence"] for event in resumed] == [10, 11, 12, 13, 14]
+        assert [event["sequence"] for event in resumed] == [10, 11, 12, 13, 14, 15]
         assert [event["kind"] for event in resumed] == [
             "task_review_submitted",
             "graph_node_completed",
             "graph_node_completed",
             "graph_node_completed",
-            "task_succeeded",
+            "graph_node_completed",
+            "task_awaiting_input",
         ]
-        assert [event.get("node") for event in resumed[1:4]] == [
+        assert [event.get("node") for event in resumed[1:5]] == [
             "human_review",
             "apply_review_decision",
             "apply_plan_revision",
+            "prepare_human_review",
         ]
-        assert [event.get("state_status") for event in resumed[1:4]] == [
+        assert [event.get("state_status") for event in resumed[1:5]] == [
             "review_decided",
             "revision_requested",
             "revision_applied",
+            "awaiting_human_review",
         ]
 
-        terminal = (await client.get(accepted["task_url"])).json()
-        assert terminal["status"] == "succeeded"
-        assert terminal["result"]["state"]["status"] == "revision_applied"
-        assert terminal["result"]["state"]["revision_result"]["model_call_count"] == 0
-        assert terminal["result"]["state"]["revision_result"]["provider_call_count"] == 0
-        assert [item["version_number"] for item in terminal["plan_versions"]] == [1, 2]
-        revised_version = terminal["plan_versions"][1]
+        awaiting_v2 = (await client.get(accepted["task_url"])).json()
+        assert awaiting_v2["status"] == "awaiting_input"
+        assert awaiting_v2["result"]["state"]["status"] == "awaiting_human_review"
+        assert awaiting_v2["result"]["state"]["revision_result"]["model_call_count"] == 0
+        assert awaiting_v2["result"]["state"]["revision_result"]["provider_call_count"] == 0
+        assert [item["version_number"] for item in awaiting_v2["plan_versions"]] == [1, 2]
+        revised_version = awaiting_v2["plan_versions"][1]
         assert revised_version["based_on_version_id"] == version["version_id"]
         assert revised_version["changed_dates"] == [target_day["date"]]
-        outcome = terminal["review_outcome"]
+        outcome = awaiting_v2["review_outcome"]
         assert outcome["plan_diff"]["from_version_id"] == version["version_id"]
         assert outcome["plan_diff"]["to_version_id"] == revised_version["version_id"]
         assert outcome["plan_diff"]["plan_changed"] is True
         assert outcome["plan_diff"]["changed_dates"] == [target_day["date"]]
         assert outcome["plan_diff"]["rescheduled_item_ids"] == revision_request["target_item_ids"]
-        assert terminal["plan_versions"][0]["plan"] == plan
+        assert awaiting_v2["plan_versions"][0]["plan"] == plan
         assert revised_version["plan"]["days"][0] == plan["days"][0]
 
+        current_plan = revised_version["plan"]
+        state = awaiting_v2["result"]["state"]
+        explore_branch = next(
+            branch
+            for branch in state["specialists"]["branches"]
+            if branch["specialist"] == "explore"
+        )
+        observations = list(explore_branch["explore_result"]["observations"])
+        recovery = state.get("weather_indoor_recovery")
+        if recovery:
+            observations.extend(recovery["observations"])
+        observed_candidates = {
+            observation["candidate"]["candidate_id"]: observation["candidate"]
+            for observation in observations
+        }
+        scheduled_ids = {
+            item["candidate_id"]
+            for day in current_plan["days"]
+            for item in day["items"]
+            if item["candidate_id"] is not None
+        }
+        eligible_candidates = [
+            observation["candidate"]
+            for observation in observations
+            if observation["candidate"]["candidate_id"] not in scheduled_ids
+            and "餐饮服务" not in observation["candidate"]["categories"]
+            and observation["candidate"]["city"] == current_plan["destination_city"]
+        ]
+        second_target_day, second_target_item, second_candidate = next(
+            (day, item, candidate)
+            for day in reversed(current_plan["days"])
+            for item in day["items"]
+            if item["kind"] == "attraction"
+            and item["candidate_id"] in observed_candidates
+            for candidate in eligible_candidates
+            if candidate["district"]
+            == observed_candidates[item["candidate_id"]]["district"]
+        )
+        second_revision = {
+            "revision_id": "revision-api-day-one-replacement-v2",
+            "base_version_id": revised_version["version_id"],
+            "base_plan_id": current_plan["plan_id"],
+            "target_date": second_target_day["date"],
+            "operation": "replace_activity",
+            "replaced_item_id": second_target_item["item_id"],
+            "replacement_candidate_id": second_candidate["candidate_id"],
+            "target_item_ids": [item["item_id"] for item in second_target_day["items"]],
+            "protected_item_ids": [
+                item["item_id"]
+                for day in current_plan["days"]
+                if day["date"] != second_target_day["date"]
+                for item in day["items"]
+            ],
+            "confirmed": True,
+        }
+        second_decision = {
+            "decision_id": "review-decision-api-revision-v2",
+            "review_id": state["review_request"]["review_id"],
+            "action": "request_revision",
+            "reviewer_id": "reviewer-api-fixture",
+            "comment": "继续替换另一天的活动。",
+            "revision_request": second_revision,
+        }
+        second_response = await client.post(
+            f"{accepted['task_url']}/review-decisions",
+            json=second_decision,
+        )
+        assert second_response.status_code == 202
+        second_resumed_response = await client.get(f"{accepted['events_url']}?after=15")
+        second_resumed = parse_sse_events(second_resumed_response.text)
+        assert [event["kind"] for event in second_resumed] == [
+            "task_review_submitted",
+            "graph_node_completed",
+            "graph_node_completed",
+            "graph_node_completed",
+            "graph_node_completed",
+            "task_awaiting_input",
+        ]
 
-def test_structured_revision_creates_a_scoped_v2(tmp_path: Path) -> None:
-    asyncio.run(request_structured_revision_until_v2(tmp_path))
+        awaiting_v3 = (await client.get(accepted["task_url"])).json()
+        assert awaiting_v3["status"] == "awaiting_input"
+        assert [item["version_number"] for item in awaiting_v3["plan_versions"]] == [1, 2, 3]
+        version_v3 = awaiting_v3["plan_versions"][-1]
+        assert version_v3["based_on_version_id"] == revised_version["version_id"]
+        assert version_v3["changed_dates"] == [second_target_day["date"]]
+        assert all(
+            revised_day == original_day
+            for revised_day, original_day in zip(
+                version_v3["plan"]["days"], current_plan["days"], strict=True
+            )
+            if original_day["date"] != second_target_day["date"]
+        )
+        assert second_candidate["candidate_id"] in {
+            item["candidate_id"]
+            for day in version_v3["plan"]["days"]
+            if day["date"] == second_target_day["date"]
+            for item in day["items"]
+        }
+
+        final_review = awaiting_v3["result"]["state"]["review_request"]
+        final_action = (
+            "approve_draft"
+            if "approve_draft" in final_review["allowed_actions"]
+            else "acknowledge_conflict"
+        )
+        final_decision = await client.post(
+            f"{accepted['task_url']}/review-decisions",
+            json={
+                "decision_id": "review-decision-api-final-v3",
+                "review_id": final_review["review_id"],
+                "action": final_action,
+                "reviewer_id": "reviewer-api-fixture",
+            },
+        )
+        assert final_decision.status_code == 202
+        final_events_response = await client.get(
+            f"{accepted['events_url']}?after={awaiting_v3['event_count']}"
+        )
+        final_events = parse_sse_events(final_events_response.text)
+        assert final_events[-1]["kind"] == "task_succeeded"
+        terminal = (await client.get(accepted["task_url"])).json()
+        assert terminal["status"] == "succeeded"
+        assert [item["version_number"] for item in terminal["plan_versions"]] == [1, 2, 3]
+
+
+def test_structured_revisions_create_scoped_v2_and_v3(tmp_path: Path) -> None:
+    asyncio.run(request_structured_revisions_until_v3(tmp_path))
 
 
 class FailingExecutor:

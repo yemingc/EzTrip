@@ -77,13 +77,13 @@ class _PersistedPlanningTaskRecord(DomainModel):
         if not self.events or self.events[-1].task_status != self.snapshot.status:
             raise ValueError("persisted final event status must match the task snapshot")
         decision_ids = tuple(decision.decision_id for decision in self.review_decisions)
-        if len(decision_ids) != len(set(decision_ids)) or len(decision_ids) > 1:
-            raise ValueError("a task may persist at most one accepted review decision")
-        if self.accepted_decision_id is None:
-            if decision_ids:
-                raise ValueError("persisted review decisions require an accepted decision id")
-        elif decision_ids != (self.accepted_decision_id,):
-            raise ValueError("accepted decision id must match the persisted review decision")
+        if len(decision_ids) != len(set(decision_ids)):
+            raise ValueError("persisted review decision ids must be unique")
+        if (
+            self.accepted_decision_id is not None
+            and self.accepted_decision_id not in decision_ids
+        ):
+            raise ValueError("accepted decision id must reference a persisted review decision")
         return self
 
 
@@ -421,6 +421,60 @@ class InMemoryPlanningTaskStore:
             plan_versions=plan_versions,
             review_outcome=review_outcome,
         )
+
+    async def await_input_after_revision(
+        self,
+        task_id: str,
+        *,
+        result: object,
+        review_id: str,
+        review_decision: PlanningTaskReviewDecisionRequest,
+    ) -> PlanningTaskSnapshot:
+        snapshot = PLANNING_RESULT_ADAPTER.validate_python(result)
+        async with self._condition:
+            self._ensure_ready_locked()
+            current = self._require_snapshot(task_id)
+            if not current.plan_versions:
+                raise PlanningTaskTransitionError("revision completion requires a plan version")
+            if review_decision.action != HumanReviewAction.REQUEST_REVISION:
+                raise PlanningTaskTransitionError("only a revision can return to review")
+            plan_versions = (
+                *current.plan_versions,
+                build_revised_plan_version(
+                    snapshot,
+                    current.plan_versions[-1],
+                    created_at=utc_now(),
+                ),
+            )
+            review_outcome = build_review_outcome(
+                snapshot,
+                review_decision,
+                plan_versions,
+            )
+            accepted_decision_id = self._task_decision_ids.pop(task_id, None)
+            if accepted_decision_id != review_decision.decision_id:
+                if accepted_decision_id is not None:
+                    self._task_decision_ids[task_id] = accepted_decision_id
+                raise PlanningTaskTransitionError(
+                    "completed revision does not match the accepted review decision"
+                )
+            try:
+                updated = self._append_locked(
+                    task_id,
+                    kind=PlanningTaskEventKind.TASK_AWAITING_INPUT,
+                    status=PlanningTaskStatus.AWAITING_INPUT,
+                    message="修改版已生成, 正在等待用户继续审核。",
+                    allowed_from={PlanningTaskStatus.RUNNING},
+                    result=snapshot,
+                    review_id=review_id,
+                    plan_versions=plan_versions,
+                    review_outcome=review_outcome,
+                )
+            except Exception:
+                self._task_decision_ids[task_id] = review_decision.decision_id
+                raise
+            self._condition.notify_all()
+            return updated
 
     async def fail(
         self,

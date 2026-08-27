@@ -640,6 +640,10 @@ async def apply_activity_replacement(
         for target_item in replacement_items
         if target_item.candidate_id is not None
     )
+    prior_replacement_records = materials.activity_replacements or (
+        (materials.activity_replacement,) if materials.activity_replacement is not None else ()
+    )
+    all_replacement_records = (*prior_replacement_records, *replacement_records)
     revised_materials = PlanningMaterialBundle(
         request_id=materials.request_id,
         context_id=materials.context_id,
@@ -652,8 +656,12 @@ async def apply_activity_replacement(
         route_matrix=route_matrix,
         budget_allocation=budget_allocation,
         budget_estimate=budget_estimate,
-        activity_replacement=(replacement_records[0] if len(replacement_records) == 1 else None),
-        activity_replacements=(replacement_records if len(replacement_records) > 1 else ()),
+        activity_replacement=(
+            all_replacement_records[0] if len(all_replacement_records) == 1 else None
+        ),
+        activity_replacements=(
+            all_replacement_records if len(all_replacement_records) > 1 else ()
+        ),
         weather_indoor_recovery=weather_indoor_recovery,
     )
     revised_day, rescheduled_ids, added_ids, removed_ids = _revised_target_day(
