@@ -181,9 +181,7 @@ class ProductPlanningData(DomainModel):
             return self
 
         effective_validation = (
-            self.revision_result.validation
-            if self.revision_result is not None
-            else self.validation
+            self.revision_result.validation if self.revision_result is not None else self.validation
         )
         if self.review_request is None:
             raise ValueError("review state requires a human review request")

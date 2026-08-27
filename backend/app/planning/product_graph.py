@@ -164,9 +164,7 @@ def _evolve_state(current: ProductPlanningData, **updates: object) -> ProductPla
 
 def _review_id(state: ProductPlanningData) -> str:
     validation = (
-        state.revision_result.validation
-        if state.revision_result is not None
-        else state.validation
+        state.revision_result.validation if state.revision_result is not None else state.validation
     )
     if validation is None:
         raise ProductPlanningProtocolError("product review requires hard validation")
@@ -180,9 +178,7 @@ def _review_id(state: ProductPlanningData) -> str:
 
 def build_product_human_review_request(state: ProductPlanningData) -> HumanReviewRequest:
     validation = (
-        state.revision_result.validation
-        if state.revision_result is not None
-        else state.validation
+        state.revision_result.validation if state.revision_result is not None else state.validation
     )
     if validation is None:
         raise ProductPlanningProtocolError("product review requires hard validation")
@@ -390,9 +386,7 @@ def build_product_planning_graph(
     ) -> dict[str, Any]:
         state = _require_state(graph_state)
         effective_plan = (
-            state.revision_result.revised_plan
-            if state.revision_result is not None
-            else state.plan
+            state.revision_result.revised_plan if state.revision_result is not None else state.plan
         )
         effective_materials = (
             state.revision_result.revised_materials
@@ -500,9 +494,7 @@ def build_product_planning_graph(
     ) -> dict[str, Any]:
         state = _require_state(graph_state)
         effective_plan = (
-            state.revision_result.revised_plan
-            if state.revision_result is not None
-            else state.plan
+            state.revision_result.revised_plan if state.revision_result is not None else state.plan
         )
         effective_materials = (
             state.revision_result.revised_materials

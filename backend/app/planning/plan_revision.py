@@ -659,9 +659,7 @@ async def apply_activity_replacement(
         activity_replacement=(
             all_replacement_records[0] if len(all_replacement_records) == 1 else None
         ),
-        activity_replacements=(
-            all_replacement_records if len(all_replacement_records) > 1 else ()
-        ),
+        activity_replacements=(all_replacement_records if len(all_replacement_records) > 1 else ()),
         weather_indoor_recovery=weather_indoor_recovery,
     )
     revised_day, rescheduled_ids, added_ids, removed_ids = _revised_target_day(

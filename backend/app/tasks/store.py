@@ -79,10 +79,7 @@ class _PersistedPlanningTaskRecord(DomainModel):
         decision_ids = tuple(decision.decision_id for decision in self.review_decisions)
         if len(decision_ids) != len(set(decision_ids)):
             raise ValueError("persisted review decision ids must be unique")
-        if (
-            self.accepted_decision_id is not None
-            and self.accepted_decision_id not in decision_ids
-        ):
+        if self.accepted_decision_id is not None and self.accepted_decision_id not in decision_ids:
             raise ValueError("accepted decision id must reference a persisted review decision")
         return self
 

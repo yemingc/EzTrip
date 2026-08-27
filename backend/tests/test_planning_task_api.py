@@ -570,11 +570,9 @@ async def request_structured_revisions_until_v3(tmp_path: Path) -> None:
             (day, item, candidate)
             for day in reversed(current_plan["days"])
             for item in day["items"]
-            if item["kind"] == "attraction"
-            and item["candidate_id"] in observed_candidates
+            if item["kind"] == "attraction" and item["candidate_id"] in observed_candidates
             for candidate in eligible_candidates
-            if candidate["district"]
-            == observed_candidates[item["candidate_id"]]["district"]
+            if candidate["district"] == observed_candidates[item["candidate_id"]]["district"]
         )
         second_revision = {
             "revision_id": "revision-api-day-one-replacement-v2",
