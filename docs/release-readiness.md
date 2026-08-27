@@ -2,9 +2,9 @@
 
 ## 结论
 
-EzTrip 的本地单实例技术发布门禁为 **CLOSED**：冻结功能后的锁文件、静态检查、全量测试、真实 fixture 浏览器链路、依赖漏洞、空白凭据、临时 PostgreSQL/Alembic 与 clean-checkout 安装/启动均纳入复核。本结论只针对本地作品集与单用户演示，不把项目描述为生产级预订系统、全国城市质量保证或高可用服务。
+EzTrip 在 `3060834` 上完成的本地单实例发布基线为 **CLOSED**。Budget Estimate V2 在 `fa1f0e2` 上的本地增量技术门禁也为 **CLOSED**，但远端分支、PR/CI 与用户浏览器验收仍为 **PENDING**，因此尚未宣称该增量已经远端发布。本结论只针对本地作品集与单用户演示，不把项目描述为生产级预订系统、全国城市质量保证或高可用服务。
 
-## 2026-08-25 验证环境
+## 2026-08-25 基线验证环境
 
 - Windows / PowerShell
 - Python 3.12.11，uv 0.8.15
@@ -12,7 +12,7 @@ EzTrip 的本地单实例技术发布门禁为 **CLOSED**：冻结功能后的�
 - Docker Engine 29.4.3，PostgreSQL 17 Alpine
 - Chromium Playwright，单 worker
 
-## 自动门禁结果
+## 基线自动门禁结果（`3060834`）
 
 | 门禁 | 结果 |
 | --- | --- |
@@ -28,6 +28,25 @@ EzTrip 的本地单实例技术发布门禁为 **CLOSED**：冻结功能后的�
 
 CI 同步执行 Python/Node 依赖审计。pytest 已从存在 `PYSEC-2026-1845` 的 8.4.2 升级到已修复的 9.1.1，并通过全量回归。
 
+## 2026-08-27 Budget Estimate V2 增量门禁（`fa1f0e2`）
+
+本轮只验证 `250e89a` 与 `fa1f0e2` 引入的行程关联预算估算及其当前回归状态。预算金额来自版本化 fixture/reference 区间和确定性聚合，会随住宿晚数、排程景点、路线矩阵、人数、天数及结构化修订重新计算；它不是实时房价、票价、成交价或预订报价。
+
+| 门禁 | 当前结果 |
+| --- | --- |
+| Checkout | `codex/budget-estimate-v2`，提交 `fa1f0e2`；工作区在验证前干净 |
+| Backend lock / Ruff / format / Mypy | 通过；Mypy 覆盖 `app scripts` |
+| Backend tests | 453/453 通过，app branch coverage 85%；保留 2 条上游弃用 warning |
+| Python dependency audit | `pip-audit`：0 个已知漏洞 |
+| Frontend lint / typecheck / build | 通过；Next.js 16.3.1 production build 成功 |
+| Node dependency audit | `pnpm audit --audit-level high`：0 个已知漏洞 |
+| Product browser E2E | 22/22 通过；隔离冷启动 fixture FastAPI + SSE + Chromium，覆盖需求确认、首个进度事件、审核、刷新恢复、结构化 v2 修订和 390px 视口 |
+| 当前开发服务 | `GET /api/health`、首页与 `/docs` 均返回 HTTP 200 |
+| Remote branch / PR / CI | PENDING；遵守用户浏览器验收停止点，本轮不推送、不创建 PR |
+| User browser acceptance | PENDING；自动化门禁不能代替实际浏览器验收 |
+
+隔离浏览器复核为避免复用开发中的 `3000/8000` 服务，在本机测试工件目录使用 `3100/8100`、独立 SQLite 任务账本与 checkpoint；临时配置和截图均未写入仓库。它不调用 DeepSeek、实时高德或 live canary。`fa1f0e2` 尚未重新执行空白 PostgreSQL、完整 clean-checkout 后端安装或远端 CI；这些检查应在用户验收后由 PR CI/发布复核补齐，不能沿用 2026-08-25 的点时结果冒充本轮结果。
+
 ## 配置加固
 
 - `DEEPSEEK_API_KEY`、`LANGSMITH_API_KEY`、`AMAP_MAPS_API_KEY` 的空字符串或纯空白现在统一归一化为 `None`；复制 `.env.example` 后不会把长度为 0 的 SecretStr 误判为已配置凭据。
@@ -35,7 +54,7 @@ CI 同步执行 Python/Node 依赖审计。pytest 已从存在 `PYSEC-2026-1845`
 - AMap endpoint 继续要求 HTTPS 且拒绝查询参数中的 Key；真实凭据只存在于未跟踪 `.env`。
 - live 浏览器 canary 与 CI 隔离，需要显式设置 `EZTRIP_RUN_LIVE_BROWSER_CANARY=1`，并会消耗 DeepSeek/高德配额。
 
-## Clean-checkout 复现
+## 2026-08-25 基线 clean-checkout 复现
 
 发布提交使用独立、无项目 `.env`、无既有 `node_modules`、`.venv`、`.next` 或 `tmp` 状态的 Git worktree 复现以下路径：
 
@@ -56,4 +75,4 @@ CI 同步执行 Python/Node 依赖审计。pytest 已从存在 `PYSEC-2026-1845`
 
 ## 停止规则
 
-技术发布门禁关闭后，不再为 V1 新增 Agent、城市样本或旅行功能。下一阶段只整理可核验的架构说明、60–90 秒演示脚本、截图与简历/面试材料；任何能力数字必须链接到当前报告、fixture 评测或 live canary 证据。
+Budget Estimate V2 的本地技术门禁关闭后，不再为 V1 新增 Agent、城市样本或旅行功能。当前先等待用户完成实际浏览器验收；验收前不推送远端、不创建 PR，也不进入作品集交付。验收通过后，先推送 `codex/budget-estimate-v2`、由 PR CI 补齐远端门禁，再整理可核验的架构说明、60–90 秒演示脚本、截图与简历/面试材料。任何能力数字必须链接到当前报告、fixture 评测或 live canary 证据。
