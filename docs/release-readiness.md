@@ -2,7 +2,7 @@
 
 ## 结论
 
-EzTrip 在 `3060834` 上完成的本地单实例发布基线为 **CLOSED**。Budget Estimate V2 在 `fa1f0e2` 上的本地增量技术门禁也为 **CLOSED**，但远端分支、PR/CI 与用户浏览器验收仍为 **PENDING**，因此尚未宣称该增量已经远端发布。本结论只针对本地作品集与单用户演示，不把项目描述为生产级预订系统、全国城市质量保证或高可用服务。
+EzTrip 在 `3060834` 上完成的本地单实例发布基线为 **CLOSED**。Budget Estimate V2 在 `fa1f0e2` 上的本地增量技术门禁为 **CLOSED**，用户浏览器验收为 **PASSED**；远端分支、PR/CI 尚未执行，因此仍未宣称该增量已经远端发布。本结论只针对本地作品集与单用户演示，不把项目描述为生产级预订系统、全国城市质量保证或高可用服务。
 
 ## 2026-08-25 基线验证环境
 
@@ -42,8 +42,8 @@ CI 同步执行 Python/Node 依赖审计。pytest 已从存在 `PYSEC-2026-1845`
 | Node dependency audit | `pnpm audit --audit-level high`：0 个已知漏洞 |
 | Product browser E2E | 22/22 通过；隔离冷启动 fixture FastAPI + SSE + Chromium，覆盖需求确认、首个进度事件、审核、刷新恢复、结构化 v2 修订和 390px 视口 |
 | 当前开发服务 | `GET /api/health`、首页与 `/docs` 均返回 HTTP 200 |
-| Remote branch / PR / CI | PENDING；遵守用户浏览器验收停止点，本轮不推送、不创建 PR |
-| User browser acceptance | PENDING；自动化门禁不能代替实际浏览器验收 |
+| Remote branch / PR / CI | PENDING；记录本次验收后再推送分支并创建 PR |
+| User browser acceptance | PASSED；用户于 2026-08-27 明确回复“测试通过”。这是用户验收声明，不把未报告的具体场景推断为已验证 |
 
 隔离浏览器复核为避免复用开发中的 `3000/8000` 服务，在本机测试工件目录使用 `3100/8100`、独立 SQLite 任务账本与 checkpoint；临时配置和截图均未写入仓库。它不调用 DeepSeek、实时高德或 live canary。`fa1f0e2` 尚未重新执行空白 PostgreSQL、完整 clean-checkout 后端安装或远端 CI；这些检查应在用户验收后由 PR CI/发布复核补齐，不能沿用 2026-08-25 的点时结果冒充本轮结果。
 
@@ -75,4 +75,4 @@ CI 同步执行 Python/Node 依赖审计。pytest 已从存在 `PYSEC-2026-1845`
 
 ## 停止规则
 
-Budget Estimate V2 的本地技术门禁关闭后，不再为 V1 新增 Agent、城市样本或旅行功能。当前先等待用户完成实际浏览器验收；验收前不推送远端、不创建 PR，也不进入作品集交付。验收通过后，先推送 `codex/budget-estimate-v2`、由 PR CI 补齐远端门禁，再整理可核验的架构说明、60–90 秒演示脚本、截图与简历/面试材料。任何能力数字必须链接到当前报告、fixture 评测或 live canary 证据。
+Budget Estimate V2 的本地技术门禁关闭后，不再为 V1 新增 Agent、城市样本或旅行功能。用户已完成实际浏览器验收；下一步推送 `codex/budget-estimate-v2` 并由 PR CI 补齐远端门禁。远端 CI 通过前不合并、不把增量描述为已发布；通过后再整理可核验的架构说明、60–90 秒演示脚本、截图与简历/面试材料。任何能力数字必须链接到当前报告、fixture 评测或 live canary 证据。
