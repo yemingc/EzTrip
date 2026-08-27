@@ -347,10 +347,10 @@ class RequestIntakeService:
                 budget=BudgetConstraint(
                     total_limit=budget_limit,
                     included_categories=(
+                        BudgetCategory.LODGING,
                         BudgetCategory.TRANSPORT,
                         BudgetCategory.FOOD,
                         BudgetCategory.ADMISSION,
-                        BudgetCategory.ACTIVITY,
                     ),
                     hard_limit=False,
                 ),

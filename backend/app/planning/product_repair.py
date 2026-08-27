@@ -191,6 +191,7 @@ def _replace_budget(
         shortlist=materials.shortlist,
         route_matrix=materials.route_matrix,
         budget_allocation=budget,
+        budget_estimate=materials.budget_estimate,
     )
 
 

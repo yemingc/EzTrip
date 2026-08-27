@@ -15,6 +15,7 @@ from app.itinerary_quality import (
     major_activity_target,
     select_major_activities,
 )
+from app.planning.budget_estimator import estimate_trip_budget
 from app.planning.material_contracts import (
     BudgetAllocation,
     BudgetAllocationItem,
@@ -478,6 +479,11 @@ async def build_planning_material_bundle(
         max_concurrency=max_route_concurrency,
     )
     budget_allocation = allocate_budget(specialist_result.planner_context)
+    budget_estimate = estimate_trip_budget(
+        specialist_result.planner_context,
+        shortlist,
+        route_matrix,
+    )
     issues = planning_material_issues(
         specialist_result,
         shortlist,
@@ -507,4 +513,5 @@ async def build_planning_material_bundle(
         shortlist=shortlist,
         route_matrix=route_matrix,
         budget_allocation=budget_allocation,
+        budget_estimate=budget_estimate,
     )

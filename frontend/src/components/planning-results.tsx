@@ -31,12 +31,33 @@ const categoryLabels: Record<BudgetCategory, string> = {
   other: "其他",
 };
 
+const budgetAdviceLabels = {
+  keep_buffer: "保留一部分机动预算，应对临时交通和价格波动。",
+  lower_lodging_tier: "优先选择价格更低的住宿档位或减少换酒店。",
+  prioritize_free_activities: "优先保留免费景点，减少高价门票和额外体验。",
+  use_public_transport: "市内出行优先地铁和公交，减少长距离打车。",
+} as const;
+
+const budgetExclusionLabels = {
+  intercity_transport: "往返大交通",
+  shopping: "购物",
+  booking_fees: "预订手续费",
+} as const;
+
+const budgetComparisonLabels = {
+  not_requested: "费用参考",
+  within_budget: "预算内",
+  possible_overrun: "可能超出",
+  over_budget: "预计超出",
+  incomplete: "信息待补",
+} as const;
+
 const repairIssueLabels: Record<string, string> = {
   "opening_hours.schedule_outside_verified_window": "营业时间冲突",
 };
 
 const validationIssueLabels: Record<string, string> = {
-  "budget.incomplete_category_coverage": "预算采用规划估算",
+  "budget.incomplete_category_coverage": "部分费用为参考区间",
   "budget.possible_overrun": "预算可能超出目标",
   "budget.deterministic_floor_exceeds_limit": "已知费用超过预算",
   "route.missing_for_grounded_item": "一段到达路线未取得",
@@ -50,7 +71,7 @@ const validationIssueLabels: Record<string, string> = {
 };
 
 const validationIssueDescriptions: Record<string, string> = {
-  "budget.incomplete_category_coverage": "预算按总额、人数和天数估算，实际费用可能不同。",
+  "budget.incomplete_category_coverage": "住宿、餐饮、交通或门票暂无成交价，页面已提供估算区间。",
   "budget.possible_overrun": "当前安排可能超过预算目标，可以调整住宿、交通或活动。",
   "budget.deterministic_floor_exceeds_limit": "已知费用已超过预算上限，需要减少或更换部分安排。",
   "route.missing_for_grounded_item": "部分行程的通勤时间暂未取得，出发前请再次确认。",
@@ -91,6 +112,24 @@ function formatMoney(value: string | number) {
     currency: "CNY",
     maximumFractionDigits: 0,
   }).format(Number(value));
+}
+
+function formatMoneyRange(range: {
+  minimum: string | number;
+  maximum: string | number;
+}) {
+  const minimum = Number(range.minimum);
+  const maximum = Number(range.maximum);
+  if (minimum === maximum) return formatMoney(minimum);
+  return `${formatMoney(minimum)}–${formatMoney(maximum)}`;
+}
+
+function formatMoneyMidpoint(range: {
+  minimum: string | number;
+  maximum: string | number;
+}) {
+  const midpoint = (Number(range.minimum) + Number(range.maximum)) / 2;
+  return formatMoney(Math.round(midpoint / 10) * 10);
 }
 
 function candidateTag(candidate: CandidatePoi, prefix: string) {
@@ -277,7 +316,23 @@ export function PlanningResults({
     .slice(0, 2);
   const blockingIssues = validation.issues.filter((issue) => issue.severity === "error");
   const warningIssues = validation.issues.filter((issue) => issue.severity === "warning");
-  const budgetAllocations = materials?.budget_allocation.allocations ?? [];
+  const budgetEstimate = materials?.budget_estimate ?? null;
+  const budgetComparisonDetail = (() => {
+    if (!budgetEstimate?.total || budgetEstimate.budget_limit === null) return null;
+    const limit = Number(budgetEstimate.budget_limit);
+    const minimum = Number(budgetEstimate.total.minimum);
+    const maximum = Number(budgetEstimate.total.maximum);
+    if (budgetEstimate.comparison_status === "within_budget") {
+      return `按较高值计算，仍有约 ${formatMoney(limit - maximum)} 余量。`;
+    }
+    if (budgetEstimate.comparison_status === "possible_overrun") {
+      return `按较高值计算，最多可能超出约 ${formatMoney(maximum - limit)}。`;
+    }
+    if (budgetEstimate.comparison_status === "over_budget") {
+      return `即使按较低值计算，也会超出约 ${formatMoney(minimum - limit)}。`;
+    }
+    return null;
+  })();
   const reviewSummary = blockingIssues.length
     ? `当前方案有 ${blockingIssues.length} 项重要问题尚未解决：${blockingIssues
         .map(issueTitle)
@@ -907,45 +962,120 @@ export function PlanningResults({
           </article>
 
           <article className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm" data-testid="budget-estimate">
-            <p className="eyebrow">预算参考</p>
-            <div className="mt-3 flex items-end justify-between gap-4">
+            <p className="eyebrow">费用参考</p>
+            <div className="mt-3 flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold text-slate-800">预算估算</p>
-                <p className="text-2xl font-semibold tracking-tight">
-                  {hasBudget && (materials?.budget_allocation.total_limit ?? budget.total_limit) !== null
-                    ? formatMoney(materials?.budget_allocation.total_limit ?? budget.total_limit ?? 0)
-                    : "未设置"}
+                <p className="text-sm font-semibold text-slate-800">基于当前行程估算</p>
+                <p className="mt-1 text-2xl font-semibold tracking-tight" data-testid="budget-estimate-total">
+                  {budgetEstimate
+                    ? budgetEstimate.total
+                      ? `约 ${formatMoneyMidpoint(budgetEstimate.total)}`
+                      : "部分费用待确认"
+                    : "重新规划后显示"}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {materials?.budget_allocation.hard_limit ? "整趟行程预算上限" : "整趟行程建议分配"}
-                </p>
+                {budgetEstimate?.total ? (
+                  <p className="mt-1 text-xs text-slate-500" data-testid="budget-estimate-range">
+                    参考范围 {formatMoneyRange(budgetEstimate.total)}
+                  </p>
+                ) : null}
+                {hasBudget && budget.total_limit !== null ? (
+                  <p className="mt-2 text-xs text-slate-500">
+                    你的预算：{formatMoney(budget.total_limit)}
+                  </p>
+                ) : null}
+                {budgetComparisonDetail ? (
+                  <p className="mt-1 text-xs font-medium text-slate-700">
+                    {budgetComparisonDetail}
+                  </p>
+                ) : null}
               </div>
-              <span className="status-pill status-warning">
-                {budgetAllocations.length ? "规划估算" : "待补估算"}
+              <span
+                className={`status-pill ${
+                  budgetEstimate?.comparison_status === "within_budget"
+                    ? "status-success"
+                    : "status-warning"
+                }`}
+              >
+                {budgetEstimate
+                  ? budgetComparisonLabels[budgetEstimate.comparison_status]
+                  : "待计算"}
               </span>
             </div>
-            {budgetAllocations.length ? (
+
+            {budgetEstimate?.total ? (
               <div className="mt-5 grid grid-cols-2 gap-2">
-                {budgetAllocations.map((allocation) => (
-                  <div className="rounded-2xl bg-slate-50 p-3" key={allocation.category}>
-                    <p className="text-[11px] text-slate-500">{categoryLabels[allocation.category]}</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-950">
-                      {formatMoney(allocation.target_amount)}
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-[11px] text-slate-500">人均参考</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-950">
+                    {budgetEstimate.per_traveler
+                      ? formatMoneyRange(budgetEstimate.per_traveler)
+                      : "待补充"}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-[11px] text-slate-500">每日参考</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-950">
+                    {budgetEstimate.per_day ? formatMoneyRange(budgetEstimate.per_day) : "待补充"}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
+            {budgetEstimate?.items.length ? (
+              <div className="mt-5 space-y-2" data-testid="budget-estimate-breakdown">
+                {budgetEstimate.items.map((item) => (
+                  <div
+                    className="rounded-2xl border border-slate-100 bg-slate-50 p-3"
+                    key={item.category}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-slate-900">
+                        {categoryLabels[item.category]}
+                      </p>
+                      <p className="text-sm font-semibold text-slate-950">
+                        {formatMoneyRange(item.total)}
+                      </p>
+                    </div>
+                    <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                      {item.basis_description}
                     </p>
                   </div>
                 ))}
               </div>
             ) : (
               <p className="mt-5 text-xs leading-5 text-slate-500">
-                当前没有可用的预算目标。
+                这份旧行程还没有费用区间，请重新规划一次。
               </p>
             )}
-            <p className="mt-4 text-[10px] leading-5 text-slate-400">
-              根据总预算、人数和天数估算，实际费用以出行时为准。
-              {budget.missing_categories.length
-                ? ` 尚未取得实时价格：${budget.missing_categories.map((item) => categoryLabels[item]).join("、")}。`
-                : ""}
-            </p>
+
+            {budgetEstimate?.advice_codes.length ? (
+              <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4" data-testid="budget-advice">
+                <p className="text-xs font-semibold text-amber-950">
+                  {budgetEstimate.comparison_status === "within_budget" ? "预算提醒" : "调整建议"}
+                </p>
+                <ul className="mt-2 space-y-1 text-xs leading-5 text-amber-900">
+                  {budgetEstimate.advice_codes.map((code) => (
+                    <li key={code}>· {budgetAdviceLabels[code]}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {budgetEstimate ? (
+              <p className="mt-4 text-[10px] leading-5 text-slate-400">
+                费用根据当前住宿、行程地点、路线段数、人数和餐次计算；参考区间不代表实时成交价。
+                {budgetEstimate.exclusions.length
+                  ? ` 不含${budgetEstimate.exclusions
+                      .map((item) => budgetExclusionLabels[item])
+                      .join("、")}。`
+                  : ""}
+                {budgetEstimate.unknown_categories.length
+                  ? ` 尚缺${budgetEstimate.unknown_categories
+                      .map((item) => categoryLabels[item])
+                      .join("、")}信息。`
+                  : ""}
+              </p>
+            ) : null}
           </article>
 
           <WeatherOutlook

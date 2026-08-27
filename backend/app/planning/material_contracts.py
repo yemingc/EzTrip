@@ -19,6 +19,7 @@ from app.itinerary_quality import (
     major_activity_target,
     select_major_activities,
 )
+from app.planning.budget_estimate_contracts import BudgetEstimate
 from app.planning.specialist_contracts import (
     SpecialistBranchStatus,
     SpecialistFanoutResult,
@@ -361,6 +362,7 @@ class PlanningMaterialBundle(DomainModel):
     shortlist: PlanningShortlist
     route_matrix: RouteMatrix
     budget_allocation: BudgetAllocation
+    budget_estimate: BudgetEstimate | None = None
     activity_replacement: PlanningActivityReplacement | None = None
     activity_replacements: tuple[PlanningActivityReplacement, ...] = Field(
         default=(),
@@ -377,6 +379,8 @@ class PlanningMaterialBundle(DomainModel):
             (self.route_matrix.request_id, self.route_matrix.context_id),
             (self.budget_allocation.request_id, self.budget_allocation.context_id),
         }
+        if self.budget_estimate is not None:
+            identity_values.add((self.budget_estimate.request_id, self.budget_estimate.context_id))
         if len(identity_values) != 1:
             raise ValueError("planning material components must preserve request/context identity")
         if (

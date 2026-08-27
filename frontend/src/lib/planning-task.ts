@@ -45,6 +45,13 @@ export interface CandidateStay {
   location: { latitude: number; longitude: number };
   area_name: string;
   tags: string[];
+  nightly_price_estimate?: {
+    minimum: string | number;
+    maximum: string | number;
+    currency: "CNY";
+  } | null;
+  price_basis?: "user_input" | "fixture_estimate" | "historical_estimate" | null;
+  price_source?: SourceReference | null;
   availability_status: "unknown";
   booking_supported: false;
   source: SourceReference;
@@ -262,6 +269,71 @@ export interface ProductPlanningMaterials {
       target_per_unit: string | number;
     }[];
   };
+  budget_estimate?: {
+    status: "complete" | "partial";
+    currency: "CNY";
+    scope_categories: BudgetCategory[];
+    items: {
+      category: BudgetCategory;
+      description: string;
+      quantity_basis:
+        | "room_night"
+        | "traveler_day"
+        | "traveler_activity"
+        | "traveler_trip"
+        | "traveler_meal"
+        | "traveler_route_leg"
+        | "party_trip";
+      quantity: string | number;
+      unit_price: {
+        minimum: string | number;
+        maximum: string | number;
+        currency: "CNY";
+      };
+      total: {
+        minimum: string | number;
+        maximum: string | number;
+        currency: "CNY";
+      };
+      method:
+        | "candidate_price_range"
+        | "itinerary_price_range"
+        | "route_reference"
+        | "planning_reference";
+      confidence: "high" | "medium" | "low";
+      basis_description: string;
+    }[];
+    unknown_categories: BudgetCategory[];
+    total: {
+      minimum: string | number;
+      maximum: string | number;
+      currency: "CNY";
+    } | null;
+    per_traveler: {
+      minimum: string | number;
+      maximum: string | number;
+      currency: "CNY";
+    } | null;
+    per_day: {
+      minimum: string | number;
+      maximum: string | number;
+      currency: "CNY";
+    } | null;
+    budget_limit: string | number | null;
+    comparison_status:
+      | "not_requested"
+      | "within_budget"
+      | "possible_overrun"
+      | "over_budget"
+      | "incomplete";
+    advice_codes: (
+      | "keep_buffer"
+      | "lower_lodging_tier"
+      | "prioritize_free_activities"
+      | "use_public_transport"
+    )[];
+    exclusions: ("intercity_transport" | "shopping" | "booking_fees")[];
+  } | null;
 }
 
 export interface WeatherIndoorRecovery {
