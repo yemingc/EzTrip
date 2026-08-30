@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="EzTrip 行程演示：展示旅行规划、预算参考、雨天推荐与确认调整。"
+    />
+    <meta name="theme-color" content="#f7f5ed" />
+    <title>EzTrip 行程演示</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#demo-main">跳到演示内容</a>
+
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="./" aria-label="EzTrip 行程演示首页">
+          <span class="brand-mark" aria-hidden="true">EZ</span>
+          <span class="brand-copy">
+            <strong>EzTrip 行程演示</strong>
+            <span>规划 · 预算 · 雨天调整</span>
+          </span>
+        </a>
+
+        <p class="data-boundary">
+          本页面使用演示数据，预算为规划参考。
+        </p>
+
+        <nav class="header-actions" aria-label="演示操作">
+          <button class="button button-quiet" id="reset-demo" type="button">
+            <span data-icon="refresh" aria-hidden="true"></span>
+            重新开始
+          </button>
+          <button class="button button-quiet" id="open-evidence" type="button">
+            <span data-icon="document" aria-hidden="true"></span>
+            数据说明
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <div id="progress-root"></div>
+
+    <main id="demo-main" tabindex="-1">
+      <div id="app-root"></div>
+    </main>
+
+    <div class="sr-only" id="status-live" aria-live="polite"></div>
+
+    <dialog class="evidence-dialog" id="evidence-dialog">
+      <div class="dialog-header">
+        <div>
+          <p class="section-label">数据说明</p>
+          <h2>使用前请了解</h2>
+        </div>
+        <button
+          class="icon-button"
+          id="close-evidence"
+          type="button"
+          aria-label="关闭数据说明"
+        >
+          <span data-icon="close" aria-hidden="true"></span>
+        </button>
+      </div>
+
+      <div class="evidence-content">
+        <ul class="evidence-list evidence-list-plain">
+          <li>本页面使用演示数据。</li>
+          <li>价格仅供行程预算参考。</li>
+          <li>不提供实时库存或预订服务。</li>
+        </ul>
+      </div>
+    </dialog>
+
+    <noscript>
+      <div class="noscript-message">此演示需要启用 JavaScript。</div>
+    </noscript>
+
+    <script src="./data.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
