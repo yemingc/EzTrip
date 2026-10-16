@@ -17,13 +17,16 @@ pnpm dev
 ## 质量检查
 
 ```powershell
-pnpm audit --audit-level high
+pnpm test:audit
+pnpm audit:security
 pnpm lint
 pnpm typecheck
 pnpm build
 pnpm exec playwright install chromium
 pnpm test:e2e
 ```
+
+前端审计仅允许一项开发依赖限时例外，最晚于 2026-10-30 00:00 UTC 失效；详见[审计例外说明](../docs/security/frontend-audit-exception.md)。
 
 Playwright 测试运行真实 fixture FastAPI + SSE 链路，覆盖 Request Intake proposal → 确认 → 规划边界、任务 URL 在执行中/等待审核/完成后的连续刷新恢复、北京默认规划、上海三日规划、重名行政区确认、fixture 不支持城市的诚实提示、live 选择即显式启用的界面语义、营业时间冲突的确定性 Plan 修复、正常草案批准、软预算目标下费用事实缺失提醒、第二天整体延后、从 Provider observations 替换单个活动、无候选空状态并生成 v2，以及 390px 移动端视口。fixture 路径不会调用 DeepSeek 或实时高德。
 
