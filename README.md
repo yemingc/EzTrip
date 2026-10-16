@@ -92,13 +92,16 @@ Frontend：
 
 ```powershell
 Set-Location frontend
-pnpm audit --audit-level high
+pnpm test:audit
+pnpm audit:security
 pnpm lint
 pnpm typecheck
 pnpm build
 pnpm exec playwright install chromium
 pnpm test:e2e
 ```
+
+前端审计仅允许一项开发依赖限时例外，最晚于 2026-10-30 00:00 UTC 失效；详见[审计例外说明](docs/security/frontend-audit-exception.md)。
 
 `test:e2e` 会启动 fixture backend 和 frontend，不读取 API Key，也不调用 DeepSeek 或实时高德。
 

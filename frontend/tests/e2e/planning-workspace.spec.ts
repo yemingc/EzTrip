@@ -558,9 +558,16 @@ test("resolves Shanghai and plans a three-day fixture trip", async ({ page }) =>
 
   await page.getByLabel("目的城市").fill("上海");
   await page.getByLabel("行程天数").selectOption("3");
-  await understandAndStart(page);
+  await page.getByTestId("submit-planning-task").click();
 
+  const confirmation = page.getByTestId("request-intake-confirmation");
+  await expect(confirmation).toBeVisible({ timeout: 20_000 });
+  // Destination resolution belongs to the intake form, which is removed after confirmation.
   await expect(page.getByTestId("destination-resolution")).toContainText("已确认目的地：上海市");
+  await page.getByTestId("confirm-request-intake").click();
+
+  await expect(page.getByTestId("planning-task-summary")).toContainText("上海 · 3 天");
+  await expect(confirmation).toHaveCount(0);
   const results = page.getByTestId("planning-results");
   await expect(results).toBeVisible({ timeout: 20_000 });
   await expect(results).toContainText("上海 · 3 天行程");
